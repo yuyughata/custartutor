@@ -129,7 +129,11 @@ export function averageSentenceLength(blocks: readonly AnyBlock[]): number | nul
   return sentences === 0 ? null : words / sentences;
 }
 
-function collectStrings(value: unknown, path: PathSegment[], out: { path: PathSegment[]; text: string }[]) {
+function collectStrings(
+  value: unknown,
+  path: PathSegment[],
+  out: { path: PathSegment[]; text: string }[],
+) {
   if (typeof value === 'string') {
     out.push({ path, text: value });
   } else if (Array.isArray(value)) {
@@ -145,16 +149,15 @@ function collectStrings(value: unknown, path: PathSegment[], out: { path: PathSe
 // Think Deeper rungs (brief section 9)
 // ---------------------------------------------------------------------------------------------
 
-const EXPRESS_RUNG = /\b(?:explain why|explain how|give your reason|give a reason|which is better|how do you know)\b/;
+const EXPRESS_RUNG =
+  /\b(?:explain why|explain how|give your reason|give a reason|which is better|how do you know)\b/;
 const CONNECT_RUNG =
   /\b(?:same or different|why do you think|what would happen if|what if|how (?:is|are|does|do) .{0,60}(?:different|alike|the same)|why)\b/;
 const ABSORB_RUNG = /\b(?:name|what|which|who|where|what comes next)\b/;
 
 /** The highest reasoning rung a prompt appears to ask for, or null when no keyword matches. */
 export function reasoningRungOf(prompt: string): Stage | null {
-  const text = stripInlineMarkup(prompt)
-    .toLowerCase()
-    .replace(/[‘’]/g, "'");
+  const text = stripInlineMarkup(prompt).toLowerCase().replace(/[‘’]/g, "'");
   if (EXPRESS_RUNG.test(text)) return 'express';
   if (CONNECT_RUNG.test(text)) return 'connect';
   if (ABSORB_RUNG.test(text)) return 'absorb';
@@ -169,7 +172,9 @@ function thinkDeeperPrompts(section: Section, questions: Record<string, Question
         prompts.push(...block.items.map((item) => item.text));
         break;
       case 'paragraph':
-        prompts.push(...(stripInlineMarkup(block.text).match(/[^.!?]*\?/g) ?? []).map((q) => q.trim()));
+        prompts.push(
+          ...(stripInlineMarkup(block.text).match(/[^.!?]*\?/g) ?? []).map((q) => q.trim()),
+        );
         break;
       case 'activity_steps':
         prompts.push(...block.steps.map((step) => step.text).filter((text) => text.includes('?')));
@@ -231,11 +236,10 @@ function lintQuestions(questions: Record<string, Question>, report: Report): voi
         continue;
       }
       for (const problem of answerProblems(question)) {
-        report.error(
-          'answer_spec_invalid',
-          `Question "${id}": ${problem.message}.`,
-          [...path, ...problem.path],
-        );
+        report.error('answer_spec_invalid', `Question "${id}": ${problem.message}.`, [
+          ...path,
+          ...problem.path,
+        ]);
       }
     } else if (question.kind === 'free_text' || question.kind === 'spoken') {
       const rubric: unknown = question.rubric;
@@ -319,7 +323,9 @@ function lintWorkbook(workbook: Workbook | undefined, report: Report): void {
 
 function lintTeacherManual(manual: TeacherManual | undefined, report: Report): void {
   if (!manual) {
-    report.error('teacher_manual_missing', "The unit has no teacher's manual entry.", ['teacher_manual']);
+    report.error('teacher_manual_missing', "The unit has no teacher's manual entry.", [
+      'teacher_manual',
+    ]);
     return;
   }
   if ((manual.script ?? []).length === 0) {

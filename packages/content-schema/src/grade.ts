@@ -50,7 +50,12 @@ function ungraded(reason: string): GradeResult {
   return { result: 'ungraded', detail: { reason, score: null } };
 }
 
-function fromItems(items: boolean[], allReason: string, someReason: string, noneReason: string): GradeResult {
+function fromItems(
+  items: boolean[],
+  allReason: string,
+  someReason: string,
+  noneReason: string,
+): GradeResult {
   const right = items.filter(Boolean).length;
   const score = items.length === 0 ? 0 : right / items.length;
   if (right === items.length && items.length > 0) {
@@ -65,7 +70,12 @@ function fromItems(items: boolean[], allReason: string, someReason: string, none
 /** Grades one fill-in-the-blank answer against its accepted values. Exported for the tutor scripts. */
 export function gradeBlank(
   response: string,
-  blank: { accepted: readonly string[]; numeric?: boolean; units?: readonly string[]; exact?: boolean },
+  blank: {
+    accepted: readonly string[];
+    numeric?: boolean;
+    units?: readonly string[];
+    exact?: boolean;
+  },
   options: GradeOptions = {},
 ): boolean {
   const typoTolerance = options.typoTolerance !== false && blank.exact !== true;
@@ -78,7 +88,9 @@ export function gradeBlank(
       });
     }
     // Not a number: only an exact match against non-numeric accepted words ("five") counts.
-    const words = blank.accepted.filter((value) => parseNumeric(value, { units: blank.units }) === null);
+    const words = blank.accepted.filter(
+      (value) => parseNumeric(value, { units: blank.units }) === null,
+    );
     return matchText(response, words, { typoTolerance: false }) !== null;
   }
   return matchText(response, blank.accepted, { typoTolerance }) !== null;
@@ -149,17 +161,25 @@ function gradeDeterministic(
     case 'sort': {
       if (response.kind !== 'sort') return ungraded('response_kind_mismatch');
       const given = new Map(
-        Object.entries(response.placements).map(([item, category]) => [normalizeText(item), category]),
+        Object.entries(response.placements).map(([item, category]) => [
+          normalizeText(item),
+          category,
+        ]),
       );
       const expected = new Map(
-        Object.entries(question.answer.mapping).map(([item, category]) => [normalizeText(item), category]),
+        Object.entries(question.answer.mapping).map(([item, category]) => [
+          normalizeText(item),
+          category,
+        ]),
       );
       const items = question.items.map((item) => {
         const key = normalizeText(item);
         const placed = given.get(key);
         const category = expected.get(key);
         return (
-          placed !== undefined && category !== undefined && normalizeText(placed) === normalizeText(category)
+          placed !== undefined &&
+          category !== undefined &&
+          normalizeText(placed) === normalizeText(category)
         );
       });
       return fromItems(items, 'all_correct', 'some_items_wrong', 'all_items_wrong');
@@ -173,7 +193,8 @@ function gradeDeterministic(
       if (response.kind !== 'speak') return ungraded('response_kind_mismatch');
       const { expected, match } = question.answer;
       const ok =
-        matchText(response.transcript, expected, { typoTolerance: options.typoTolerance }) !== null ||
+        matchText(response.transcript, expected, { typoTolerance: options.typoTolerance }) !==
+          null ||
         (match === 'contains' && containsPhrase(response.transcript, expected));
       return ok
         ? { result: 'correct', detail: { reason: 'transcript_matches', score: 1 } }
@@ -183,9 +204,14 @@ function gradeDeterministic(
 }
 
 function containsPhrase(transcript: string, expected: readonly string[]): boolean {
-  const spoken = ` ${normalizeText(transcript).replace(/[\p{P}]+/gu, ' ').replace(/\s+/g, ' ')} `;
+  const spoken = ` ${normalizeText(transcript)
+    .replace(/[\p{P}]+/gu, ' ')
+    .replace(/\s+/g, ' ')} `;
   return expected.some((phrase) => {
-    const needle = normalizeText(phrase).replace(/[\p{P}]+/gu, ' ').replace(/\s+/g, ' ').trim();
+    const needle = normalizeText(phrase)
+      .replace(/[\p{P}]+/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
     return needle !== '' && spoken.includes(` ${needle} `);
   });
 }

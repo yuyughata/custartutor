@@ -17,7 +17,13 @@ export type Layer = z.infer<typeof Layer>;
 export const LevelCode = z.enum(['P1', 'P2', 'P3', 'P4', 'P5', 'P6']);
 export type LevelCode = z.infer<typeof LevelCode>;
 
-export const UnitKind = z.enum(['lesson', 'mini_project', 'term_project', 'revision', 'assessment']);
+export const UnitKind = z.enum([
+  'lesson',
+  'mini_project',
+  'term_project',
+  'revision',
+  'assessment',
+]);
 export type UnitKind = z.infer<typeof UnitKind>;
 
 /**
@@ -35,7 +41,10 @@ export type Lang = z.infer<typeof Lang>;
  */
 export const Id = z
   .string()
-  .regex(/^[a-z][a-z0-9_]{1,63}$/, 'must be a lowercase slug (letters, digits, underscores), 2-64 chars');
+  .regex(
+    /^[a-z][a-z0-9_]{1,63}$/,
+    'must be a lowercase slug (letters, digits, underscores), 2-64 chars',
+  );
 export type Id = z.infer<typeof Id>;
 
 /** Slug with hyphens, for subjects and themes (`basic-science`, `market-day`). */

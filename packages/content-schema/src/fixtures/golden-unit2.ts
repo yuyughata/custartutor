@@ -59,7 +59,8 @@ const questions: Record<string, Question> = {
     skill_tag: 'people_in_environment',
     options: ['teacher', 'friend', 'classmate', 'astronaut'],
     answer: { correct: ['teacher', 'friend', 'classmate'] },
-    explanation: 'A teacher, a friend and a classmate. An astronaut is not someone we meet at school.',
+    explanation:
+      'A teacher, a friend and a classmate. An astronaut is not someone we meet at school.',
   },
   // ---- Workbook, Tier 2 ----
   wb_fill_cook: {
@@ -438,7 +439,9 @@ export const goldenUnit2: LessonUnit = {
               ],
             },
             on_correct: ['Yes, that is one of our five senses!'],
-            on_incorrect: ['Our five senses are see, hear, smell, touch and taste. Can you say one of them?'],
+            on_incorrect: [
+              'Our five senses are see, hear, smell, touch and taste. Can you say one of them?',
+            ],
             hint: ['We see with our eyes. What do we do with our ears?'],
           }),
         ],
@@ -535,7 +538,9 @@ export const goldenUnit2: LessonUnit = {
           node('n_gutter', 'Here is a safety question. Is it safe to play near a deep gutter?', {
             expect: { question_id: 'qf_gutter' },
             on_correct: ['That is right. We never play near a deep gutter.'],
-            on_incorrect: ['No, it is not safe. A deep gutter can hurt us. We tell a grown-up if something is not safe.'],
+            on_incorrect: [
+              'No, it is not safe. A deep gutter can hurt us. We tell a grown-up if something is not safe.',
+            ],
             hint: ['Think about what could happen if you fell in.'],
           }),
         ],
@@ -618,7 +623,13 @@ export const goldenUnit2: LessonUnit = {
       type: 'quick_fire',
       layer: 'CORE',
       heading: 'Quick-Fire! (Answer Fast)',
-      blocks: [ask('qf_learn'), ask('qf_cook'), ask('qf_teacher'), ask('qf_clean'), ask('qf_gutter')],
+      blocks: [
+        ask('qf_learn'),
+        ask('qf_cook'),
+        ask('qf_teacher'),
+        ask('qf_clean'),
+        ask('qf_gutter'),
+      ],
     },
     {
       id: 'have_i_got_it',
@@ -724,25 +735,29 @@ export const goldenUnit2: LessonUnit = {
         section_id: 'remember_senses',
         say: 'Remind the class that the environment is everything around us. Touch your eyes, ears, nose, hand and tongue as you name each sense.',
         ask: 'Can you name the five senses?',
-        watch_for: 'Whether children recall all five. Give a clue with the action if a child is stuck.',
+        watch_for:
+          'Whether children recall all five. Give a clue with the action if a child is stuck.',
       },
       {
         section_id: 'places_in_school',
         say: 'Read each place and point to it if you can see it from where you are. Say: "classroom, where we learn."',
         ask: 'What do we do on the playground? What do we do in the toilet?',
-        watch_for: 'Children mixing up the toilet at school (wash and keep clean) with the bathroom at home.',
+        watch_for:
+          'Children mixing up the toilet at school (wash and keep clean) with the bathroom at home.',
       },
       {
         section_id: 'places_in_home',
         say: 'Ask children to picture their own home as you read each room. Let two or three children describe their kitchen.',
         ask: 'Which room do you like best, and why?',
-        watch_for: 'Children whose homes have no separate living room; accept their own words for the family sitting place.',
+        watch_for:
+          'Children whose homes have no separate living room; accept their own words for the family sitting place.',
       },
       {
         section_id: 'people_in_environment',
         say: 'Draw three circles on the board: home, school, near our home. Write one group of people in each.',
         ask: 'Who lives in your house? Who lives beside it?',
-        watch_for: 'Children who name only the immediate family; remind them that neighbours and friends are part of the environment.',
+        watch_for:
+          'Children who name only the immediate family; remind them that neighbours and friends are part of the environment.',
       },
       {
         section_id: 'staying_safe',
@@ -754,7 +769,8 @@ export const goldenUnit2: LessonUnit = {
         section_id: 'lets_look_together',
         say: 'Do the three examples together, quickly, with the whole class answering aloud.',
         ask: 'Can you point to one safe thing and one thing that is not safe?',
-        watch_for: 'Children who point to something safe both times; ask them to look again for a danger.',
+        watch_for:
+          'Children who point to something safe both times; ask them to look again for a danger.',
       },
       {
         section_id: 'our_places_walk',
@@ -772,7 +788,8 @@ export const goldenUnit2: LessonUnit = {
         section_id: 'think_deeper',
         say: 'Ask one prompt at a time and wait. Accept any sensible reason.',
         ask: 'Why do we cook food in the kitchen and not in the bedroom?',
-        watch_for: 'Reasons about safety and cleanliness. Praise the thinking, not only the answer.',
+        watch_for:
+          'Reasons about safety and cleanliness. Praise the thinking, not only the answer.',
       },
       {
         section_id: 'quick_fire',

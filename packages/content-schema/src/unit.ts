@@ -49,10 +49,7 @@ const headerCore = {
   theme: Theme.optional(),
 };
 
-function checkStageRange(
-  header: { stage: Stage; stage_to?: Stage },
-  ctx: z.RefinementCtx,
-): void {
+function checkStageRange(header: { stage: Stage; stage_to?: Stage }, ctx: z.RefinementCtx): void {
   if (header.stage_to !== undefined && stageIndex(header.stage_to) < stageIndex(header.stage)) {
     ctx.addIssue({
       code: 'custom',

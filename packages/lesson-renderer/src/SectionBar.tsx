@@ -26,7 +26,13 @@ export function SectionBar({ heading, layer, showBadge }: SectionBarProps): Reac
     >
       <Text
         accessibilityRole="header"
-        style={{ color: colors.onBar, fontSize: 22, lineHeight: 30, fontWeight: '700', flexShrink: 1 }}
+        style={{
+          color: colors.onBar,
+          fontSize: 22,
+          lineHeight: 30,
+          fontWeight: '700',
+          flexShrink: 1,
+        }}
       >
         {heading}
       </Text>

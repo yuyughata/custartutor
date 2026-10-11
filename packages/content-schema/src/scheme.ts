@@ -69,6 +69,50 @@ export interface ChapterGroupingOptions {
   max?: number;
 }
 
+function within(sizes: readonly number[], min: number, max: number): boolean {
+  return sizes.every((size) => size >= min && size <= max);
+}
+
+/** Greedy chunks of `target`, with the short-tail rules (merge, then rebalance). */
+function greedySizes(count: number, min: number, max: number, target: number): number[] {
+  const sizes: number[] = [];
+  for (let remaining = count; remaining > 0; remaining -= target) {
+    sizes.push(Math.min(target, remaining));
+  }
+  const last = sizes[sizes.length - 1] ?? 0;
+  const previous = sizes[sizes.length - 2];
+  if (last < min && previous !== undefined) {
+    const pooled = previous + last;
+    sizes.splice(sizes.length - 2, 2);
+    if (pooled <= max) {
+      sizes.push(pooled); // merge the tail into the previous chapter
+    } else {
+      sizes.push(Math.ceil(pooled / 2), Math.floor(pooled / 2)); // rebalance the two as evenly as possible
+    }
+  }
+  return sizes;
+}
+
+/** `chapters` chapters of as equal a size as possible, the larger ones first. */
+function evenSizes(count: number, chapters: number): number[] {
+  const base = Math.floor(count / chapters);
+  const extra = count % chapters;
+  return Array.from({ length: chapters }, (_, index) => (index < extra ? base + 1 : base));
+}
+
+/** The chapter count whose even split is valid and whose average size is closest to `target`. */
+function bestEvenSizes(count: number, min: number, max: number, target: number): number[] | null {
+  let best: number[] | null = null;
+  for (let chapters = Math.ceil(count / max); chapters <= Math.floor(count / min); chapters += 1) {
+    const candidate = evenSizes(count, chapters);
+    if (!within(candidate, min, max)) continue;
+    if (!best || Math.abs(count / chapters - target) < Math.abs(count / best.length - target)) {
+      best = candidate;
+    }
+  }
+  return best;
+}
+
 /**
  * Proposes chapter groupings: runs of consecutive TEACHING weeks, 3 to 5 units each.
  *
@@ -76,13 +120,14 @@ export interface ChapterGroupingOptions {
  *  1. Keep only weeks of kind `teaching`, ordered by week number. Exams, breaks, revision and closing
  *     weeks are skipped, so a chapter may sit on either side of the mid-term break.
  *  2. Cut the list greedily into chunks of the target size, the midpoint of min and max (4 by default).
- *  3. If the last chunk is smaller than `min`, it is a short tail (1 or 2 weeks):
+ *  3. If the last chunk is smaller than `min` (a short tail of 1 or 2 weeks by default):
  *       a. merge it into the previous chunk when the result is no larger than `max`;
  *       b. otherwise rebalance: pool the previous chunk and the tail and split them as evenly as possible
  *          into two chunks (for example 4 + 2 becomes 3 + 3).
- *     If neither keeps every chunk within [min, max] (only possible with unusual min/max values), the
- *     tail is merged anyway and a warning is returned.
- *  4. A term with fewer than `min` teaching weeks becomes one short chapter, with a warning.
+ *  4. If that still leaves a chunk outside [min, max] (only possible with unusual bounds), fall back to
+ *     an even split into the number of chapters that fits and is closest to the target size. If no
+ *     number of chapters fits, the greedy result is returned together with a warning.
+ *  5. A term with fewer than `min` teaching weeks becomes one short chapter, with a warning.
  *
  * Examples with the defaults: 8 weeks -> 4+4; 9 -> 4+5; 10 -> 4+3+3; 11 -> 4+4+3; 12 -> 4+4+4.
  *
@@ -101,48 +146,34 @@ export function groupIntoChapters(
   const teaching = scheme.weeks
     .filter((week) => week.kind === 'teaching')
     .sort((a, b) => a.week_no - b.week_no);
+  const count = teaching.length;
 
-  if (teaching.length === 0) return { chapters: [], warnings };
-
-  const target = Math.min(max, Math.max(min, Math.round((min + max) / 2)));
-  const chunks: SchemeWeek[][] = [];
-  for (let start = 0; start < teaching.length; start += target) {
-    chunks.push(teaching.slice(start, start + target));
+  if (count === 0) return { chapters: [], warnings };
+  if (count < min) {
+    warnings.push(`Only ${count} teaching week(s); a chapter needs ${min} to ${max} units.`);
   }
 
-  const last = chunks[chunks.length - 1];
-  if (last && last.length < min && chunks.length > 1) {
-    const previous = chunks[chunks.length - 2] ?? [];
-    const pooled = [...previous, ...last];
-    if (pooled.length <= max) {
-      chunks.splice(chunks.length - 2, 2, pooled);
+  const target = Math.min(max, Math.max(min, Math.round((min + max) / 2)));
+  let sizes = count < min ? [count] : greedySizes(count, min, max, target);
+  if (count >= min && !within(sizes, min, max)) {
+    const even = bestEvenSizes(count, min, max, target);
+    if (even) {
+      sizes = even;
     } else {
-      const firstSize = Math.ceil(pooled.length / 2);
-      const first = pooled.slice(0, firstSize);
-      const second = pooled.slice(firstSize);
-      if (first.length >= min && second.length >= min && first.length <= max && second.length <= max) {
-        chunks.splice(chunks.length - 2, 2, first, second);
-      } else {
-        chunks.splice(chunks.length - 2, 2, pooled);
-        warnings.push(
-          `The last chapter has ${pooled.length} units, outside ${min}-${max}; adjust it by hand.`,
-        );
-      }
+      warnings.push(`No grouping keeps every chapter within ${min}-${max} units; adjust by hand.`);
     }
   }
 
-  if (chunks.length === 1 && (chunks[0]?.length ?? 0) < min) {
-    warnings.push(
-      `Only ${teaching.length} teaching week(s); a chapter needs ${min} to ${max} units.`,
-    );
+  const chapters: ChapterProposal[] = [];
+  let start = 0;
+  for (const size of sizes) {
+    const group = teaching.slice(start, start + size);
+    chapters.push({
+      chapter_no: chapters.length + 1,
+      week_nos: group.map((week) => week.week_no),
+      topics: group.map((week) => week.topic),
+    });
+    start += size;
   }
-
-  return {
-    chapters: chunks.map((weeks, index) => ({
-      chapter_no: index + 1,
-      week_nos: weeks.map((week) => week.week_no),
-      topics: weeks.map((week) => week.topic),
-    })),
-    warnings,
-  };
+  return { chapters, warnings };
 }

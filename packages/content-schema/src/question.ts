@@ -205,7 +205,10 @@ export function answerProblems(question: QuestionShape): AnswerProblem[] {
           blank.numeric &&
           !blank.accepted.some((value) => parseNumeric(value, { units: blank.units }) !== null)
         ) {
-          add(['answer', 'blanks', index, 'accepted'], 'numeric blank has no numeric accepted value');
+          add(
+            ['answer', 'blanks', index, 'accepted'],
+            'numeric blank has no numeric accepted value',
+          );
         }
       });
       break;
@@ -230,7 +233,8 @@ export function answerProblems(question: QuestionShape): AnswerProblem[] {
     }
     case 'sort': {
       if (duplicates(question.items).length > 0) add(['items'], 'items must be distinct');
-      if (duplicates(question.categories).length > 0) add(['categories'], 'categories must be distinct');
+      if (duplicates(question.categories).length > 0)
+        add(['categories'], 'categories must be distinct');
       const categories = question.categories.map(normalizeText);
       const mapping = new Map(
         Object.entries(question.answer.mapping).map(([item, category]) => [
@@ -243,7 +247,10 @@ export function answerProblems(question: QuestionShape): AnswerProblem[] {
         if (category === undefined) {
           add(['answer', 'mapping'], `item "${item}" has no category in the mapping`);
         } else if (!categories.includes(normalizeText(category))) {
-          add(['answer', 'mapping'], `item "${item}" maps to "${category}", which is not a category`);
+          add(
+            ['answer', 'mapping'],
+            `item "${item}" maps to "${category}", which is not a category`,
+          );
         }
       }
       const items = question.items.map(normalizeText);
@@ -257,7 +264,8 @@ export function answerProblems(question: QuestionShape): AnswerProblem[] {
         add([], 'tap_image needs an asset_id or a brief');
       }
       const ids = question.answer.hotspots.map((hotspot) => hotspot.id);
-      if (new Set(ids).size !== ids.length) add(['answer', 'hotspots'], 'hotspot ids must be unique');
+      if (new Set(ids).size !== ids.length)
+        add(['answer', 'hotspots'], 'hotspot ids must be unique');
       if (!question.answer.hotspots.some((hotspot) => hotspot.correct)) {
         add(['answer', 'hotspots'], 'at least one hotspot must be correct');
       }

@@ -65,7 +65,9 @@ function add(a: Rational, b: Rational): Rational | null {
 
 function stripUnits(input: string, units: readonly string[]): string {
   let value = input;
-  const ordered = [...units].map((u) => u.normalize('NFC').toLowerCase()).sort((a, b) => b.length - a.length);
+  const ordered = [...units]
+    .map((u) => u.normalize('NFC').toLowerCase())
+    .sort((a, b) => b.length - a.length);
   for (const unit of ordered) {
     if (unit === '') continue;
     const lower = value.toLowerCase();
@@ -133,8 +135,7 @@ export function parseNumeric(
   let value = input
     .normalize('NFC')
     .replace(/[−‒–]/g, '-')
-    .replace(/[   ]/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/\s+/g, ' ') // \s also covers no-break, narrow no-break and thin spaces
     .trim();
   if (value.length === 0 || value.length > MAX_LENGTH) return null;
   value = value.replace(/[.!?,;:\s]+$/, '');

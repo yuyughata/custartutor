@@ -18,7 +18,9 @@ export const TutorExpectation = z
     accepted: z.array(Text).min(1).optional(),
   })
   .superRefine((expect, ctx) => {
-    const set = [expect.question_id !== undefined, expect.accepted !== undefined].filter(Boolean).length;
+    const set = [expect.question_id !== undefined, expect.accepted !== undefined].filter(
+      Boolean,
+    ).length;
     if (set !== 1) {
       ctx.addIssue({
         code: 'custom',

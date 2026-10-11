@@ -17,6 +17,7 @@ interface SectionRef {
 }
 
 export interface UnitRefInput {
+  tutor_script?: SectionRef['tutor_script'];
   sections?: readonly SectionRef[];
   questions?: Readonly<Record<string, { id: string }>>;
   session_plan?: readonly { sections: readonly string[] }[];
@@ -78,16 +79,37 @@ export function findRefIssues(unit: UnitRefInput): RefIssue[] {
     }
   };
 
+  unit.tutor_script?.nodes.forEach((node, nodeIndex) => {
+    const id = node.expect?.question_id;
+    if (id !== undefined) {
+      needQuestion(id, ['tutor_script', 'nodes', nodeIndex, 'expect', 'question_id']);
+    }
+  });
+
   sections.forEach((section, sectionIndex) => {
     section.blocks.forEach((block, blockIndex) => {
       if (block.type === 'question' && typeof block.question_id === 'string') {
-        needQuestion(block.question_id, ['sections', sectionIndex, 'blocks', blockIndex, 'question_id']);
+        needQuestion(block.question_id, [
+          'sections',
+          sectionIndex,
+          'blocks',
+          blockIndex,
+          'question_id',
+        ]);
       }
     });
     section.tutor_script?.nodes.forEach((node, nodeIndex) => {
       const id = node.expect?.question_id;
       if (id !== undefined) {
-        needQuestion(id, ['sections', sectionIndex, 'tutor_script', 'nodes', nodeIndex, 'expect', 'question_id']);
+        needQuestion(id, [
+          'sections',
+          sectionIndex,
+          'tutor_script',
+          'nodes',
+          nodeIndex,
+          'expect',
+          'question_id',
+        ]);
       }
     });
   });

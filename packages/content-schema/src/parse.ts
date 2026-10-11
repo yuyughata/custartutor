@@ -25,7 +25,9 @@ export class UnitParseError extends Error {
   readonly issues: ParseIssue[];
 
   constructor(issues: ParseIssue[]) {
-    const shown = issues.slice(0, 20).map((issue) => `  ${issue.path || '(root)'}: ${issue.message}`);
+    const shown = issues
+      .slice(0, 20)
+      .map((issue) => `  ${issue.path || '(root)'}: ${issue.message}`);
     const more = issues.length > 20 ? [`  ... and ${issues.length - 20} more`] : [];
     super(`Invalid unit content (${issues.length} problem(s)):\n${[...shown, ...more].join('\n')}`);
     this.name = 'UnitParseError';
@@ -46,7 +48,9 @@ function flattenIssue(issue: z.core.$ZodIssue, prefix: readonly PropertyKey[] = 
   const path = [...prefix, ...issue.path];
   if (issue.code === 'invalid_key') {
     const inner = issue.issues[0]?.message;
-    return [{ path: formatPath(path), message: inner ? `${issue.message}: ${inner}` : issue.message }];
+    return [
+      { path: formatPath(path), message: inner ? `${issue.message}: ${inner}` : issue.message },
+    ];
   }
   if (issue.code === 'invalid_union' && issue.errors.length > 0) {
     const first = issue.errors[0];

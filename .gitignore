@@ -19,3 +19,6 @@ playwright-report/
 android/
 ios/
 web-build/
+
+# Claude Code local settings
+.claude/settings.local.json*

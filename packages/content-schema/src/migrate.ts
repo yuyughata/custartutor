@@ -13,7 +13,8 @@ import { CURRENT_SCHEMA_VERSION } from './common';
 export type RawUnit = Record<string, unknown>;
 export type Migration = (unit: RawUnit) => RawUnit;
 
-export type SchemaVersionErrorCode = 'newer_than_supported' | 'invalid_version' | 'missing_migration';
+export type SchemaVersionErrorCode =
+  'newer_than_supported' | 'invalid_version' | 'missing_migration';
 
 export class SchemaVersionError extends Error {
   readonly code: SchemaVersionErrorCode;
@@ -91,7 +92,7 @@ export function migrateToCurrent(raw: unknown): MigrationResult {
   if (!isRecord(raw)) {
     throw new TypeError('unit content must be a JSON object');
   }
-  const found = raw.schema_version ?? 0;
+  const found = raw.schema_version === undefined ? 0 : raw.schema_version;
   if (typeof found !== 'number' || !Number.isInteger(found) || found < 0) {
     throw new SchemaVersionError(
       'invalid_version',
