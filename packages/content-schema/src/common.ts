@@ -55,11 +55,11 @@ export const Text = z.string().refine((value) => value.trim().length > 0, 'must 
 export type Text = z.infer<typeof Text>;
 
 /** Term number within the school year. */
-export const Term = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+export const Term = z.literal([1, 2, 3]);
 export type Term = z.infer<typeof Term>;
 
 /** Difficulty tier of a question: 1 supported, 2 now you try, 3 stretch. */
-export const Tier = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+export const Tier = z.literal([1, 2, 3]);
 export type Tier = z.infer<typeof Tier>;
 
 /** Position of a value in `STAGE_ORDER`. */

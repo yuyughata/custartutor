@@ -162,6 +162,30 @@ export function isKnownBlockType(raw: unknown): boolean {
   return typeof type === 'string' && KNOWN_TYPES.has(type);
 }
 
+function isUnknownWrapper(raw: unknown): boolean {
+  return (
+    typeof raw === 'object' &&
+    raw !== null &&
+    (raw as { type?: unknown }).type === 'unknown' &&
+    typeof (raw as { original_type?: unknown }).original_type === 'string'
+  );
+}
+
+/**
+ * Leaves a recognised block (or an existing `unknown` stand-in) as it is, and wraps anything else as
+ * `{ type: 'unknown', original_type, raw }`. Never throws.
+ */
+export function degradeUnknownBlock(raw: unknown): unknown {
+  if (isKnownBlockType(raw) || isUnknownWrapper(raw)) return raw;
+  const type =
+    typeof raw === 'object' && raw !== null ? (raw as { type?: unknown }).type : undefined;
+  return {
+    type: 'unknown',
+    original_type: typeof type === 'string' ? type : '(missing)',
+    raw,
+  };
+}
+
 /**
  * Parses a list of raw blocks WITHOUT throwing on an unrecognised block `type`.
  *
@@ -177,18 +201,7 @@ export function parseBlocksLenient(input: unknown): AnyBlock[] {
   if (!Array.isArray(input)) {
     throw new TypeError('blocks must be an array');
   }
-  return input.map((raw: unknown): AnyBlock => {
-    if (isKnownBlockType(raw)) {
-      return Block.parse(raw);
-    }
-    const type =
-      typeof raw === 'object' && raw !== null ? (raw as { type?: unknown }).type : undefined;
-    return {
-      type: 'unknown',
-      original_type: typeof type === 'string' ? type : '(missing)',
-      raw,
-    };
-  });
+  return input.map((raw: unknown) => AnyBlock.parse(degradeUnknownBlock(raw)));
 }
 
 /** Removes `**bold**` markers, for text-to-speech, the tutor and reading-level analysis. */
