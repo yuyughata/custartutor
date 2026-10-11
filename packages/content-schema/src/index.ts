@@ -14,3 +14,4 @@ export * from './lint';
 export * from './scheme';
 export * from './migrate';
 export * from './parse';
+export * from './pack';

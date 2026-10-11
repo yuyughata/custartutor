@@ -3,7 +3,7 @@
 --   write household_members; profiles are not readable across members (member_display only).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(46);
+select plan(47);
 
 -- fixtures (as the table owner) -----------------------------------------------------------------------
 -- gA a1..01 guardian of hA | gB b1..02 guardian of hB | tU c1..03 tutor (child Ada) | t2 c2..04 tutor (child Bayo)
@@ -228,6 +228,11 @@ select lives_ok(
   $$insert into public.children (household_id, display_alias, level_code, reading_mode)
     values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Dayo', 'P1', 'pre_reader')$$,
   'guardian A can add a child to their household'
+);
+select lives_ok(
+  $$insert into public.children (household_id, display_alias, level_code)
+    values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Efe', 'P2') returning id, display_alias$$,
+  'guardian A can insert a child and read it back in the same statement (RETURNING, as supabase-js does)'
 );
 select results_eq(
   $$with u as (update public.children set display_alias = 'Adaora'

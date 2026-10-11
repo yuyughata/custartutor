@@ -5,7 +5,7 @@
 -- and "time passing" is simulated by moving locked_until / expires_at into the past as the owner.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(49);
+select plan(51);
 
 -- u1 a1..01 (PIN user) | u2 b1..02 (independent user) | u3 c1..03 (never sets a PIN)
 insert into auth.users (id, email) values
@@ -166,6 +166,23 @@ select is(
   'the 7th failure doubles the lock again to 120 seconds'
 );
 
+-- the back-off is capped at 1 hour (a child mashing the keypad must not lock a parent out for long)
+reset role;
+update public.grownup_pins set failed_attempts = 20, locked_until = now() - interval '1 second'
+ where user_id = 'a1000000-0000-4000-8000-000000000001';
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}';
+
+select ok(
+  (select public.elevate_grownup('dev-1', '9090')) is null,
+  'the 21st wrong guess is refused'
+);
+select is(
+  (select locked_until from public.get_grownup_pin_status()),
+  now() + interval '3600 seconds',
+  'the lock never exceeds 1 hour'
+);
+
 -- success -----------------------------------------------------------------------------------------------------------------------
 reset role;
 update public.grownup_pins set locked_until = now() - interval '1 second'
@@ -256,7 +273,7 @@ select ok(
 
 -- audit trail ------------------------------------------------------------------------------------------------------------------------------------------
 reset role;
-select is((select count(*)::int from public.audit_log where action = 'pin_locked'), 3, 'each lockout was audited');
+select is((select count(*)::int from public.audit_log where action = 'pin_locked'), 4, 'each lockout was audited');
 select is((select count(*)::int from public.audit_log where action = 'pin_set'), 3, 'each PIN set/change was audited');
 select is((select count(*)::int from public.audit_log where action = 'elevation_granted'), 6, 'each successful elevation was audited');
 

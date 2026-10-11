@@ -3,7 +3,7 @@
 --   elevation; a tutor loses access immediately after revoke / removal; the last guardian stays.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(50);
+select plan(51);
 
 -- fixtures (as the table owner) -----------------------------------------------------------------------
 -- gA a1..01 guardian of hA | gB b1..02 guardian of hB | tU c1..03 invited tutor | gC e1..06 invited guardian
@@ -89,6 +89,10 @@ select throws_ok(
   $$select * from public.create_invite('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'tutor',
     array['ca000001-0000-4000-8000-000000000001']::uuid[], 0)$$,
   '22023', 'invalid_ttl', 'a zero TTL is rejected'
+);
+select throws_ok(
+  $$select * from public.create_invite('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'guardian', '{}'::uuid[], 100)$$,
+  '22023', 'invalid_ttl', 'a guardian invite lives at most 72 hours (it exposes the whole household)'
 );
 select throws_ok(
   $$select * from public.create_invite('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'admin', '{}'::uuid[], 24)$$,

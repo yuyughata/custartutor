@@ -21602,10 +21602,162 @@ function parseUnitLenient(raw) {
   const normalised = normalizeDeep(unit);
   return validate2(mapBlocks(normalised, degradeUnknownBlock));
 }
+
+// packages/content-schema/src/pack.ts
+var PACK_VERSION = 1;
+var Sha256Hex = external_exports.string().regex(/^[0-9a-f]{64}$/, "must be a lowercase SHA-256 hex digest");
+var PackPath = external_exports.string().max(256).regex(
+  /^[A-Za-z0-9][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/,
+  'must be a safe relative path (no "..", no leading "/" or ".")'
+);
+var AppVersion = external_exports.string().regex(/^\d+(\.\d+){0,2}$/, "must look like 1.2.3");
+var Uuid = external_exports.guid();
+var PackFileKind = external_exports.enum(["content", "media", "audio"]);
+var PackWhich = external_exports.enum(["learner", "grownup"]);
+var PackFile = external_exports.object({
+  /** Logical path inside the pack. Content files are stored at this path; media/audio under `blobs/<sha256>`. */
+  path: PackPath,
+  sha256: Sha256Hex,
+  bytes: external_exports.number().int().min(0),
+  kind: PackFileKind,
+  pack: PackWhich,
+  /** The content asset id (`illustration.asset_id`, `audio_refs[]`) this file is, for media and audio. */
+  asset_id: external_exports.string().min(1).max(128).optional()
+});
+var PackManifest = external_exports.object({
+  pack_version: external_exports.literal(PACK_VERSION),
+  unit_id: Uuid,
+  version_no: external_exports.number().int().min(1),
+  /** Version of the unit content schema inside (see `CURRENT_SCHEMA_VERSION`). */
+  schema_version: external_exports.number().int().min(1),
+  /** The oldest app build that can read this pack. */
+  min_app_version: AppVersion,
+  /** Hash of the unit content this pack was built from; equals `published.content_hash` on the server. */
+  content_hash: Sha256Hex,
+  files: external_exports.array(PackFile).min(1).max(2e3),
+  /** Path (in `files`) of the learner content JSON. */
+  learner_content_path: PackPath,
+  /** Path (in `files`) of the grown-up content JSON, or null when the unit has no grown-up content. */
+  grownup_content_path: PackPath.nullable()
+});
+function filesForPack(manifest, which) {
+  return manifest.files.filter((file2) => which === "all" || file2.pack === which);
+}
+function packTotalBytes(manifest, which) {
+  const seen = /* @__PURE__ */ new Set();
+  let total = 0;
+  for (const file2 of filesForPack(manifest, which)) {
+    const key = file2.kind === "content" ? `path:${file2.path}` : `sha:${file2.sha256}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    total += file2.bytes;
+  }
+  return total;
+}
+function verifyManifestIntegrity(manifest) {
+  const issues = [];
+  const byPath = /* @__PURE__ */ new Map();
+  const bytesBySha = /* @__PURE__ */ new Map();
+  for (const file2 of manifest.files) {
+    if (byPath.has(file2.path)) issues.push(`duplicate path "${file2.path}"`);
+    byPath.set(file2.path, file2);
+    if (file2.kind === "content" && file2.bytes === 0) {
+      issues.push(`content file "${file2.path}" is empty`);
+    }
+    if (file2.kind !== "content") {
+      if (file2.path.startsWith("blobs/")) {
+        issues.push(
+          `media path "${file2.path}" must not live under blobs/ (that is the device store)`
+        );
+      }
+      const known = bytesBySha.get(file2.sha256);
+      if (known !== void 0 && known !== file2.bytes) {
+        issues.push(`blob ${file2.sha256} is listed with two different sizes`);
+      }
+      bytesBySha.set(file2.sha256, file2.bytes);
+    }
+  }
+  const expectContent = (path, which, label) => {
+    if (path === null) return;
+    const file2 = byPath.get(path);
+    if (!file2) {
+      issues.push(`${label} "${path}" is not listed in files`);
+    } else if (file2.kind !== "content" || file2.pack !== which) {
+      issues.push(`${label} "${path}" must be a ${which}-pack content file`);
+    }
+  };
+  expectContent(manifest.learner_content_path, "learner", "learner_content_path");
+  expectContent(manifest.grownup_content_path, "grownup", "grownup_content_path");
+  const contentFiles = manifest.files.filter((file2) => file2.kind === "content");
+  const referenced = /* @__PURE__ */ new Set([manifest.learner_content_path, manifest.grownup_content_path]);
+  for (const file2 of contentFiles) {
+    if (!referenced.has(file2.path)) issues.push(`content file "${file2.path}" is not referenced`);
+  }
+  if (manifest.grownup_content_path === null && manifest.files.some((f) => f.pack === "grownup")) {
+    issues.push("grownup_content_path is null but the manifest lists grown-up files");
+  }
+  if (manifest.learner_content_path === manifest.grownup_content_path) {
+    issues.push("learner and grown-up content must be different files");
+  }
+  return issues;
+}
+function compareAppVersions(a, b) {
+  const left = a.split(".").map(Number);
+  const right = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+    const diff = (left[i] ?? 0) - (right[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+function appCanReadPack(appVersion, minAppVersion) {
+  return compareAppVersions(appVersion, minAppVersion) >= 0;
+}
+var GrownupPackContent = external_exports.object({
+  schema_version: external_exports.number().int().min(1),
+  kind: external_exports.literal("lesson"),
+  teacher_manual: TeacherManual
+});
+function splitUnitForPacks(unit) {
+  if (unit.kind !== "lesson") return { learner: unit, grownup: null };
+  const { teacher_manual: teacherManual, ...learner } = unit;
+  return {
+    learner,
+    grownup: { schema_version: unit.schema_version, kind: "lesson", teacher_manual: teacherManual }
+  };
+}
+var STRIPPED_NOTE = "The teacher manual is in the grown-up pack.";
+var STRIPPED_TEACHER_MANUAL = {
+  script: [],
+  timing: STRIPPED_NOTE,
+  materials: [],
+  mastery_guidance: { got_it: [], not_yet: STRIPPED_NOTE },
+  helper_script: []
+};
+function hasTeacherManual(unit) {
+  return unit.kind === "lesson" && unit.teacher_manual.timing !== STRIPPED_NOTE;
+}
+function isRecord2(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function parseLearnerContent(raw) {
+  if (isRecord2(raw) && raw.kind === "lesson" && raw.teacher_manual === void 0) {
+    return parseUnitLenient({ ...raw, teacher_manual: STRIPPED_TEACHER_MANUAL });
+  }
+  return parseUnitLenient(raw);
+}
+function parseGrownupContent(raw) {
+  return GrownupPackContent.parse(normalizeDeep(raw));
+}
+function joinUnitFromPacks(learner, grownup) {
+  if (learner.kind !== "lesson" || grownup === null) return learner;
+  return { ...learner, teacher_manual: grownup.teacher_manual };
+}
 export {
   ALWAYS_PRESENT_TYPES,
   ActivityStepsBlock,
   AnyBlock,
+  AppVersion,
   AssessmentUnit,
   AssetId,
   BLANK_PATTERN,
@@ -21630,6 +21782,7 @@ export {
   FillBlankQuestion,
   FreeTextQuestion,
   GeneralHeader,
+  GrownupPackContent,
   Hotspot,
   Id,
   IllustrationBlock,
@@ -21646,6 +21799,12 @@ export {
   McqQuestion,
   MiniProjectUnit,
   OTHER_SECTION_TYPES,
+  PACK_VERSION,
+  PackFile,
+  PackFileKind,
+  PackManifest,
+  PackPath,
+  PackWhich,
   ParagraphBlock,
   QUESTION_KINDS,
   Question,
@@ -21658,6 +21817,7 @@ export {
   SESSION_MINUTES_MIN,
   SESSION_SEGMENTS,
   STAGE_ORDER,
+  STRIPPED_TEACHER_MANUAL,
   SchemaVersionError,
   Scheme,
   SchemeWeek,
@@ -21692,21 +21852,26 @@ export {
   Workbook,
   WorkbookTier,
   answerProblems,
+  appCanReadPack,
   averageSentenceLength,
+  compareAppVersions,
   countBlanks,
   degradeUnknownBlock,
+  filesForPack,
   findRefIssues,
   formatPath2 as formatPath,
   formatZodIssues,
   gradeBlank,
   gradeQuestion,
   groupIntoChapters,
+  hasTeacherManual,
   hotspotAt,
   isDeterministic,
   isDeterministicKind,
   isEnrichmentType,
   isKnownBlockType,
   isUnknownBlock,
+  joinUnitFromPacks,
   levenshtein,
   lintUnit,
   lintVersionIds,
@@ -21716,7 +21881,10 @@ export {
   normalizeDeep,
   normalizeText,
   numbersMatch,
+  packTotalBytes,
   parseBlocksLenient,
+  parseGrownupContent,
+  parseLearnerContent,
   parseNumeric,
   parseUnit,
   parseUnitLenient,
@@ -21724,6 +21892,8 @@ export {
   rationalEquals,
   reasoningRungOf,
   sectionsOf,
+  splitUnitForPacks,
   stageIndex,
-  stripInlineMarkup
+  stripInlineMarkup,
+  verifyManifestIntegrity
 };

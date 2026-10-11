@@ -1,0 +1,22 @@
+{
+  "name": "@custar/learner-core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local-first engine for the CUSTAR learner app: SQLite store, outbox sync, lesson packs, mastery and the grown-up PIN gate. Pure TypeScript; platform pieces are injected through ports.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@custar/content-schema": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}

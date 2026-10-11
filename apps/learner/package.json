@@ -1,0 +1,44 @@
+{
+  "name": "@custar/learner",
+  "version": "0.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "web": "expo start --web",
+    "build:web": "expo export --platform web",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@custar/content-schema": "*",
+    "@custar/design-tokens": "*",
+    "@custar/learner-core": "*",
+    "@custar/lesson-renderer": "*",
+    "@expo/metro-runtime": "~57.0.16",
+    "@supabase/supabase-js": "^2.117.3",
+    "aes-js": "^3.1.2",
+    "expo": "~57.0.27",
+    "expo-application": "~57.0.3",
+    "expo-constants": "~57.0.21",
+    "expo-crypto": "~57.0.3",
+    "expo-file-system": "~57.0.7",
+    "expo-linking": "~57.0.12",
+    "expo-network": "~57.0.2",
+    "expo-router": "~57.0.25",
+    "expo-secure-store": "~57.0.4",
+    "expo-sqlite": "~57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-web": "~0.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~5.9.3",
+    "@types/aes-js": "^3.1.4"
+  }
+}
