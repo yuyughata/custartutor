@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.expo/
+.expo-shared/
+coverage/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+*.local
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+# Playwright output
+test-results/
+playwright-report/
+# Expo native build output
+android/
+ios/
+web-build/

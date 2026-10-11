@@ -1,0 +1,11 @@
+node_modules
+dist
+.expo
+coverage
+package-lock.json
+docs/reference
+docs/brief
+supabase/functions/_shared/vendor
+supabase/migrations
+*.pdf
+*.docx
