@@ -25,13 +25,18 @@ const script = {
       hint: ['Hint A', 'Hint B'],
     }),
     node('after', 'Good. Next one.'),
-    node('half', 'What is half of one?', { expect: { accepted: ['1/2', '0.5'] }, on_correct: ['Correct'], on_incorrect: ['Not quite'] }),
+    node('half', 'What is half of one?', {
+      expect: { accepted: ['1/2', '0.5'] },
+      on_correct: ['Correct'],
+      on_incorrect: ['Not quite'],
+    }),
   ],
 } as unknown as TutorScript;
 
 const options = { questions: {} };
 const ctx = { script, ...options };
-const persist = (state: TutorLiteState): TutorLiteState => JSON.parse(JSON.stringify(state)) as TutorLiteState;
+const persist = (state: TutorLiteState): TutorLiteState =>
+  JSON.parse(JSON.stringify(state)) as TutorLiteState;
 
 describe('startLite', () => {
   it('says nodes in order until one waits for a reply', () => {
@@ -40,7 +45,11 @@ describe('startLite', () => {
       ['intro', 'say', 'Hello!'],
       ['price', 'say', 'How much is one orange?'],
     ]);
-    expect(step).toMatchObject({ expecting: true, graded: null, state: { node_id: 'price', attempts: 0, finished: false } });
+    expect(step).toMatchObject({
+      expecting: true,
+      graded: null,
+      state: { node_id: 'price', attempts: 0, finished: false },
+    });
   });
 });
 
@@ -62,7 +71,10 @@ describe('replyLite', () => {
     expect(step.lines.map((l) => [l.kind, l.text])).toEqual([['incorrect', 'No 1']]);
     expect(step).toMatchObject({ expecting: true, graded: { correct: false } });
     step = replyLite(persist(step.state), 'wrong', ctx);
-    expect(step.lines.map((l) => [l.kind, l.text])).toEqual([['incorrect', 'No 2'], ['hint', 'Hint A']]);
+    expect(step.lines.map((l) => [l.kind, l.text])).toEqual([
+      ['incorrect', 'No 2'],
+      ['hint', 'Hint A'],
+    ]);
     expect(step.state).toMatchObject({ attempts: 2, hints_used: 1 });
     step = replyLite(persist(step.state), 'wrong', ctx);
     expect(step.lines.map((l) => [l.kind, l.text])).toEqual([
@@ -75,7 +87,9 @@ describe('replyLite', () => {
 
   it('chooses lines by cursor, never by chance', () => {
     const loop = {
-      nodes: [node('q', 'Say it.', { expect: { accepted: ['go'] }, on_correct: ['A', 'B'], next: 'q' })],
+      nodes: [
+        node('q', 'Say it.', { expect: { accepted: ['go'] }, on_correct: ['A', 'B'], next: 'q' }),
+      ],
     } as unknown as TutorScript;
     const c = { script: loop, questions: {} };
     let step = startLite(loop, c);
@@ -95,7 +109,11 @@ describe('replyLite', () => {
     const huge = replyLite(start.state, 'x'.repeat(100_000), ctx);
     expect(huge.graded).toEqual({ correct: false });
     const done: TutorLiteState = { ...initialLiteState(), finished: true };
-    expect(replyLite(done, 'anything', ctx)).toMatchObject({ lines: [], expecting: false, state: done });
+    expect(replyLite(done, 'anything', ctx)).toMatchObject({
+      lines: [],
+      expecting: false,
+      state: done,
+    });
     const lost = replyLite({ ...initialLiteState(), node_id: 'gone' }, 'anything', ctx);
     expect(lost).toMatchObject({ lines: [], expecting: false });
   });
@@ -119,7 +137,9 @@ describe('hintLite and skipLite', () => {
     expect(two.lines[0]?.text).toBe('Hint B');
     const atHalf = skipLite(start.state, ctx);
     expect(atHalf.state.node_id).toBe('half');
-    expect(hintLite(atHalf.state, ctx).lines).toEqual([{ node_id: 'half', text: 'What is half of one?', kind: 'say' }]);
+    expect(hintLite(atHalf.state, ctx).lines).toEqual([
+      { node_id: 'half', text: 'What is half of one?', kind: 'say' },
+    ]);
   });
 
   it('skipping moves on without feedback or a grade, and never reveals an answer', () => {
@@ -143,9 +163,12 @@ describe('matching: the rules of fill-in-the-blank', () => {
   });
 
   it('compares by value: 1/2 is 0.5', () => {
-    for (const reply of ['1/2', '0.5', '.5', '½', '2/4', ' 1 / 2 ']) expect(matchesAccepted(reply, ['1/2']), reply).toBe(true);
-    for (const reply of ['0.5', '1/2', '½']) expect(matchesAccepted(reply, ['0.5']), reply).toBe(true);
-    for (const reply of ['0,5', '1/3', '5', '0.55']) expect(matchesAccepted(reply, ['1/2', '0.5']), reply).toBe(false);
+    for (const reply of ['1/2', '0.5', '.5', '½', '2/4', ' 1 / 2 '])
+      expect(matchesAccepted(reply, ['1/2']), reply).toBe(true);
+    for (const reply of ['0.5', '1/2', '½'])
+      expect(matchesAccepted(reply, ['0.5']), reply).toBe(true);
+    for (const reply of ['0,5', '1/3', '5', '0.55'])
+      expect(matchesAccepted(reply, ['1/2', '0.5']), reply).toBe(false);
   });
 
   it('knows units and number words, and only those', () => {
@@ -173,7 +196,10 @@ describe('grading with a question of the unit', () => {
   const questions = questionsOf(goldenUnit2);
   const one = (id: string, reply: string) => {
     const s = {
-      nodes: [node('n', 'Q?', { expect: { question_id: id }, on_correct: ['ok'], on_incorrect: ['no'] }), node('end', 'Bye.')],
+      nodes: [
+        node('n', 'Q?', { expect: { question_id: id }, on_correct: ['ok'], on_incorrect: ['no'] }),
+        node('end', 'Bye.'),
+      ],
     } as unknown as TutorScript;
     const c = { script: s, questions };
     return replyLite(startLite(s, c).state, reply, c);
@@ -190,15 +216,26 @@ describe('grading with a question of the unit', () => {
     ['wb_circle_people', 'teacher, friend and classmate', true],
     ['wb_circle_people', 'teacher, friend', false],
     ['wb_circle_people', 'astronaut', false],
-    ['wb_match_places', 'Kitchen - Cook, Bedroom - Sleep, Playground - Play, Classroom - Learn, Bathroom - Bath', true],
+    [
+      'wb_match_places',
+      'Kitchen - Cook, Bedroom - Sleep, Playground - Play, Classroom - Learn, Bathroom - Bath',
+      true,
+    ],
     ['wb_match_places', 'Kitchen - Sleep', false],
   ])('%s <- "%s": %s', (id, reply, correct) => {
     expect(one(id, reply).graded).toEqual({ correct });
   });
 
   it('a drawing or free text is a self-report: no grade, a word of "no" is a miss', () => {
-    expect(one('dr_family', 'Mummy')).toMatchObject({ graded: null, lines: [{ kind: 'correct' }, { kind: 'say' }, { kind: 'wrap' }] });
-    expect(one('dr_family', 'no')).toMatchObject({ graded: null, expecting: true, lines: [{ kind: 'incorrect' }] });
+    expect(one('dr_family', 'Mummy')).toMatchObject({
+      graded: null,
+      lines: [{ kind: 'correct' }, { kind: 'say' }, { kind: 'wrap' }],
+    });
+    expect(one('dr_family', 'no')).toMatchObject({
+      graded: null,
+      expecting: true,
+      lines: [{ kind: 'incorrect' }],
+    });
     expect(one('wb_application', 'done').graded).toBeNull();
   });
 

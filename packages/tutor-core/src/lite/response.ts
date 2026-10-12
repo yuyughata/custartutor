@@ -6,13 +6,15 @@ import { normalizeText } from '@custar/content-schema';
 import type { Question, QuestionResponse } from '@custar/content-schema';
 import { splitList } from './match';
 
-const PAIR_SPLIT = /\s*(?:->|→|=>|=|:|–|—|-|\bgoes (?:with|in|to)\b|\bmatches\b|\bwith\b|\bin\b|\bto\b)\s*/i;
+const PAIR_SPLIT =
+  /\s*(?:->|→|=>|=|:|–|—|-|\bgoes (?:with|in|to)\b|\bmatches\b|\bwith\b|\bin\b|\bto\b)\s*/i;
 
 function parsePairs(text: string): Array<[string, string]> {
   const pairs: Array<[string, string]> = [];
   for (const part of text.split(/\s*[,;\n]\s*/)) {
     const pieces = part.split(PAIR_SPLIT).filter((piece) => piece.trim() !== '');
-    if (pieces.length === 2) pairs.push([(pieces[0] as string).trim(), (pieces[1] as string).trim()]);
+    if (pieces.length === 2)
+      pairs.push([(pieces[0] as string).trim(), (pieces[1] as string).trim()]);
   }
   return pairs;
 }
@@ -39,7 +41,10 @@ export function toResponse(question: Question, reply: string): QuestionResponse 
       const blanks = question.answer.blanks.length;
       if (blanks === 1) return { kind: 'fill_blank', answers: [reply] };
       const parts = splitList(reply);
-      return { kind: 'fill_blank', answers: Array.from({ length: blanks }, (_, i) => parts[i] ?? '') };
+      return {
+        kind: 'fill_blank',
+        answers: Array.from({ length: blanks }, (_, i) => parts[i] ?? ''),
+      };
     }
     case 'circle': {
       const selected = splitList(reply).map((part) => {

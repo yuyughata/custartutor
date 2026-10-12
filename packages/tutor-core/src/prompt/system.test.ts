@@ -6,7 +6,12 @@ import type { TutorTurnInput } from '../contract';
 import { buildGrounding } from './grounding';
 import { toMessages, windowHistory } from './history';
 import { TUTOR_RULES_TEXT } from './rules';
-import { THINKING_ALLOWANCE_TOKENS, buildTutorPrefix, buildTutorRequest, safeAlias } from './system';
+import {
+  THINKING_ALLOWANCE_TOKENS,
+  buildTutorPrefix,
+  buildTutorRequest,
+  safeAlias,
+} from './system';
 import { TUTOR_TOOLS } from './tools';
 
 const grounding = buildGrounding(goldenUnit2, {
@@ -58,7 +63,11 @@ describe('the cached prefix', () => {
 
   it('changes when the unit, the child or the persona changes', () => {
     const base = request(turn()).system[0]?.text;
-    const other = request(turn({ child: { alias: 'Star', level_code: 'P1', stage: 'connect', reading_mode: 'reader' } }));
+    const other = request(
+      turn({
+        child: { alias: 'Star', level_code: 'P1', stage: 'connect', reading_mode: 'reader' },
+      }),
+    );
     expect(other.system[0]?.text).not.toBe(base);
     const named = buildTutorRequest({
       turn: turn(),
@@ -98,19 +107,35 @@ describe('the cached prefix', () => {
   });
 
   it('adapts the reply length to the stage', () => {
-    const connect = buildTutorPrefix({ ...turn().child, stage: 'connect', reading_mode: 'reader' }, grounding, DEFAULT_CAST, null);
+    const connect = buildTutorPrefix(
+      { ...turn().child, stage: 'connect', reading_mode: 'reader' },
+      grounding,
+      DEFAULT_CAST,
+      null,
+    );
     expect(connect).toContain('at most 12 words');
-    const express = buildTutorPrefix({ ...turn().child, stage: 'express', reading_mode: 'reader' }, grounding, DEFAULT_CAST, null);
+    const express = buildTutorPrefix(
+      { ...turn().child, stage: 'express', reading_mode: 'reader' },
+      grounding,
+      DEFAULT_CAST,
+      null,
+    );
     expect(express).toContain('short paragraph');
   });
 });
 
 describe('after the prefix', () => {
   it('puts the position, helper, steer and privacy notes in a second, uncached block', () => {
-    const r = request(turn({ helper_present: true, position: { section_id: 'staying_safe', question_id: 'mc_places' } }), {
-      steer: true,
-      remindPrivacy: true,
-    });
+    const r = request(
+      turn({
+        helper_present: true,
+        position: { section_id: 'staying_safe', question_id: 'mc_places' },
+      }),
+      {
+        steer: true,
+        remindPrivacy: true,
+      },
+    );
     expect(r.system).toHaveLength(2);
     const notes = r.system[1];
     expect(notes?.cache).toBeUndefined();
@@ -132,7 +157,8 @@ describe('after the prefix', () => {
     expect(Object.keys(r)).not.toContain('toolChoice');
     expect(r.tools.map((t) => t.name)).toEqual(['show_activity', 'record_evidence']);
     expect(r.tools).toBe(TUTOR_TOOLS);
-    for (const tool of r.tools) expect(tool.schema).toMatchObject({ type: 'object', additionalProperties: false });
+    for (const tool of r.tools)
+      expect(tool.schema).toMatchObject({ type: 'object', additionalProperties: false });
   });
 
   it('ends with the child message and never with a tutor message', () => {

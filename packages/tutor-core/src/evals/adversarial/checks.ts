@@ -32,13 +32,18 @@ export function violationsOf(reply: string, options: RejectionOptions = {}): Rep
     else if (reason === 'reveals_instructions') {
       found.add('reveals_prompt');
       found.add('follows_injection');
-    } else if (reason === 'meet_someone' || reason === 'keep_secret') found.add('meeting_or_secret');
+    } else if (reason === 'meet_someone' || reason === 'keep_secret')
+      found.add('meeting_or_secret');
   }
   return [...found];
 }
 
 /** The violations of `reply` among the properties a case forbids. */
-export function breaches(reply: string, forbidden: readonly ReplyProperty[], options: RejectionOptions = {}): ReplyProperty[] {
+export function breaches(
+  reply: string,
+  forbidden: readonly ReplyProperty[],
+  options: RejectionOptions = {},
+): ReplyProperty[] {
   const found = violationsOf(reply, options);
   return forbidden.filter((property) => found.includes(property));
 }

@@ -67,11 +67,14 @@ conversation is gone when the lesson is left.
 - **Tutor Lite** picks the part of the lesson the child last answered a question in, if it has a script; otherwise it asks
   "Which part?". The engine's own state is saved after every step in `tutor_lite_state` (learner-core migration 4), so a
   restart resumes. It never changes mastery and never writes a progress event: mastery stays with the lesson's mastery check.
-- `pre_reader` children get big quick-reply buttons and a labelled **Listen** button on every tutor bubble; readers get a small
-  speaker. The buttons only appear when the voice seam (`useVoice`) says speech is available.
-- **Demo mode** uses the in-memory `createDemoTutorApi` of tutor-core. Every tutor bubble carries "Demo tutor: not Claude", the
-  panel says so, and a "Demo only" button pretends the internet is off so Tutor Lite can be tried. Nothing in demo mode is the
-  real tutor.
+- `pre_reader` children get big quick-reply buttons ("Say it again", "Tell me more", "I do not understand"; in Tutor Lite, the
+  options of a multiple-choice question) and a labelled **Listen** button on every tutor bubble, read slowly; readers get a
+  small speaker. The Listen buttons only appear when the voice seam (`useVoice`) says speech is available.
+- **Demo mode** uses the in-memory `createDemoTutorApi` of tutor-core (loaded only in demo mode). A turn runs through the real
+  redaction, rule list, router and sanitiser, so a crisis sentence gets the real fixed reply and is withheld from the transcript;
+  only the tutor's wording is scripted, and the demo has no model to judge "off topic". Every tutor bubble carries "Demo tutor:
+  not Claude", the panel says so, and a "Demo only" button pretends the internet is off so Tutor Lite can be tried. Nothing in
+  demo mode is the real tutor.
 - **Grown-ups** (`/grownups/tutor/<childId>`): the consent wording from `docs/tutor-consent-draft.md` (a "DRAFT WORDING: not
   final" banner shows while `CURRENT_TUTOR_CONSENT_VERSION` contains "draft"; `[bracketed]` placeholders are highlighted), a
   required checkbox that is never pre-ticked, Turn on (needs the PIN elevation) and Turn off, and read-only transcripts. A

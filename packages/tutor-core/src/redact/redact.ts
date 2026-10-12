@@ -234,7 +234,7 @@ function redactSpokenDigits(text: string, hit: Hit): string {
     const values = spokenDigitValues(match);
     if (values.length < 9 || isCounting(values)) return match;
     hit('phone');
-    const trailing = /[\s,.\-]*$/.exec(match)?.[0] ?? '';
+    const trailing = /[\s,.-]*$/.exec(match)?.[0] ?? '';
     return REDACTION_TOKENS.phone + trailing;
   });
 }
@@ -265,7 +265,8 @@ const ADDRESS_PREFIX = new RegExp(
   String.raw`\bmy\s+(?:home\s+|house\s+|street\s+|postal\s+|residential\s+|full\s+)?address\s*(?:is|na|be|:|=)\s*`,
   'giu',
 );
-const NA_FOR_PLACE = /\bna\s+(?:for|inside|near)\s+([^.!?\n,]{2,40}?)\s+(?:i|we)\s+(?:dey\s+)?(?:stay|live)\b/giu;
+const NA_FOR_PLACE =
+  /\bna\s+(?:for|inside|near)\s+([^.!?\n,]{2,40}?)\s+(?:i|we)\s+(?:dey\s+)?(?:stay|live)\b/giu;
 
 const STOP_CONJUNCTIONS = new Set([
   'and',
@@ -347,13 +348,7 @@ function redactAddresses(text: string, hit: Hit): string {
   // 2. "12 Adeola Odeku Street", "no. 5 Palm Road", "Plot 7 Ikota Estate", "Block 5, Flat 3"
   out = out.replace(
     STREET,
-    (
-      match: string,
-      prefix: string | undefined,
-      _number: string,
-      middle: string,
-      kind: string,
-    ) => {
+    (match: string, prefix: string | undefined, _number: string, middle: string, kind: string) => {
       const words = middle.trim() === '' ? [] : middle.trim().split(/\s+/);
       if (prefix === undefined) {
         // Without "no." or "plot", lower-case words are plain counting: "I saw 5 big cars on the road".
@@ -484,12 +479,26 @@ function foldWithMap(text: string): { folded: string; starts: number[]; ends: nu
   return { folded, starts, ends };
 }
 
-const NAME_PART_IGNORE = new Set(['and', 'the', 'for', 'bin', 'van', 'von', 'del', 'dos', 'ibn', 'ben']);
+const NAME_PART_IGNORE = new Set([
+  'and',
+  'the',
+  'for',
+  'bin',
+  'van',
+  'von',
+  'del',
+  'dos',
+  'ibn',
+  'ben',
+]);
 
 function nameVariants(names: readonly string[]): string[] {
   const variants = new Set<string>();
   for (const raw of names) {
-    const whole = foldChar(raw).replace(/[^\p{L}\p{N}\s'’-]/gu, ' ').replace(/\s+/g, ' ').trim();
+    const whole = foldChar(raw)
+      .replace(/[^\p{L}\p{N}\s'’-]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
     if (whole.length < 2) continue;
     variants.add(whole);
     const parts = whole.split(/[\s-]+/).filter((part) => part !== '');
@@ -593,12 +602,7 @@ const RELATION_NAME = new RegExp(
   'gu',
 );
 
-function replaceNamesAfter(
-  text: string,
-  prefix: RegExp,
-  strict: boolean,
-  hit: Hit,
-): string {
+function replaceNamesAfter(text: string, prefix: RegExp, strict: boolean, hit: Hit): string {
   const spans: Span[] = [];
   prefix.lastIndex = 0;
   for (let match = prefix.exec(text); match !== null; match = prefix.exec(text)) {

@@ -60,15 +60,12 @@ describe('redactPii replaces personal data', () => {
 });
 
 describe('redactPii leaves lesson content and ordinary talk alone', () => {
-  it.each(allKeep.map((row) => [row.input, row.knownNames] as const))(
-    '%s',
-    (input, knownNames) => {
-      const result = redactPii(input, knownNames ? { knownNames } : {});
-      expect(result.text).toBe(input);
-      expect(result.count).toBe(0);
-      expect(result.kinds).toEqual([]);
-    },
-  );
+  it.each(allKeep.map((row) => [row.input, row.knownNames] as const))('%s', (input, knownNames) => {
+    const result = redactPii(input, knownNames ? { knownNames } : {});
+    expect(result.text).toBe(input);
+    expect(result.count).toBe(0);
+    expect(result.kinds).toEqual([]);
+  });
 });
 
 describe('redactPii bookkeeping', () => {

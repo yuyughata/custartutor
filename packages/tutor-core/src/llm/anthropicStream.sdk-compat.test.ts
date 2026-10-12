@@ -11,15 +11,25 @@ import { describe, expect, it } from 'vitest';
 import type { TutorLlmEvent, TutorLlmRequest } from '../contract';
 import { TUTOR_TOOLS } from '../prompt/tools';
 import { createAnthropicTutorLlm } from './anthropicStream';
-import type { AnthropicStreamEventLike, AnthropicStreamLike, AnthropicStreamParams } from './anthropicStream';
+import type {
+  AnthropicStreamEventLike,
+  AnthropicStreamLike,
+  AnthropicStreamParams,
+} from './anthropicStream';
 
 // --- compile time ----------------------------------------------------------------------------------
 
 type AssertAssignable<_To, _From extends _To> = true;
 
 export type ClientIsAssignable = AssertAssignable<AnthropicStreamLike, Anthropic>;
-export type ParamsAreAssignable = AssertAssignable<Anthropic.MessageStreamParams, AnthropicStreamParams>;
-export type EventsAreAssignable = AssertAssignable<AnthropicStreamEventLike, Anthropic.RawMessageStreamEvent>;
+export type ParamsAreAssignable = AssertAssignable<
+  Anthropic.MessageStreamParams,
+  AnthropicStreamParams
+>;
+export type EventsAreAssignable = AssertAssignable<
+  AnthropicStreamEventLike,
+  Anthropic.RawMessageStreamEvent
+>;
 
 // A client without `messages.stream` must not be accepted.
 // @ts-expect-error the structural type requires stream
@@ -33,18 +43,31 @@ interface Seen {
 }
 
 function sse(events: Array<[string, unknown]>, status = 200): Response {
-  const text = events.map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`).join('');
+  const text = events
+    .map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`)
+    .join('');
   return new Response(text, { status, headers: { 'content-type': 'text/event-stream' } });
 }
 
 function harness(respond: (seen: Seen) => Response | Promise<Response>) {
   const seen: Seen[] = [];
-  const fetchStub = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
-    const entry: Seen = { url: String(input), body: JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown> };
+  const fetchStub = async (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    const entry: Seen = {
+      url: String(input),
+      body: JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>,
+    };
     seen.push(entry);
     return respond(entry);
   };
-  const client = new Anthropic({ apiKey: 'placeholder-not-a-real-key', baseURL: 'https://api.invalid', fetch: fetchStub, maxRetries: 0 });
+  const client = new Anthropic({
+    apiKey: 'placeholder-not-a-real-key',
+    baseURL: 'https://api.invalid',
+    fetch: fetchStub,
+    maxRetries: 0,
+  });
   return { seen, llm: createAnthropicTutorLlm({ client, models: DEFAULT_MODELS, maxRetries: 0 }) };
 }
 
@@ -65,7 +88,12 @@ const message = (extra: Record<string, unknown> = {}) => ({
   content: [],
   stop_reason: null,
   stop_sequence: null,
-  usage: { input_tokens: 30, output_tokens: 1, cache_read_input_tokens: 400, cache_creation_input_tokens: 0 },
+  usage: {
+    input_tokens: 30,
+    output_tokens: 1,
+    cache_read_input_tokens: 400,
+    cache_creation_input_tokens: 0,
+  },
   ...extra,
 });
 
@@ -73,13 +101,26 @@ const reply = (blocks: Array<[string, unknown]>, stopReason = 'end_turn') =>
   sse([
     ['message_start', { type: 'message_start', message: message() }],
     ...blocks,
-    ['message_delta', { type: 'message_delta', delta: { stop_reason: stopReason, stop_sequence: null }, usage: { output_tokens: 22 } }],
+    [
+      'message_delta',
+      {
+        type: 'message_delta',
+        delta: { stop_reason: stopReason, stop_sequence: null },
+        usage: { output_tokens: 22 },
+      },
+    ],
     ['message_stop', { type: 'message_stop' }],
   ]);
 
 const textBlock = (index: number, pieces: string[]): Array<[string, unknown]> => [
-  ['content_block_start', { type: 'content_block_start', index, content_block: { type: 'text', text: '' } }],
-  ...pieces.map((text): [string, unknown] => ['content_block_delta', { type: 'content_block_delta', index, delta: { type: 'text_delta', text } }]),
+  [
+    'content_block_start',
+    { type: 'content_block_start', index, content_block: { type: 'text', text: '' } },
+  ],
+  ...pieces.map((text): [string, unknown] => [
+    'content_block_delta',
+    { type: 'content_block_delta', index, delta: { type: 'text_delta', text } },
+  ]),
   ['content_block_stop', { type: 'content_block_stop', index }],
 ];
 
@@ -98,7 +139,12 @@ describe('against the real SDK with a stubbed fetch', () => {
       { type: 'text', text: 'in the kitchen.' },
       {
         type: 'done',
-        usage: { input_tokens: 30, output_tokens: 22, cache_read_tokens: 400, cache_creation_tokens: 0 },
+        usage: {
+          input_tokens: 30,
+          output_tokens: 22,
+          cache_read_tokens: 400,
+          cache_creation_tokens: 0,
+        },
         model: DEFAULT_MODELS.tutor,
         stopReason: 'end_turn',
       },
@@ -110,24 +156,55 @@ describe('against the real SDK with a stubbed fetch', () => {
       stream: true,
       thinking: { type: 'adaptive' },
       output_config: { effort: 'low' },
-      system: [{ type: 'text', text: 'Stable rules.', cache_control: { type: 'ephemeral' } }, { type: 'text', text: 'Notes.' }],
+      system: [
+        { type: 'text', text: 'Stable rules.', cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: 'Notes.' },
+      ],
       messages: [{ role: 'user', content: 'where do we cook' }],
     });
     expect(seen[0]?.body).not.toHaveProperty('tool_choice');
-    expect((seen[0]?.body['tools'] as Array<{ name: string }>).map((t) => t.name)).toEqual(['show_activity', 'record_evidence']);
+    expect((seen[0]?.body['tools'] as Array<{ name: string }>).map((t) => t.name)).toEqual([
+      'show_activity',
+      'record_evidence',
+    ]);
   });
 
   it('reads a tool call out of the real SDK event stream', async () => {
     const tool: Array<[string, unknown]> = [
-      ['content_block_start', { type: 'content_block_start', index: 1, content_block: { type: 'tool_use', id: 'toolu_1', name: 'show_activity', input: {} } }],
-      ['content_block_delta', { type: 'content_block_delta', index: 1, delta: { type: 'input_json_delta', partial_json: '{"question_id":' } }],
-      ['content_block_delta', { type: 'content_block_delta', index: 1, delta: { type: 'input_json_delta', partial_json: '"qf_gutter"}' } }],
+      [
+        'content_block_start',
+        {
+          type: 'content_block_start',
+          index: 1,
+          content_block: { type: 'tool_use', id: 'toolu_1', name: 'show_activity', input: {} },
+        },
+      ],
+      [
+        'content_block_delta',
+        {
+          type: 'content_block_delta',
+          index: 1,
+          delta: { type: 'input_json_delta', partial_json: '{"question_id":' },
+        },
+      ],
+      [
+        'content_block_delta',
+        {
+          type: 'content_block_delta',
+          index: 1,
+          delta: { type: 'input_json_delta', partial_json: '"qf_gutter"}' },
+        },
+      ],
       ['content_block_stop', { type: 'content_block_stop', index: 1 }],
     ];
     const { llm } = harness(() => reply([...textBlock(0, ['Try this.']), ...tool], 'tool_use'));
     const events = await collect(llm.stream(request));
     expect(events.map((e) => e.type)).toEqual(['text', 'tool', 'done']);
-    expect(events[1]).toEqual({ type: 'tool', name: 'show_activity', input: { question_id: 'qf_gutter' } });
+    expect(events[1]).toEqual({
+      type: 'tool',
+      name: 'show_activity',
+      input: { question_id: 'qf_gutter' },
+    });
   });
 
   it('maps a refusal that arrives as a stop reason', async () => {
@@ -145,10 +222,31 @@ describe('against the real SDK with a stubbed fetch', () => {
 
   it('maps the SDK error classes: overloaded and a bad request', async () => {
     const body = (type: string) => JSON.stringify({ type: 'error', error: { type, message: 'x' } });
-    const busy = harness(() => new Response(body('overloaded_error'), { status: 529, headers: { 'content-type': 'application/json', 'retry-after': '2' } }));
-    await expect(collect(busy.llm.stream(request))).rejects.toMatchObject({ code: 'transport', retryable: true, status: 529, retryAfterMs: 2000 });
-    const bad = harness(() => new Response(body('invalid_request_error'), { status: 400, headers: { 'content-type': 'application/json' } }));
-    await expect(collect(bad.llm.stream(request))).rejects.toMatchObject({ code: 'transport', retryable: false, status: 400 });
+    const busy = harness(
+      () =>
+        new Response(body('overloaded_error'), {
+          status: 529,
+          headers: { 'content-type': 'application/json', 'retry-after': '2' },
+        }),
+    );
+    await expect(collect(busy.llm.stream(request))).rejects.toMatchObject({
+      code: 'transport',
+      retryable: true,
+      status: 529,
+      retryAfterMs: 2000,
+    });
+    const bad = harness(
+      () =>
+        new Response(body('invalid_request_error'), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        }),
+    );
+    await expect(collect(bad.llm.stream(request))).rejects.toMatchObject({
+      code: 'transport',
+      retryable: false,
+      status: 400,
+    });
   });
 
   it('maps a connection failure and an abort', async () => {

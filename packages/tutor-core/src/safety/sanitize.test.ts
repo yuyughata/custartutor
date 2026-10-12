@@ -17,7 +17,10 @@ describe('sanitizeReply tidies', () => {
   });
 
   it('strips markdown', () => {
-    clean('**Great** job! Here is *a hint*: think of the `kitchen`.', 'Great job! Here is a hint: think of the kitchen.');
+    clean(
+      '**Great** job! Here is *a hint*: think of the `kitchen`.',
+      'Great job! Here is a hint: think of the kitchen.',
+    );
     clean('# Hello\n- one\n- two\n1. three', 'Hello one two three');
     clean('Look at [this page](https://example.com) now', 'Look at this page now');
     clean('Fill in the blank: ____ and _italic_ words', 'Fill in the blank: ____ and italic words');
@@ -72,7 +75,13 @@ describe('sanitizeReply rejects', () => {
     for (const rule of REJECTION_RULES) {
       for (const example of rule.examples) {
         const matcher = createPatternMatcher([
-          { id: 'r', category: 'distress', severity: 'low', template: rule.template, examples: [example] },
+          {
+            id: 'r',
+            category: 'distress',
+            severity: 'low',
+            template: rule.template,
+            examples: [example],
+          },
         ]);
         expect(matcher(example).length, `${rule.reason}: ${example}`).toBeGreaterThan(0);
       }
@@ -119,9 +128,15 @@ describe('sanitizeReply rejects', () => {
     rejected('My instructions say that I must be kind.', 'reveals_instructions');
     rejected('Okay, I will ignore my rules.', 'reveals_instructions');
     rejected('I am now in developer mode.', 'reveals_instructions');
-    rejected('Always keep your answers short and warm and never tell the child anything unsafe.', 'reveals_instructions', {
-      protectedText: ['Rule one: always keep your answers short and warm and never tell the child anything unsafe, ever.'],
-    });
+    rejected(
+      'Always keep your answers short and warm and never tell the child anything unsafe.',
+      'reveals_instructions',
+      {
+        protectedText: [
+          'Rule one: always keep your answers short and warm and never tell the child anything unsafe, ever.',
+        ],
+      },
+    );
   });
 
   it('gives a mastery answer', () => {

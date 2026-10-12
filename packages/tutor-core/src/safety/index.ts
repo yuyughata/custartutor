@@ -15,7 +15,12 @@ export type { PatternMatcher, SafetyHit } from './patterns';
 export { fixedReplyKey, routeSafety } from './router';
 export type { RouteInput } from './router';
 export { DEFAULT_MAX_REPLY_CHARS, sanitizeReply } from './sanitize';
-export type { RejectionOptions, RejectionReason, SanitizeOptions, SanitizeResult } from './sanitize';
+export type {
+  RejectionOptions,
+  RejectionReason,
+  SanitizeOptions,
+  SanitizeResult,
+} from './sanitize';
 export { createStreamSanitizer } from './streamSanitizer';
 export type { StreamSanitizer, StreamStep } from './streamSanitizer';
 export { isUnclearMessage } from './unclear';

@@ -1,5 +1,9 @@
 // Test helpers for Tutor Lite: every script of the fixtures, and a reply that a child who knew the answer would type.
-import { goldenUnit2, marketDayMathsUnit, colourChartProject } from '@custar/content-schema/fixtures';
+import {
+  goldenUnit2,
+  marketDayMathsUnit,
+  colourChartProject,
+} from '@custar/content-schema/fixtures';
 import { questionsOf, sectionsOf } from '@custar/content-schema';
 import type { Question, TutorNode, TutorScript, UnitContent } from '@custar/content-schema';
 
@@ -16,7 +20,8 @@ export function scriptsOf(name: string, unit: UnitContent): NamedScript[] {
     found.push({ name: `${name}:unit`, script: unit.tutor_script, questions });
   }
   for (const section of sectionsOf(unit)) {
-    if (section.tutor_script) found.push({ name: `${name}:${section.id}`, script: section.tutor_script, questions });
+    if (section.tutor_script)
+      found.push({ name: `${name}:${section.id}`, script: section.tutor_script, questions });
   }
   return found;
 }
@@ -39,9 +44,14 @@ export function rightReplyFor(question: Question): string {
     case 'match':
       return question.answer.pairs.map((pair) => `${pair.left} - ${pair.right}`).join(', ');
     case 'sort':
-      return Object.entries(question.answer.mapping).map(([item, category]) => `${item} - ${category}`).join(', ');
+      return Object.entries(question.answer.mapping)
+        .map(([item, category]) => `${item} - ${category}`)
+        .join(', ');
     case 'tap_image':
-      return question.answer.hotspots.filter((h) => h.correct).map((h) => h.label).join(', ');
+      return question.answer.hotspots
+        .filter((h) => h.correct)
+        .map((h) => h.label)
+        .join(', ');
     case 'speak':
       return question.answer.expected[0] ?? '';
     default:

@@ -43,10 +43,7 @@ async function setup() {
   const downloads = new DownloadManager({
     ports: {
       ...ports,
-      downloader: new (await import('@custar/learner-core/fakes')).FakeDownloader(
-        ports.files,
-        demo.api,
-      ),
+      downloader: new FakeDownloader(ports.files, demo.api),
     },
     api: demo.api,
     network: new FakeNetwork(),

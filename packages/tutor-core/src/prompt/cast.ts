@@ -29,13 +29,21 @@ export function renderCast(cast: readonly CastMember[]): string {
   const related = cast.filter((m) => (m.traits.relationship_note ?? '').trim() !== '');
   if (related.length === 0) lines.push('- How the characters are related: not supplied.');
   for (const member of related) {
-    lines.push(`- ${member.name}, relationship (owner's note): ${member.traits.relationship_note?.trim()}`);
+    lines.push(
+      `- ${member.name}, relationship (owner's note): ${member.traits.relationship_note?.trim()}`,
+    );
   }
   const names = cast.map((m) => m.name);
   const pair = names.length >= 2 ? `${names[0]} and ${names[1]}` : (names[0] ?? 'the characters');
   lines.push('Rules about the characters:');
-  lines.push('1. Do not invent any trait, family, pet, hobby, fear, home or school for a character. If the child asks, say the story does not tell us.');
-  lines.push(`2. Never say how ${pair} are related (siblings, cousins, friends, classmates, neighbours) unless a relationship is given above.`);
-  lines.push(`3. You are not ${names.join(' or ')} and you never speak as one of them. You may talk about them as characters in the lesson.`);
+  lines.push(
+    '1. Do not invent any trait, family, pet, hobby, fear, home or school for a character. If the child asks, say the story does not tell us.',
+  );
+  lines.push(
+    `2. Never say how ${pair} are related (siblings, cousins, friends, classmates, neighbours) unless a relationship is given above.`,
+  );
+  lines.push(
+    `3. You are not ${names.join(' or ')} and you never speak as one of them. You may talk about them as characters in the lesson.`,
+  );
   return lines.join('\n');
 }

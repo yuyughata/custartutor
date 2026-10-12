@@ -8,7 +8,12 @@
 // proves at compile time that the SDK's client and event types are assignable to it. Every request field and
 // event below is taken from the SDK's type definitions (resources/messages/messages.d.ts); the comments name the
 // interface each one comes from.
-import { LlmCallError, LlmError, LlmRequestError, toLlmTransportError } from '@custar/authoring-core';
+import {
+  LlmCallError,
+  LlmError,
+  LlmRequestError,
+  toLlmTransportError,
+} from '@custar/authoring-core';
 import type { Effort, LlmModels, LlmUsage } from '@custar/authoring-core';
 import type { TutorLlm, TutorLlmEvent, TutorLlmRequest } from '../contract';
 
@@ -49,8 +54,16 @@ interface UsageLike {
 /** `RawMessageStreamEvent`, as far as it is read here. */
 export type AnthropicStreamEventLike =
   | { type: 'message_start'; message: { model?: string; usage: UsageLike } }
-  | { type: 'content_block_start'; index: number; content_block: { type: string; id?: string; name?: string; text?: string } }
-  | { type: 'content_block_delta'; index: number; delta: { type: string; text?: string; partial_json?: string } }
+  | {
+      type: 'content_block_start';
+      index: number;
+      content_block: { type: string; id?: string; name?: string; text?: string };
+    }
+  | {
+      type: 'content_block_delta';
+      index: number;
+      delta: { type: string; text?: string; partial_json?: string };
+    }
   | { type: 'content_block_stop'; index: number }
   | {
       type: 'message_delta';
@@ -93,14 +106,19 @@ export function assertValidTutorRequest(request: TutorLlmRequest): void {
     throw new LlmRequestError(`${where}: maxTokens must be a positive integer`);
   }
   request.system.forEach((block, index) => {
-    if (block.text.trim() === '') throw new LlmRequestError(`${where}: system block ${index} has no text`);
+    if (block.text.trim() === '')
+      throw new LlmRequestError(`${where}: system block ${index} has no text`);
   });
   const first = request.messages[0];
   const last = request.messages[request.messages.length - 1];
-  if (first === undefined || last === undefined) throw new LlmRequestError(`${where}: messages must not be empty`);
-  if (first.role !== 'user') throw new LlmRequestError(`${where}: the first message must have role "user"`);
+  if (first === undefined || last === undefined)
+    throw new LlmRequestError(`${where}: messages must not be empty`);
+  if (first.role !== 'user')
+    throw new LlmRequestError(`${where}: the first message must have role "user"`);
   if (last.role !== 'user') {
-    throw new LlmRequestError(`${where}: the last message must have role "user" (assistant prefill is not supported)`);
+    throw new LlmRequestError(
+      `${where}: the last message must have role "user" (assistant prefill is not supported)`,
+    );
   }
 }
 
@@ -108,7 +126,9 @@ export function assertValidTutorRequest(request: TutorLlmRequest): void {
 export function buildStreamParams(request: TutorLlmRequest, model: string): AnthropicStreamParams {
   assertValidTutorRequest(request);
   const marked = new Set(
-    request.system.flatMap((block, index) => (block.cache === true ? [index] : [])).slice(-MAX_CACHE_BREAKPOINTS),
+    request.system
+      .flatMap((block, index) => (block.cache === true ? [index] : []))
+      .slice(-MAX_CACHE_BREAKPOINTS),
   );
   const system: AnthropicTextBlock[] = request.system.map((block, index) => ({
     type: 'text',
@@ -165,7 +185,9 @@ export function createAnthropicTutorLlm(options: AnthropicTutorLlmOptions): Tuto
       const model = options.models.tutor;
       const params = buildStreamParams(request, model);
       if (request.signal?.aborted) {
-        throw new LlmError('aborted', 'The model call was aborted before it started', { retryable: true });
+        throw new LlmError('aborted', 'The model call was aborted before it started', {
+          retryable: true,
+        });
       }
       let stream: AnthropicMessageStreamLike | undefined;
       let finished = false;
@@ -177,11 +199,17 @@ export function createAnthropicTutorLlm(options: AnthropicTutorLlmOptions): Tuto
         });
 
         let servedModel = model;
-        const usage: LlmUsage = { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_creation_tokens: 0 };
+        const usage: LlmUsage = {
+          input_tokens: 0,
+          output_tokens: 0,
+          cache_read_tokens: 0,
+          cache_creation_tokens: 0,
+        };
         const merge = (u: UsageLike): void => {
           if (typeof u.input_tokens === 'number') usage.input_tokens = count(u.input_tokens);
           if (typeof u.output_tokens === 'number') usage.output_tokens = count(u.output_tokens);
-          if (typeof u.cache_read_input_tokens === 'number') usage.cache_read_tokens = count(u.cache_read_input_tokens);
+          if (typeof u.cache_read_input_tokens === 'number')
+            usage.cache_read_tokens = count(u.cache_read_input_tokens);
           if (typeof u.cache_creation_input_tokens === 'number') {
             usage.cache_creation_tokens = count(u.cache_creation_input_tokens);
           }
@@ -200,16 +228,27 @@ export function createAnthropicTutorLlm(options: AnthropicTutorLlmOptions): Tuto
               const block = event.content_block;
               if (block.type === 'tool_use' && typeof block.name === 'string') {
                 tools.set(event.index, { name: block.name, json: '' });
-              } else if (block.type === 'text' && typeof block.text === 'string' && block.text !== '') {
+              } else if (
+                block.type === 'text' &&
+                typeof block.text === 'string' &&
+                block.text !== ''
+              ) {
                 yield { type: 'text', text: block.text };
               }
               break;
             }
             case 'content_block_delta': {
               const delta = event.delta;
-              if (delta.type === 'text_delta' && typeof delta.text === 'string' && delta.text !== '') {
+              if (
+                delta.type === 'text_delta' &&
+                typeof delta.text === 'string' &&
+                delta.text !== ''
+              ) {
                 yield { type: 'text', text: delta.text };
-              } else if (delta.type === 'input_json_delta' && typeof delta.partial_json === 'string') {
+              } else if (
+                delta.type === 'input_json_delta' &&
+                typeof delta.partial_json === 'string'
+              ) {
                 const tool = tools.get(event.index);
                 if (tool) tool.json += delta.partial_json;
               }
@@ -236,7 +275,9 @@ export function createAnthropicTutorLlm(options: AnthropicTutorLlmOptions): Tuto
         }
 
         if (stopReason === null) {
-          throw new LlmError('transport', 'The model stream ended before the reply was complete', { retryable: true });
+          throw new LlmError('transport', 'The model stream ended before the reply was complete', {
+            retryable: true,
+          });
         }
         if (stopReason === 'refusal') {
           throw new LlmCallError(

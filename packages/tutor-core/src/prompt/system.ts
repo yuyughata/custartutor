@@ -17,7 +17,11 @@ export const THINKING_ALLOWANCE_TOKENS = 512;
 
 /** The alias is the only name the model sees: letters, digits and spaces only, short, never empty. */
 export function safeAlias(alias: string): string {
-  const cleaned = alias.replace(/[^\p{L}\p{N} '-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 24);
+  const cleaned = alias
+    .replace(/[^\p{L}\p{N} '-]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 24);
   return cleaned === '' ? 'friend' : cleaned;
 }
 
@@ -33,10 +37,13 @@ export function renderGrounding(g: TutorGrounding): string {
   for (const s of g.sections) lines.push(`[${s.id}] ${s.heading} (${s.type}): ${s.digest}`);
   if (g.practice.length > 0) {
     lines.push('PRACTICE QUESTIONS (ids you may use with show_activity):');
-    for (const q of g.practice) lines.push(`[${q.id}] ${q.prompt}${q.answer ? ` -> answer: ${q.answer}` : ''}`);
+    for (const q of g.practice)
+      lines.push(`[${q.id}] ${q.prompt}${q.answer ? ` -> answer: ${q.answer}` : ''}`);
   }
   if (g.mastery_prompts.length > 0) {
-    lines.push('MASTERY CHECK (prompts only. Never give or confirm an answer, never hint at one, never use show_activity for these):');
+    lines.push(
+      'MASTERY CHECK (prompts only. Never give or confirm an answer, never hint at one, never use show_activity for these):',
+    );
     for (const q of g.mastery_prompts) lines.push(`[${q.id}] ${q.prompt}`);
   }
   return lines.join('\n');
@@ -89,7 +96,7 @@ export function buildTurnNotes(input: TurnNotesInput): string {
   }
   if (input.remindPrivacy) {
     notes.push(
-      'Personal details were removed from the child\'s message. Remind the child gently, in one short sentence, not to share names, phone numbers or addresses. Then go on with the lesson.',
+      "Personal details were removed from the child's message. Remind the child gently, in one short sentence, not to share names, phone numbers or addresses. Then go on with the lesson.",
     );
   }
   if (input.steer) {

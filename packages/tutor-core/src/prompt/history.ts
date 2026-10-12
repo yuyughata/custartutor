@@ -17,7 +17,10 @@ export function windowHistory(history: readonly HistoryItem[], maxMessages: numb
 
 /** History plus the child's new message, as alternating user and assistant messages ending with a user one. */
 export function toMessages(history: readonly HistoryItem[], childText: string): LlmMessage[] {
-  const items = [...history, { role: 'child' as const, text: childText.trim() === '' ? '(no text)' : childText }];
+  const items = [
+    ...history,
+    { role: 'child' as const, text: childText.trim() === '' ? '(no text)' : childText },
+  ];
   const messages: LlmMessage[] = [];
   for (const item of items) {
     const role = item.role === 'child' ? 'user' : 'assistant';

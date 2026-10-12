@@ -72,7 +72,7 @@ describe('sections', () => {
     expect(sectionUsage(gold, 'places_in_school').length).toBeGreaterThan(1);
     const { unit, notes } = removeSection(gold, index);
     expect(ids(unit)).not.toContain('places_in_school');
-    expect(JSON.stringify(unit.session_plan)).not.toContain('places_in_school');
+    expect(JSON.stringify(getAt(unit, ['session_plan']))).not.toContain('places_in_school');
     expect(JSON.stringify(getAt(unit, ['teacher_manual']))).not.toContain('"places_in_school"');
     expect(notes.length).toBeGreaterThanOrEqual(2);
     // the original is untouched

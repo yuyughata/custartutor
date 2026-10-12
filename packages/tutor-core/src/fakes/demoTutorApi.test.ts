@@ -36,7 +36,9 @@ function request(text: string, patch: Partial<TutorChatRequest> = {}): TutorChat
 async function send(demo: ReturnType<typeof api>, req: TutorChatRequest) {
   const events: TutorStreamEvent[] = [];
   const result = await demo.sendTurn(req, (event) => events.push(event));
-  const text = events.map((e) => (e.type === 'delta' ? e.text : e.type === 'replace' ? '\u0000' + e.text : '')).join('');
+  const text = events
+    .map((e) => (e.type === 'delta' ? e.text : e.type === 'replace' ? '\u0000' + e.text : ''))
+    .join('');
   return { events, result, text };
 }
 
@@ -49,8 +51,14 @@ describe('the demo tutor api', () => {
 
   it('keeps consent in memory and refuses a turn without it', async () => {
     const demo = api({ initialConsent: false });
-    expect(await demo.consent(CHILD)).toEqual({ granted: false, version: null, required_version: 'tutor-v1-draft' });
-    await expect(demo.sendTurn(request('hello'), () => undefined)).rejects.toMatchObject({ code: 'consent_required' });
+    expect(await demo.consent(CHILD)).toEqual({
+      granted: false,
+      version: null,
+      required_version: 'tutor-v1-draft',
+    });
+    await expect(demo.sendTurn(request('hello'), () => undefined)).rejects.toMatchObject({
+      code: 'consent_required',
+    });
     await demo.setConsent(CHILD, 'grant');
     expect((await demo.consent(CHILD)).granted).toBe(true);
     await demo.setConsent(CHILD, 'withdraw');
@@ -60,7 +68,9 @@ describe('the demo tutor api', () => {
   it('granting consent needs the grown-up elevation', async () => {
     const demo = api({ initialConsent: false, elevated: false });
     await expect(demo.setConsent(CHILD, 'grant')).rejects.toBeInstanceOf(TutorApiError);
-    await expect(demo.setConsent(CHILD, 'grant')).rejects.toMatchObject({ code: 'elevation_required' });
+    await expect(demo.setConsent(CHILD, 'grant')).rejects.toMatchObject({
+      code: 'elevation_required',
+    });
   });
 
   it('answers an ordinary turn with a labelled scripted reply, through the real pipeline', async () => {
@@ -85,7 +95,10 @@ describe('the demo tutor api', () => {
     const demo = api();
     const { events, result, text } = await send(demo, request('I want to die'));
     expect(text).toBe(DEFAULT_SAFE_REPLIES.self_harm);
-    expect(events.find((e) => e.type === 'safety')).toEqual({ type: 'safety', action: 'safe_reply' });
+    expect(events.find((e) => e.type === 'safety')).toEqual({
+      type: 'safety',
+      action: 'safe_reply',
+    });
     expect(result).toMatchObject({ status: 'safe_reply', safety_action: 'safe_reply' });
     const [session] = await demo.listSessions(CHILD);
     expect(session?.has_withheld).toBe(true);
@@ -128,8 +141,15 @@ describe('the demo tutor api', () => {
     const limited = api({ settings: { daily_turns_per_child: 2 } });
     await send(limited, request('one'));
     await send(limited, request('two'));
-    await expect(limited.sendTurn(request('three'), () => undefined)).rejects.toMatchObject({ code: 'daily_limit' });
-    await expect(api().sendTurn(request('x', { unit_id: '66666666-6666-4666-8666-666666666666' }), () => undefined)).rejects.toMatchObject({ code: 'unit_not_found' });
+    await expect(limited.sendTurn(request('three'), () => undefined)).rejects.toMatchObject({
+      code: 'daily_limit',
+    });
+    await expect(
+      api().sendTurn(
+        request('x', { unit_id: '66666666-6666-4666-8666-666666666666' }),
+        () => undefined,
+      ),
+    ).rejects.toMatchObject({ code: 'unit_not_found' });
     const locked = api({ elevated: false });
     await expect(locked.listSessions(CHILD)).rejects.toMatchObject({ code: 'elevation_required' });
     await expect(locked.getTranscript('x')).rejects.toMatchObject({ code: 'elevation_required' });

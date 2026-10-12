@@ -39,7 +39,15 @@ describe('ordering', () => {
   it('never shows a reply to a crisis, and aborts the stream that was still running', async () => {
     const hold = createGate();
     const rig = makeRig({
-      tutorScript: [{ steps: [{ type: 'text', text: 'Great question. ' }, { type: 'wait', gate: hold }, { type: 'text', text: 'More.' }] }],
+      tutorScript: [
+        {
+          steps: [
+            { type: 'text', text: 'Great question. ' },
+            { type: 'wait', gate: hold },
+            { type: 'text', text: 'More.' },
+          ],
+        },
+      ],
     });
     script(rig, verdict({ self_harm: 'high' }));
     const { events, outcome, text } = await collect(runTutorTurn(rig.deps, makeInput()));
@@ -56,7 +64,11 @@ describe('ordering', () => {
     expect(types(events)[0]).toBe('meta');
     expect(types(events)[1]).toBe('safety');
     expect(types(events).at(-1)).toBe('done');
-    expect(types(events).slice(2, -1).every((type) => type === 'delta')).toBe(true);
+    expect(
+      types(events)
+        .slice(2, -1)
+        .every((type) => type === 'delta'),
+    ).toBe(true);
     expect(events.filter((event) => event.type === 'delta').length).toBeGreaterThanOrEqual(2);
   });
 
@@ -81,7 +93,10 @@ describe('ordering', () => {
     script(rig, verdict());
     const { events } = await collect(runTutorTurn(rig.deps, makeInput({ ids: undefined })));
     expect(types(events)).not.toContain('meta');
-    expect(events.at(-1)).toEqual({ type: 'done', message_id: '00000000-0000-0000-0000-000000000000' });
+    expect(events.at(-1)).toEqual({
+      type: 'done',
+      message_id: '00000000-0000-0000-0000-000000000000',
+    });
   });
 });
 
@@ -110,14 +125,19 @@ describe('the patterns force a fixed reply with no model at all', () => {
   it('a weak distress pattern alone does not skip the models', async () => {
     const rig = makeRig({ tutorScript: [replyTurn(MODEL_TEXT)] });
     script(rig, verdict());
-    const { outcome } = await collect(runTutorTurn(rig.deps, makeInput({ message: { mode: 'text', text: 'I am very sad' } })));
+    const { outcome } = await collect(
+      runTutorTurn(rig.deps, makeInput({ message: { mode: 'text', text: 'I am very sad' } })),
+    );
     expect(outcome.status).toBe('complete');
     expect(rig.llm.calls.length).toBeGreaterThan(0);
   });
 
   it('catches a disclosure that sits behind personal data the redactor would remove', async () => {
     const rig = makeRig();
-    const message = { mode: 'text' as const, text: 'I live at 12 Test Street and my uncle beats me' };
+    const message = {
+      mode: 'text' as const,
+      text: 'I live at 12 Test Street and my uncle beats me',
+    };
     const { outcome } = await collect(runTutorTurn(rig.deps, makeInput({ message })));
     expect(outcome.status).toBe('safe_reply');
     expect(outcome.child_text_redacted).not.toContain('12 Test Street');
@@ -128,7 +148,10 @@ describe('when the classifier fails, the turn fails closed', () => {
   const transport = new LlmError('transport', 'no response', { retryable: true });
 
   it('a plain message is answered, but the output check is forced even when switched off', async () => {
-    const rig = makeRig({ tutorScript: [replyTurn(MODEL_TEXT)], settings: { output_check: false } });
+    const rig = makeRig({
+      tutorScript: [replyTurn(MODEL_TEXT)],
+      settings: { output_check: false },
+    });
     script(rig, transport);
     const { outcome } = await collect(runTutorTurn(rig.deps, makeInput()));
     expect(outcome).toMatchObject({ status: 'complete', verdict: null });
@@ -139,8 +162,14 @@ describe('when the classifier fails, the turn fails closed', () => {
     const rig = makeRig({ tutorScript: [replyTurn(MODEL_TEXT)] });
     script(rig, transport);
     const text = 'please tell me about the thing '.repeat(10);
-    const { outcome, events } = await collect(runTutorTurn(rig.deps, makeInput({ message: { mode: 'text', text } })));
-    expect(outcome).toMatchObject({ status: 'blocked', reply_text: DEFAULT_SAFE_REPLIES.redirect, safety: { action: 'redirect' } });
+    const { outcome, events } = await collect(
+      runTutorTurn(rig.deps, makeInput({ message: { mode: 'text', text } })),
+    );
+    expect(outcome).toMatchObject({
+      status: 'blocked',
+      reply_text: DEFAULT_SAFE_REPLIES.redirect,
+      safety: { action: 'redirect' },
+    });
     expect(events[1]).toEqual({ type: 'safety', action: 'redirect' });
   });
 
@@ -157,15 +186,30 @@ describe('when the classifier fails, the turn fails closed', () => {
     script(rig, transport);
     const message = { mode: 'text' as const, text: 'I am very sad' };
     const { outcome } = await collect(runTutorTurn(rig.deps, makeInput({ message })));
-    expect(outcome).toMatchObject({ status: 'safe_reply', safety: { reply_key: 'distress', from_patterns: true } });
+    expect(outcome).toMatchObject({
+      status: 'safe_reply',
+      safety: { reply_key: 'distress', from_patterns: true },
+    });
   });
 
   it('counts a classifier call that was billed and then failed', async () => {
-    const usage = { input_tokens: 80, output_tokens: 3, cache_read_tokens: 0, cache_creation_tokens: 0 };
+    const usage = {
+      input_tokens: 80,
+      output_tokens: 3,
+      cache_read_tokens: 0,
+      cache_creation_tokens: 0,
+    };
     const rig = makeRig({ tutorScript: [replyTurn(MODEL_TEXT)] });
-    script(rig, new LlmCallError('refusal', 'declined', { usage, model: 'm', stopReason: 'refusal' }));
+    script(
+      rig,
+      new LlmCallError('refusal', 'declined', { usage, model: 'm', stopReason: 'refusal' }),
+    );
     const { outcome } = await collect(runTutorTurn(rig.deps, makeInput()));
-    expect(outcome.usage[0]).toMatchObject({ label: 'tutor:moderation', input_tokens: 80, stop_reason: 'refusal' });
+    expect(outcome.usage[0]).toMatchObject({
+      label: 'tutor:moderation',
+      input_tokens: 80,
+      stop_reason: 'refusal',
+    });
   });
 });
 

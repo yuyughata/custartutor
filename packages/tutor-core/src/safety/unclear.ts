@@ -6,7 +6,10 @@ import type { SafetyHit } from './patterns';
 
 export const UNCLEAR_MAX_CHARS = 200;
 
-export function isUnclearMessage(redactedText: string, guardHits: readonly SafetyHit[] = []): boolean {
+export function isUnclearMessage(
+  redactedText: string,
+  guardHits: readonly SafetyHit[] = [],
+): boolean {
   const text = redactedText.trim();
   if (text.length > UNCLEAR_MAX_CHARS) return true;
   if (guardHits.some((hit) => hit.category === 'jailbreak' && SEVERITY_RANK[hit.severity] >= 2)) {

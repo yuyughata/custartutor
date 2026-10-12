@@ -28,55 +28,70 @@ const route = (v: ModerationVerdict | null, hits: SafetyHit[] = [], unclear = fa
 describe('every row of the ADR 0008 table', () => {
   const severities: Severity[] = ['low', 'medium', 'high'];
 
-  it.each(severities)('self_harm %s -> safe_reply, self_harm text, high case, withheld', (level) => {
-    const d = route(verdict({ self_harm: level }));
-    expect(d).toMatchObject({
-      action: 'safe_reply',
-      reply_key: 'self_harm',
-      open_case: true,
-      case_severity: 'high',
-      withhold_from_guardian: true,
-      from_patterns: false,
-    });
-  });
+  it.each(severities)(
+    'self_harm %s -> safe_reply, self_harm text, high case, withheld',
+    (level) => {
+      const d = route(verdict({ self_harm: level }));
+      expect(d).toMatchObject({
+        action: 'safe_reply',
+        reply_key: 'self_harm',
+        open_case: true,
+        case_severity: 'high',
+        withhold_from_guardian: true,
+        from_patterns: false,
+      });
+    },
+  );
 
-  it.each(severities)('abuse_disclosure %s -> safe_reply, abuse text, high case, withheld', (level) => {
-    const d = route(verdict({ abuse_disclosure: level }));
-    expect(d).toMatchObject({
-      action: 'safe_reply',
-      reply_key: 'abuse',
-      case_severity: 'high',
-      withhold_from_guardian: true,
-    });
-  });
+  it.each(severities)(
+    'abuse_disclosure %s -> safe_reply, abuse text, high case, withheld',
+    (level) => {
+      const d = route(verdict({ abuse_disclosure: level }));
+      expect(d).toMatchObject({
+        action: 'safe_reply',
+        reply_key: 'abuse',
+        case_severity: 'high',
+        withhold_from_guardian: true,
+      });
+    },
+  );
 
-  it.each(['medium', 'high'] as const)('distress %s -> safe_reply, distress text, medium case', (level) => {
-    const d = route(verdict({ distress: level }));
-    expect(d).toMatchObject({
-      action: 'safe_reply',
-      reply_key: 'distress',
-      case_severity: 'medium',
-      withhold_from_guardian: true,
-    });
-  });
+  it.each(['medium', 'high'] as const)(
+    'distress %s -> safe_reply, distress text, medium case',
+    (level) => {
+      const d = route(verdict({ distress: level }));
+      expect(d).toMatchObject({
+        action: 'safe_reply',
+        reply_key: 'distress',
+        case_severity: 'medium',
+        withhold_from_guardian: true,
+      });
+    },
+  );
 
   it('distress low alone is just a normal turn', () => {
-    expect(route(verdict({ distress: 'low' }))).toMatchObject({ action: 'allow', open_case: false });
+    expect(route(verdict({ distress: 'low' }))).toMatchObject({
+      action: 'allow',
+      open_case: false,
+    });
   });
 
-  it.each(['sexual', 'violence'] as const)('%s medium or high -> blocked, low case, guardian sees', (c) => {
-    for (const level of ['medium', 'high'] as const) {
-      const d = route(verdict({ [c]: level }));
-      expect(d).toMatchObject({
-        action: 'blocked',
-        reply_key: null,
-        open_case: true,
-        case_severity: 'low',
-        withhold_from_guardian: false,
-      });
-    }
-    expect(route(verdict({ [c]: 'low' })).action).toBe('allow');
-  });
+  it.each(['sexual', 'violence'] as const)(
+    '%s medium or high -> blocked, low case, guardian sees',
+    (c) => {
+      for (const level of ['medium', 'high'] as const) {
+        const d = route(verdict({ [c]: level }));
+        expect(d).toMatchObject({
+          action: 'blocked',
+          reply_key: null,
+          open_case: true,
+          case_severity: 'low',
+          withhold_from_guardian: false,
+        });
+      }
+      expect(route(verdict({ [c]: 'low' })).action).toBe('allow');
+    },
+  );
 
   it('jailbreak medium or high -> redirect, no case', () => {
     for (const level of ['medium', 'high'] as const) {
@@ -97,7 +112,10 @@ describe('every row of the ADR 0008 table', () => {
   });
 
   it.each(severities)('off_topic %s -> steer', (level) => {
-    expect(route(verdict({ off_topic: level }))).toMatchObject({ action: 'steer', open_case: false });
+    expect(route(verdict({ off_topic: level }))).toMatchObject({
+      action: 'steer',
+      open_case: false,
+    });
   });
 
   it('nothing -> allow', () => {
@@ -115,9 +133,16 @@ describe('every row of the ADR 0008 table', () => {
 
 describe('combinations', () => {
   it('a safe reply beats blocked, redirect and steer', () => {
-    const d = route(verdict({ self_harm: 'low', sexual: 'high', jailbreak: 'high', off_topic: 'high' }));
+    const d = route(
+      verdict({ self_harm: 'low', sexual: 'high', jailbreak: 'high', off_topic: 'high' }),
+    );
     expect(d.action).toBe('safe_reply');
-    expect(d.categories.map((c) => c.category)).toEqual(['self_harm', 'sexual', 'jailbreak', 'off_topic']);
+    expect(d.categories.map((c) => c.category)).toEqual([
+      'self_harm',
+      'sexual',
+      'jailbreak',
+      'off_topic',
+    ]);
   });
 
   it('blocked beats redirect; redirect beats steer', () => {
@@ -128,13 +153,19 @@ describe('combinations', () => {
   it('the highest severity picks the safe reply; ties go self_harm, abuse, distress', () => {
     expect(route(verdict({ self_harm: 'low', abuse_disclosure: 'high' })).reply_key).toBe('abuse');
     expect(route(verdict({ self_harm: 'high', distress: 'high' })).reply_key).toBe('self_harm');
-    expect(route(verdict({ abuse_disclosure: 'medium', distress: 'medium' })).reply_key).toBe('abuse');
-    expect(route(verdict({ distress: 'high', abuse_disclosure: 'low' })).reply_key).toBe('distress');
+    expect(route(verdict({ abuse_disclosure: 'medium', distress: 'medium' })).reply_key).toBe(
+      'abuse',
+    );
+    expect(route(verdict({ distress: 'high', abuse_disclosure: 'low' })).reply_key).toBe(
+      'distress',
+    );
   });
 
   it('the case severity is the highest of the triggered categories', () => {
     expect(route(verdict({ distress: 'high', sexual: 'high' })).case_severity).toBe('medium');
-    expect(route(verdict({ distress: 'high', abuse_disclosure: 'low' })).case_severity).toBe('high');
+    expect(route(verdict({ distress: 'high', abuse_disclosure: 'low' })).case_severity).toBe(
+      'high',
+    );
   });
 });
 
@@ -205,7 +236,11 @@ describe('guardian visibility', () => {
     const settings = { guardian_visible_categories: ['distress'] };
     const d = routeSafety({ verdict: verdict({ distress: 'high' }), patternHits: [], settings });
     expect(d.withhold_from_guardian).toBe(false);
-    const blocked = routeSafety({ verdict: verdict({ sexual: 'high' }), patternHits: [], settings });
+    const blocked = routeSafety({
+      verdict: verdict({ sexual: 'high' }),
+      patternHits: [],
+      settings,
+    });
     expect(blocked.withhold_from_guardian).toBe(true);
   });
 

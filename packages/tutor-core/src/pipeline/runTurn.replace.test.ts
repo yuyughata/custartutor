@@ -1,14 +1,24 @@
 import { LlmError } from '@custar/authoring-core';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SAFE_REPLIES } from '../contract';
-import { SCRIPTED_USAGE, doneStep, refusalTurn, replyTurn, textSteps } from '../fakes/scriptedTutorLlm';
+import {
+  SCRIPTED_USAGE,
+  doneStep,
+  refusalTurn,
+  replyTurn,
+  textSteps,
+} from '../fakes/scriptedTutorLlm';
 import { OUTPUT_CHECK_LABEL } from './outputCheck';
 import { collect, makeInput, makeRig, script, types, verdict } from '../../test-support/testKit';
 import { runTutorTurn } from './runTurn';
 
 const REDIRECT = DEFAULT_SAFE_REPLIES.redirect;
 
-async function run(turn: ReturnType<typeof replyTurn>, check: { ok: boolean } | Error = { ok: true }, settings = {}) {
+async function run(
+  turn: ReturnType<typeof replyTurn>,
+  check: { ok: boolean } | Error = { ok: true },
+  settings = {},
+) {
   const rig = makeRig({ tutorScript: [turn], settings });
   script(rig, verdict(), check);
   return { rig, ...(await collect(runTutorTurn(rig.deps, makeInput()))) };
@@ -17,7 +27,12 @@ async function run(turn: ReturnType<typeof replyTurn>, check: { ok: boolean } | 
 describe('the sanitiser rejects a reply', () => {
   it('after the first sentence was shown: replace', async () => {
     const { events, outcome } = await run(replyTurn('Well done. Now, what is your name? Tell me.'));
-    expect(events.filter((e) => e.type === 'delta').map((e) => (e as { text: string }).text).join('')).toBe('Well done.');
+    expect(
+      events
+        .filter((e) => e.type === 'delta')
+        .map((e) => (e as { text: string }).text)
+        .join(''),
+    ).toBe('Well done.');
     expect(events.at(-2)).toEqual({ type: 'replace', text: REDIRECT, reason: 'filter' });
     expect(types(events).at(-1)).toBe('done');
     expect(outcome).toMatchObject({ status: 'replaced', reply_text: REDIRECT });
@@ -48,7 +63,9 @@ describe('the sanitiser rejects a reply', () => {
   });
 
   it('markdown, links and emoji are tidied, not rejected', async () => {
-    const { outcome } = await run(replyTurn('**Good** try! See https://example.com. Where do we sleep? \u{1F600}'));
+    const { outcome } = await run(
+      replyTurn('**Good** try! See https://example.com. Where do we sleep? \u{1F600}'),
+    );
     expect(outcome.status).toBe('complete');
     expect(outcome.reply_text).toBe('Good try! See. Where do we sleep?');
   });
@@ -68,12 +85,19 @@ describe('the output check', () => {
   });
 
   it('fails closed when the check itself fails', async () => {
-    const { outcome } = await run(replyTurn('We cook in the kitchen.'), new LlmError('transport', 'down', { retryable: true }));
+    const { outcome } = await run(
+      replyTurn('We cook in the kitchen.'),
+      new LlmError('transport', 'down', { retryable: true }),
+    );
     expect(outcome).toMatchObject({ status: 'replaced', reply_text: REDIRECT });
   });
 
   it('is skipped when switched off and the classifier worked', async () => {
-    const { rig, outcome } = await run(replyTurn('We cook in the kitchen.'), { ok: false }, { output_check: false });
+    const { rig, outcome } = await run(
+      replyTurn('We cook in the kitchen.'),
+      { ok: false },
+      { output_check: false },
+    );
     expect(outcome.status).toBe('complete');
     expect(rig.llm.calls.filter((c) => c.label === OUTPUT_CHECK_LABEL)).toHaveLength(0);
   });
@@ -95,31 +119,50 @@ describe('model failures', () => {
     expect(outcome.status).toBe('replaced');
     expect(outcome.error_code).toBeNull();
     const tutor = outcome.usage.find((u) => u.label === 'tutor:turn');
-    expect(tutor).toMatchObject({ input_tokens: SCRIPTED_USAGE.input_tokens, stop_reason: 'refusal' });
+    expect(tutor).toMatchObject({
+      input_tokens: SCRIPTED_USAGE.input_tokens,
+      stop_reason: 'refusal',
+    });
   });
 
   it('an error before any text is a calm failure with a retryable error event', async () => {
-    const { events, outcome } = await run({ steps: [{ type: 'fail', error: new LlmError('transport', 'x', { retryable: true }) }] });
+    const { events, outcome } = await run({
+      steps: [{ type: 'fail', error: new LlmError('transport', 'x', { retryable: true }) }],
+    });
     expect(events.at(-1)).toEqual({ type: 'error', code: 'upstream', retryable: true });
     expect(types(events)).not.toContain('done');
-    expect(outcome).toMatchObject({ status: 'failed', error_code: 'upstream', reply_text: null, model: null });
+    expect(outcome).toMatchObject({
+      status: 'failed',
+      error_code: 'upstream',
+      reply_text: null,
+      model: null,
+    });
   });
 
   it('an error after a whole sentence keeps what the child already read', async () => {
     const { outcome, events } = await run({
-      steps: [...textSteps('We cook in the kitchen. And then'), { type: 'fail', error: new LlmError('transport', 'cut', { retryable: true }) }],
+      steps: [
+        ...textSteps('We cook in the kitchen. And then'),
+        { type: 'fail', error: new LlmError('transport', 'cut', { retryable: true }) },
+      ],
     });
     expect(outcome).toMatchObject({ status: 'complete', reply_text: 'We cook in the kitchen.' });
     expect(types(events).at(-1)).toBe('done');
   });
 
   it('a reply cut off by the token limit ends at its last whole sentence', async () => {
-    const { outcome } = await run(replyTurn('We cook in the kitchen. Then we go to the', { stopReason: 'max_tokens' }));
+    const { outcome } = await run(
+      replyTurn('We cook in the kitchen. Then we go to the', { stopReason: 'max_tokens' }),
+    );
     expect(outcome).toMatchObject({ status: 'complete', reply_text: 'We cook in the kitchen.' });
   });
 
   it('a throwing TutorLlm cannot make the pipeline throw', async () => {
-    const rig = makeRig({ tutorScript: () => { throw new Error('boom'); } });
+    const rig = makeRig({
+      tutorScript: () => {
+        throw new Error('boom');
+      },
+    });
     script(rig, verdict());
     const { outcome } = await collect(runTutorTurn(rig.deps, makeInput()));
     expect(['failed', 'replaced']).toContain(outcome.status);

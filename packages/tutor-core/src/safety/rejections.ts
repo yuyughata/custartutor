@@ -35,7 +35,8 @@ export interface RejectionOptions {
 const COMPILED = REJECTION_RULES.map((rule) => ({ rule, regex: compileTemplate(rule.template) }));
 const ANSWER_FRAME =
   /(?:^| )(?:(?:the |correct |right )?answers? (?:is|are|for)|correct one|right one|it is option|option [a-e]|is the answer|the correct)(?= |$)/;
-const MAPPING_FRAME = /(?:^| )(?:goes (?:in|to|with|under|into)|go (?:in|to|with|under|into)|belongs?|matches|is paired)(?= |$)/;
+const MAPPING_FRAME =
+  /(?:^| )(?:goes (?:in|to|with|under|into)|go (?:in|to|with|under|into)|belongs?|matches|is paired)(?= |$)/;
 const PROTECTED_WINDOW = 7;
 
 function sentencesOf(text: string): string[] {

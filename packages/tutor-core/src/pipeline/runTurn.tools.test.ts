@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { replyTurn } from '../fakes/scriptedTutorLlm';
-import { GROUNDING, collect, makeInput, makeRig, script, types, verdict } from '../../test-support/testKit';
+import {
+  GROUNDING,
+  collect,
+  makeInput,
+  makeRig,
+  script,
+  types,
+  verdict,
+} from '../../test-support/testKit';
 import { runTutorTurn } from './runTurn';
 import { validateToolCalls } from './toolCalls';
 
@@ -14,9 +22,15 @@ async function withTools(tools: Array<{ name: string; input: unknown }>, text = 
 
 describe('show_activity', () => {
   it('is passed on for a practice question, after the text and before done', async () => {
-    const { events, outcome } = await withTools([{ name: 'show_activity', input: { question_id: 'qf_gutter' } }]);
+    const { events, outcome } = await withTools([
+      { name: 'show_activity', input: { question_id: 'qf_gutter' } },
+    ]);
     expect(types(events).slice(-3)).toEqual(['delta', 'tool', 'done']);
-    expect(events.at(-2)).toEqual({ type: 'tool', name: 'show_activity', input: { question_id: 'qf_gutter' } });
+    expect(events.at(-2)).toEqual({
+      type: 'tool',
+      name: 'show_activity',
+      input: { question_id: 'qf_gutter' },
+    });
     expect(outcome.show_activity).toEqual({ question_id: 'qf_gutter' });
   });
 
@@ -25,13 +39,18 @@ describe('show_activity', () => {
     ['an unknown question', 'nope_not_here'],
     ['a malformed id', 'Not A Slug!'],
   ])('is dropped for %s', async (_name, id) => {
-    const { events, outcome } = await withTools([{ name: 'show_activity', input: { question_id: id } }]);
+    const { events, outcome } = await withTools([
+      { name: 'show_activity', input: { question_id: id } },
+    ]);
     expect(types(events)).not.toContain('tool');
     expect(outcome.show_activity).toBeNull();
   });
 
   it('is dropped when the arguments are not an object, and only the first valid call counts', async () => {
-    const dropped = await withTools([{ name: 'show_activity', input: 'qf_gutter' }, { name: 'show_activity', input: null }]);
+    const dropped = await withTools([
+      { name: 'show_activity', input: 'qf_gutter' },
+      { name: 'show_activity', input: null },
+    ]);
     expect(dropped.outcome.show_activity).toBeNull();
     const first = await withTools([
       { name: 'show_activity', input: { question_id: 'qf_learn' } },
@@ -54,9 +73,22 @@ describe('show_activity', () => {
 describe('record_evidence', () => {
   it('is stored on the outcome only, redacted and cut', async () => {
     const long = `Finds it hard, said it to Testa Sample at 08000000000. ${'x'.repeat(300)}`;
-    const rig = makeRig({ tutorScript: [replyTurn(TEXT, { tools: [{ name: 'record_evidence', input: { kind: 'struggling', question_id: 'qf_learn', note: long } }] })] });
+    const rig = makeRig({
+      tutorScript: [
+        replyTurn(TEXT, {
+          tools: [
+            {
+              name: 'record_evidence',
+              input: { kind: 'struggling', question_id: 'qf_learn', note: long },
+            },
+          ],
+        }),
+      ],
+    });
     script(rig, verdict());
-    const { events, outcome } = await collect(runTutorTurn(rig.deps, makeInput({ known_names: ['Testa Sample'] })));
+    const { events, outcome } = await collect(
+      runTutorTurn(rig.deps, makeInput({ known_names: ['Testa Sample'] })),
+    );
     expect(types(events)).not.toContain('tool');
     expect(outcome.evidence).toHaveLength(1);
     const [item] = outcome.evidence;
@@ -74,7 +106,10 @@ describe('record_evidence', () => {
         { name: 'record_evidence', input: { kind: 'brilliant', note: 'x' } },
         { name: 'record_evidence', input: { kind: 'understood' } },
         { name: 'give_marks', input: { score: 10 } },
-        { name: 'record_evidence', input: { kind: 'understood', question_id: 'nope_nope', note: 'Got it.' } },
+        {
+          name: 'record_evidence',
+          input: { kind: 'understood', question_id: 'nope_nope', note: 'Got it.' },
+        },
       ],
       GROUNDING,
     );

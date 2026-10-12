@@ -62,7 +62,8 @@ export function compileTemplate(template: string): RegExp {
       let end = index;
       while (end < template.length && !'([.'.includes(template[end] as string)) end += 1;
       if (end === index) end = index + 1;
-      source += literal(template.slice(index, end)) + (/ $/.test(template.slice(index, end)) ? ' ' : '');
+      source +=
+        literal(template.slice(index, end)) + (/ $/.test(template.slice(index, end)) ? ' ' : '');
       index = end;
     }
   }
@@ -70,7 +71,8 @@ export function compileTemplate(template: string): RegExp {
 }
 
 /** "I want to die laughing" is not a crisis. Checked on the words right after a self-harm match. */
-const IDIOM_TAIL = /^ (?:laughing|laughter|of laughter|of laughing|from laughing|of shame|of boredom|of embarrassment)/;
+const IDIOM_TAIL =
+  /^ (?:laughing|laughter|of laughter|of laughing|from laughing|of shame|of boredom|of embarrassment)/;
 
 export type PatternMatcher = (text: string) => SafetyHit[];
 
@@ -107,7 +109,8 @@ export const detectGuardPatterns: PatternMatcher = createPatternMatcher(GUARD_PA
 export function strongestHit(hits: readonly SafetyHit[]): SafetyHit | undefined {
   let best: SafetyHit | undefined;
   for (const hit of hits) {
-    if (best === undefined || SEVERITY_RANK[hit.severity] > SEVERITY_RANK[best.severity]) best = hit;
+    if (best === undefined || SEVERITY_RANK[hit.severity] > SEVERITY_RANK[best.severity])
+      best = hit;
   }
   return best;
 }

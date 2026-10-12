@@ -51,7 +51,7 @@ describe('readingMeter', () => {
         .warnings.filter((w) => w.code === 'reading_level')
         .map((w) => w.path),
     );
-    unit.sections.forEach((section, index) => {
+    (unit.sections ?? []).forEach((section, index) => {
       const meter = readingMeter(section.blocks, unit.header.stage);
       expect(meter.status === 'over').toBe(warned.has(`sections[${index}]`));
       expect(meter.average).toBe(averageSentenceLength(section.blocks));

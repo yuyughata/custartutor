@@ -5,9 +5,13 @@ import { FIXTURE_SCRIPTS, rightReply } from '../../test-support/liteKit';
 import type { NamedScript } from '../../test-support/liteKit';
 
 /** The state survives being written to storage and read back between every call. */
-const persist = (state: TutorLiteState): TutorLiteState => JSON.parse(JSON.stringify(state)) as TutorLiteState;
+const persist = (state: TutorLiteState): TutorLiteState =>
+  JSON.parse(JSON.stringify(state)) as TutorLiteState;
 
-function runToEnd(named: NamedScript, replyFor: (nodeId: string, miss: number) => string): TutorLiteStep[] {
+function runToEnd(
+  named: NamedScript,
+  replyFor: (nodeId: string, miss: number) => string,
+): TutorLiteStep[] {
   const ctx = { script: named.script, questions: named.questions };
   const steps: TutorLiteStep[] = [startLite(named.script, ctx)];
   const misses = new Map<string, number>();
@@ -29,57 +33,64 @@ describe('the fixtures have scripts to run', () => {
   });
 });
 
-describe.each(FIXTURE_SCRIPTS.map((named) => [named.name, named] as const))('%s', (_name, named) => {
-  const nodes = new Map(named.script.nodes.map((node) => [node.id, node]));
+describe.each(FIXTURE_SCRIPTS.map((named) => [named.name, named] as const))(
+  '%s',
+  (_name, named) => {
+    const nodes = new Map(named.script.nodes.map((node) => [node.id, node]));
 
-  it('runs to the end with right replies, every one graded correct', () => {
-    const steps = runToEnd(named, (id) => rightReply(nodes.get(id)!, named.questions));
-    const last = steps[steps.length - 1] as TutorLiteStep;
-    expect(last.state.finished).toBe(true);
-    expect(last.expecting).toBe(false);
-    expect(last.lines.at(-1)).toMatchObject({ kind: 'wrap', text: LITE_WRAP_TEXT });
-    for (const step of steps.slice(1)) {
-      if (step.graded !== null) expect(step.graded.correct).toBe(true);
-    }
-    expect(steps.some((step) => step.lines.some((line) => line.kind === 'incorrect'))).toBe(false);
-  });
-
-  it('runs to the end with wrong replies: hint on the second miss, on after the third', () => {
-    const steps = runToEnd(named, () => 'zzz not it');
-    const last = steps[steps.length - 1] as TutorLiteStep;
-    expect(last.state.finished).toBe(true);
-    for (const node of named.script.nodes.filter((n) => n.expect !== undefined)) {
-      const shown = steps.flatMap((step) => step.lines).filter((l) => l.node_id === node.id);
-      if (node.hint.length > 0 && shown.some((l) => l.kind === 'incorrect' || l.kind === 'say')) {
-        // a node that was reached and missed offers its hint
-        const missed = steps.filter((s) => s.lines.some((l) => l.node_id === node.id && l.kind === 'incorrect'));
-        if (missed.length >= 2) expect(shown.some((l) => l.kind === 'hint')).toBe(true);
+    it('runs to the end with right replies, every one graded correct', () => {
+      const steps = runToEnd(named, (id) => rightReply(nodes.get(id)!, named.questions));
+      const last = steps[steps.length - 1] as TutorLiteStep;
+      expect(last.state.finished).toBe(true);
+      expect(last.expecting).toBe(false);
+      expect(last.lines.at(-1)).toMatchObject({ kind: 'wrap', text: LITE_WRAP_TEXT });
+      for (const step of steps.slice(1)) {
+        if (step.graded !== null) expect(step.graded.correct).toBe(true);
       }
-    }
-  });
+      expect(steps.some((step) => step.lines.some((line) => line.kind === 'incorrect'))).toBe(
+        false,
+      );
+    });
 
-  it('is deterministic: the same replies give the same steps', () => {
-    const run = () => runToEnd(named, (id) => rightReply(nodes.get(id)!, named.questions));
-    expect(run()).toEqual(run());
-    const wrong = () => runToEnd(named, () => 'zzz');
-    expect(wrong()).toEqual(wrong());
-  });
+    it('runs to the end with wrong replies: hint on the second miss, on after the third', () => {
+      const steps = runToEnd(named, () => 'zzz not it');
+      const last = steps[steps.length - 1] as TutorLiteStep;
+      expect(last.state.finished).toBe(true);
+      for (const node of named.script.nodes.filter((n) => n.expect !== undefined)) {
+        const shown = steps.flatMap((step) => step.lines).filter((l) => l.node_id === node.id);
+        if (node.hint.length > 0 && shown.some((l) => l.kind === 'incorrect' || l.kind === 'say')) {
+          // a node that was reached and missed offers its hint
+          const missed = steps.filter((s) =>
+            s.lines.some((l) => l.node_id === node.id && l.kind === 'incorrect'),
+          );
+          if (missed.length >= 2) expect(shown.some((l) => l.kind === 'hint')).toBe(true);
+        }
+      }
+    });
 
-  it('can be skipped through to the end', () => {
-    const ctx = { script: named.script, questions: named.questions };
-    let step = startLite(named.script, ctx);
-    for (let i = 0; i < 100 && step.expecting; i += 1) step = skipLite(persist(step.state), ctx);
-    expect(step.state.finished).toBe(true);
-    expect(step.graded).toBeNull();
-  });
+    it('is deterministic: the same replies give the same steps', () => {
+      const run = () => runToEnd(named, (id) => rightReply(nodes.get(id)!, named.questions));
+      expect(run()).toEqual(run());
+      const wrong = () => runToEnd(named, () => 'zzz');
+      expect(wrong()).toEqual(wrong());
+    });
 
-  it('answers a hint request without moving on', () => {
-    const ctx = { script: named.script, questions: named.questions };
-    const first = startLite(named.script, ctx);
-    if (!first.expecting) return;
-    const hinted = hintLite(persist(first.state), ctx);
-    expect(hinted.state.node_id).toBe(first.state.node_id);
-    expect(hinted.expecting).toBe(true);
-    expect(hinted.lines).toHaveLength(1);
-  });
-});
+    it('can be skipped through to the end', () => {
+      const ctx = { script: named.script, questions: named.questions };
+      let step = startLite(named.script, ctx);
+      for (let i = 0; i < 100 && step.expecting; i += 1) step = skipLite(persist(step.state), ctx);
+      expect(step.state.finished).toBe(true);
+      expect(step.graded).toBeNull();
+    });
+
+    it('answers a hint request without moving on', () => {
+      const ctx = { script: named.script, questions: named.questions };
+      const first = startLite(named.script, ctx);
+      if (!first.expecting) return;
+      const hinted = hintLite(persist(first.state), ctx);
+      expect(hinted.state.node_id).toBe(first.state.node_id);
+      expect(hinted.expecting).toBe(true);
+      expect(hinted.lines).toHaveLength(1);
+    });
+  },
+);

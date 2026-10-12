@@ -45,7 +45,9 @@ function parseAll(chunks: string[]): TutorStreamEvent[] {
 
 describe('encodeSseEvent', () => {
   it('writes one data line and a blank line', () => {
-    expect(encodeSseEvent({ type: 'delta', text: 'Hi' })).toBe('data: {"type":"delta","text":"Hi"}\n\n');
+    expect(encodeSseEvent({ type: 'delta', text: 'Hi' })).toBe(
+      'data: {"type":"delta","text":"Hi"}\n\n',
+    );
     expect(encodeSseComment('a\nb')).toBe(': a b\n\n');
     expect(SSE_KEEP_ALIVE).toBe(': keep-alive\n\n');
   });
@@ -88,7 +90,9 @@ describe('createSseParser', () => {
   });
 
   it('accepts "data:" without the space and drops a leading BOM', () => {
-    expect(parseAll(['\ufeffdata:{"type":"safety","action":"allow"}\n\n'])).toEqual([{ type: 'safety', action: 'allow' }]);
+    expect(parseAll(['\ufeffdata:{"type":"safety","action":"allow"}\n\n'])).toEqual([
+      { type: 'safety', action: 'allow' },
+    ]);
   });
 
   it('ignores event types it does not know and skips malformed messages without throwing', () => {
@@ -112,13 +116,17 @@ describe('createSseParser', () => {
 
   it('drops an event cut off by the end of the stream, but keeps a complete one that lacks its blank line', () => {
     expect(parseAll(['data: {"type":"delta","te'])).toEqual([]);
-    expect(parseAll(['data: {"type":"delta","text":"whole"}'])).toEqual([{ type: 'delta', text: 'whole' }]);
+    expect(parseAll(['data: {"type":"delta","text":"whole"}'])).toEqual([
+      { type: 'delta', text: 'whole' },
+    ]);
   });
 
   it('can be reused for a second stream after flush', () => {
     const parser = createSseParser();
     parser.push('data: {"type":"delta","te');
     parser.flush();
-    expect(parser.push(encodeSseEvent({ type: 'delta', text: 'next' }))).toEqual([{ type: 'delta', text: 'next' }]);
+    expect(parser.push(encodeSseEvent({ type: 'delta', text: 'next' }))).toEqual([
+      { type: 'delta', text: 'next' },
+    ]);
   });
 });

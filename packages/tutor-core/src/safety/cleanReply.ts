@@ -5,8 +5,9 @@ import { redactPii } from '../redact';
 const HTML_TAGS =
   'a|b|i|u|em|strong|p|br|div|span|script|style|iframe|img|h[1-6]|ul|ol|li|table|thead|tbody|tr|td|th|code|pre|blockquote|font|center|html|body|head|link|meta|form|input|button|svg|audio|video|source|object|embed|sup|sub|small|big|hr|mark';
 const HTML_TAG = new RegExp(String.raw`<\/?(?:${HTML_TAGS})(?:\s[^<>]*)?\/?>`, 'gi');
+// Alternatives, not one class: joiners and variation selectors must not sit next to the symbols they decorate
 const EMOJI =
-  /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{1F1E6}-\u{1F1FF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]/gu;
+  /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{1F1E6}-\u{1F1FF}]|[\u{FE00}-\u{FE0F}]|\u{200D}|\u{20E3}|[\u{E0020}-\u{E007F}]/gu;
 
 const ENTITIES: Record<string, string> = {
   '&amp;': '&',

@@ -26,13 +26,15 @@ function runtimeImports(file: string): string[] {
   for (const match of text.matchAll(statement)) {
     if (match[2] === undefined) found.push(match[4] as string);
   }
-  for (const match of text.matchAll(/^\s*import\s+['"]([^'"]+)['"]/gm)) found.push(match[1] as string);
+  for (const match of text.matchAll(/^\s*import\s+['"]([^'"]+)['"]/gm))
+    found.push(match[1] as string);
   return found;
 }
 
 function resolveRelative(from: string, specifier: string): string {
   const base = resolve(dirname(from), specifier);
-  for (const candidate of [`${base}.ts`, join(base, 'index.ts')]) if (existsSync(candidate)) return candidate;
+  for (const candidate of [`${base}.ts`, join(base, 'index.ts')])
+    if (existsSync(candidate)) return candidate;
   throw new Error(`cannot resolve ${specifier} from ${from}`);
 }
 
@@ -57,12 +59,21 @@ describe('client.ts', () => {
 
   it('reaches the contract, voice, Tutor Lite and the SSE codec', () => {
     expect(graph.files).toEqual(
-      expect.arrayContaining(['contract.ts', 'voice.ts', 'lite/engine.ts', 'lite/match.ts', 'lite/response.ts', 'stream/sse.ts']),
+      expect.arrayContaining([
+        'contract.ts',
+        'voice.ts',
+        'lite/engine.ts',
+        'lite/match.ts',
+        'lite/response.ts',
+        'stream/sse.ts',
+      ]),
     );
   });
 
   it('never reaches the pipeline, prompts, adapters, classifier, patterns, redactor or fakes', () => {
-    const bad = graph.files.filter((file) => FORBIDDEN_DIRS.some((dir) => file.startsWith(`${dir}/`)));
+    const bad = graph.files.filter((file) =>
+      FORBIDDEN_DIRS.some((dir) => file.startsWith(`${dir}/`)),
+    );
     expect(bad).toEqual([]);
   });
 

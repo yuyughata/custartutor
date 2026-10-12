@@ -1,4 +1,8 @@
-import { goldenUnit2, marketDayMathsUnit, colourChartProject } from '@custar/content-schema/fixtures';
+import {
+  goldenUnit2,
+  marketDayMathsUnit,
+  colourChartProject,
+} from '@custar/content-schema/fixtures';
 import { questionsOf, sectionsOf } from '@custar/content-schema';
 import { describe, expect, it } from 'vitest';
 import { buildGrounding, buildMasteryGuard } from './grounding';
@@ -21,22 +25,32 @@ describe('buildGrounding on the golden unit', () => {
 
   it('takes the vocabulary from bold terms and definitions', () => {
     const terms = g.vocabulary.map((v) => v.term.toLowerCase());
-    expect(terms).toEqual(expect.arrayContaining(['classroom', 'playground', 'kitchen', 'bedroom']));
+    expect(terms).toEqual(
+      expect.arrayContaining(['classroom', 'playground', 'kitchen', 'bedroom']),
+    );
     expect(g.vocabulary.find((v) => v.term === 'classroom')?.meaning).toBe('where we learn.');
   });
 
   it('digests every section in order', () => {
     expect(g.sections.map((s) => s.id)).toEqual(sectionsOf(goldenUnit2).map((s) => s.id));
-    expect(g.sections.find((s) => s.id === 'places_in_school')?.digest).toContain('The classroom — where we learn.');
+    expect(g.sections.find((s) => s.id === 'places_in_school')?.digest).toContain(
+      'The classroom — where we learn.',
+    );
     expect(g.sections.find((s) => s.id === 'come_and_explore')?.digest).toContain('Picture:');
     for (const s of g.sections) expect(s.digest.length).toBeLessThanOrEqual(600);
   });
 
   it('lists practice questions with short answers', () => {
     const cook = g.practice.find((q) => q.id === 'wb_fill_cook');
-    expect(cook).toEqual({ id: 'wb_fill_cook', prompt: 'Fill in the blank. We cook our food in the ____.', answer: 'kitchen' });
+    expect(cook).toEqual({
+      id: 'wb_fill_cook',
+      prompt: 'Fill in the blank. We cook our food in the ____.',
+      answer: 'kitchen',
+    });
     expect(g.practice.find((q) => q.id === 'qf_gutter')?.answer).toBe('No');
-    expect(g.practice.find((q) => q.id === 'wb_circle_people')?.answer).toBe('teacher, friend, classmate');
+    expect(g.practice.find((q) => q.id === 'wb_circle_people')?.answer).toBe(
+      'teacher, friend, classmate',
+    );
     expect(g.practice.find((q) => q.id === 'wb_application')?.answer).toBeNull();
   });
 

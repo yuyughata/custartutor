@@ -42,13 +42,16 @@ function unique(hits: SafetyHit[]): SafetyHit[] {
   return hits.filter((hit) => (seen.has(hit.id) ? false : (seen.add(hit.id), true)));
 }
 
+/** The server limits a message to 500 characters; this cap only protects the prompt (and the cost) if it forgot. */
+export const MAX_RAW_CHARS = 1000;
+
 export function prepareTurn(input: TutorTurnRunInput): PreparedTurn {
   const knownNames = [...(input.known_names ?? [])];
-  const redaction = redactPii(input.message.text, { knownNames });
+  const raw = input.message.text.slice(0, MAX_RAW_CHARS);
+  const redaction = redactPii(raw, { knownNames });
 
   // Patterns look at the raw text too: redaction could swallow the very words that matter ("I live at ... and he
   // hits me"). The raw text never leaves this function.
-  const raw = input.message.text;
   const safetyHits = unique([
     ...detectSafetyPatterns(raw),
     ...detectSafetyPatterns(redaction.text),

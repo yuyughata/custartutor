@@ -17,7 +17,9 @@ export function blockDigest(block: AnyBlock, questions: Record<string, Question>
     case 'callout':
       return plain(block.text);
     case 'bullets':
-      return block.items.map((item) => plain(item.lead ? `${item.lead}: ${item.text}` : item.text)).join('; ');
+      return block.items
+        .map((item) => plain(item.lead ? `${item.lead}: ${item.text}` : item.text))
+        .join('; ');
     case 'definition':
       return `${plain(block.term)}: ${plain(block.meaning)}`;
     case 'example':
@@ -29,7 +31,10 @@ export function blockDigest(block: AnyBlock, questions: Record<string, Question>
     case 'activity_steps':
       return block.steps.map((step) => `${plain(step.label)} ${plain(step.text)}`).join('; ');
     case 'table':
-      return [block.headers.join(' | '), ...block.rows.slice(0, MAX_TABLE_ROWS).map((r) => r.join(' | '))].join('; ');
+      return [
+        block.headers.join(' | '),
+        ...block.rows.slice(0, MAX_TABLE_ROWS).map((r) => r.join(' | ')),
+      ].join('; ');
     case 'question': {
       const question = questions[block.question_id];
       return question ? `Question: ${promptText(question)}` : null;
@@ -51,7 +56,9 @@ export function sectionDigest(section: Section, questions: Record<string, Questi
     if (text !== null && text !== '') parts.push(text);
   }
   const joined = parts.join(' ');
-  return joined.length > MAX_SECTION_CHARS ? `${joined.slice(0, MAX_SECTION_CHARS - 3).trimEnd()}...` : joined;
+  return joined.length > MAX_SECTION_CHARS
+    ? `${joined.slice(0, MAX_SECTION_CHARS - 3).trimEnd()}...`
+    : joined;
 }
 
 /** Ids of the questions whose answers the tutor must not have: every question of a mastery check or an assessment. */

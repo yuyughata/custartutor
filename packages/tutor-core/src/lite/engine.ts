@@ -33,7 +33,10 @@ export function initialLiteState(): TutorLiteState {
   return { node_id: null, attempts: 0, hints_used: 0, cursors: {}, finished: false };
 }
 
-const clone = (state: TutorLiteState): TutorLiteState => ({ ...state, cursors: { ...state.cursors } });
+const clone = (state: TutorLiteState): TutorLiteState => ({
+  ...state,
+  cursors: { ...state.cursors },
+});
 
 function nodeById(script: TutorScript, id: string | null): TutorNode | undefined {
   return id === null ? undefined : script.nodes.find((node) => node.id === id);
@@ -46,7 +49,12 @@ function nodeAfter(script: TutorScript, node: TutorNode): TutorNode | undefined 
 }
 
 /** The next line of a list, by cursor: the cursor moves on every use and wraps around. */
-function pick(state: TutorLiteState, node: TutorNode, list: readonly string[], kind: 'correct' | 'incorrect' | 'hint'): string | null {
+function pick(
+  state: TutorLiteState,
+  node: TutorNode,
+  list: readonly string[],
+  kind: 'correct' | 'incorrect' | 'hint',
+): string | null {
   if (list.length === 0) return null;
   const key = `${node.id}:${kind}`;
   const index = state.cursors[key] ?? 0;
@@ -59,7 +67,12 @@ function line(node: TutorNode, text: string, kind: TutorLiteLine['kind']): Tutor
 }
 
 /** Says `first` and every node after it that waits for nothing, until a node waits for a reply or the script ends. */
-function enter(ctx: TutorLiteContext, state: TutorLiteState, first: TutorNode | undefined, lines: TutorLiteLine[]): boolean {
+function enter(
+  ctx: TutorLiteContext,
+  state: TutorLiteState,
+  first: TutorNode | undefined,
+  lines: TutorLiteLine[],
+): boolean {
   const seen = new Set<string>();
   let node = first;
   while (node !== undefined && seen.size < MAX_AUTO_STEPS && !seen.has(node.id)) {
@@ -75,7 +88,11 @@ function enter(ctx: TutorLiteContext, state: TutorLiteState, first: TutorNode | 
   }
   state.node_id = null;
   state.finished = true;
-  lines.push({ node_id: lines[lines.length - 1]?.node_id ?? '', text: LITE_WRAP_TEXT, kind: 'wrap' });
+  lines.push({
+    node_id: lines[lines.length - 1]?.node_id ?? '',
+    text: LITE_WRAP_TEXT,
+    kind: 'wrap',
+  });
   return false;
 }
 
@@ -86,19 +103,26 @@ function evaluate(node: TutorNode, reply: string, ctx: TutorLiteContext): Verdic
   if (expect?.accepted !== undefined) {
     return { kind: 'graded', correct: matchesAccepted(reply, expect.accepted) };
   }
-  const question = expect?.question_id === undefined ? undefined : ctx.questions[expect.question_id];
+  const question =
+    expect?.question_id === undefined ? undefined : ctx.questions[expect.question_id];
   if (question !== undefined) {
     const response = toResponse(question, reply);
     if (response !== null) {
       const graded = gradeQuestion(question, response);
-      if (graded.result !== 'ungraded') return { kind: 'graded', correct: graded.result === 'correct' };
+      if (graded.result !== 'ungraded')
+        return { kind: 'graded', correct: graded.result === 'correct' };
     }
   }
   // not gradable from a typed line (a drawing, free text, a missing question): the child's own word counts
   return { kind: 'self', positive: !isNegativeSelfReport(reply) };
 }
 
-const step = (state: TutorLiteState, lines: TutorLiteLine[], expecting: boolean, graded: TutorLiteStep['graded']): TutorLiteStep => ({
+const step = (
+  state: TutorLiteState,
+  lines: TutorLiteLine[],
+  expecting: boolean,
+  graded: TutorLiteStep['graded'],
+): TutorLiteStep => ({
   state,
   lines,
   expecting,
@@ -113,9 +137,14 @@ export function startLite(script: TutorScript, options: TutorLiteOptions): Tutor
   return step(state, lines, expecting, null);
 }
 
-export function replyLite(previous: TutorLiteState, text: string, ctx: TutorLiteContext): TutorLiteStep {
+export function replyLite(
+  previous: TutorLiteState,
+  text: string,
+  ctx: TutorLiteContext,
+): TutorLiteStep {
   const node = previous.finished ? undefined : nodeById(ctx.script, previous.node_id);
-  if (node === undefined || node.expect === undefined) return step(clone(previous), [], false, null);
+  if (node === undefined || node.expect === undefined)
+    return step(clone(previous), [], false, null);
   if (text.trim() === '') return step(clone(previous), [], true, null);
 
   const state = clone(previous);
@@ -152,7 +181,8 @@ export function replyLite(previous: TutorLiteState, text: string, ctx: TutorLite
 
 export function hintLite(previous: TutorLiteState, ctx: TutorLiteContext): TutorLiteStep {
   const node = previous.finished ? undefined : nodeById(ctx.script, previous.node_id);
-  if (node === undefined || node.expect === undefined) return step(clone(previous), [], false, null);
+  if (node === undefined || node.expect === undefined)
+    return step(clone(previous), [], false, null);
   const state = clone(previous);
   const hint = pick(state, node, node.hint, 'hint');
   state.hints_used += 1;

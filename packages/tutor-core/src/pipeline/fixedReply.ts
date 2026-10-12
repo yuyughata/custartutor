@@ -4,9 +4,14 @@
 import { DEFAULT_SAFE_REPLIES } from '../contract';
 import type { SafeReplyKey, TutorSettings } from '../contract';
 
-export function fixedReplyText(settings: Pick<TutorSettings, 'safe_replies'>, key: SafeReplyKey): string {
+export function fixedReplyText(
+  settings: Pick<TutorSettings, 'safe_replies'>,
+  key: SafeReplyKey,
+): string {
   const configured = settings.safe_replies[key];
-  return configured !== undefined && configured.trim() !== '' ? configured : DEFAULT_SAFE_REPLIES[key];
+  return configured !== undefined && configured.trim() !== ''
+    ? configured
+    : DEFAULT_SAFE_REPLIES[key];
 }
 
 /** Splits a reply into at most `parts` chunks at sentence ends, so the stream looks like a short typed reply. */
@@ -20,6 +25,7 @@ export function chunkReply(text: string, parts = 3): string[] {
   }
   const size = Math.ceil(sentences.length / parts);
   const chunks: string[] = [];
-  for (let i = 0; i < sentences.length; i += size) chunks.push(sentences.slice(i, i + size).join(''));
+  for (let i = 0; i < sentences.length; i += size)
+    chunks.push(sentences.slice(i, i + size).join(''));
   return chunks.map((chunk) => chunk).filter((chunk) => chunk !== '');
 }

@@ -12,7 +12,8 @@ export interface Channel<T> extends AsyncIterable<T> {
 
 export function createChannel<T>(): Channel<T> {
   const values: T[] = [];
-  let waiting: { resolve: (r: IteratorResult<T>) => void; reject: (e: unknown) => void } | null = null;
+  let waiting: { resolve: (r: IteratorResult<T>) => void; reject: (e: unknown) => void } | null =
+    null;
   let closed = false;
   let failure: { error: unknown } | null = null;
 

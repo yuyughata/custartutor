@@ -8,14 +8,55 @@ import { gradeBlank, normalizeText, parseNumeric } from '@custar/content-schema'
 
 /** Unit words a child may add around a number ("5 naira", "₦5", "12 cm"). Only these are ever ignored. */
 export const LITE_UNITS: readonly string[] = [
-  '₦', 'naira', 'kobo', 'kg', 'g', 'cm', 'mm', 'm', 'km', 'l', 'ml',
-  'years', 'year', 'yrs', 'minutes', 'minute', 'mins', 'hours', 'hour', 'seconds', 'second', 'secs',
-  'days', 'day', 'pieces', 'piece',
+  '₦',
+  'naira',
+  'kobo',
+  'kg',
+  'g',
+  'cm',
+  'mm',
+  'm',
+  'km',
+  'l',
+  'ml',
+  'years',
+  'year',
+  'yrs',
+  'minutes',
+  'minute',
+  'mins',
+  'hours',
+  'hour',
+  'seconds',
+  'second',
+  'secs',
+  'days',
+  'day',
+  'pieces',
+  'piece',
 ];
 
 const ONES = [
-  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
-  'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen',
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+  'thirteen',
+  'fourteen',
+  'fifteen',
+  'sixteen',
+  'seventeen',
+  'eighteen',
+  'nineteen',
 ];
 const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
 
@@ -63,4 +104,3 @@ export function isNegativeSelfReport(text: string): boolean {
     normalizeText(text),
   );
 }
-

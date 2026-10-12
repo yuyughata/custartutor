@@ -47,4 +47,6 @@ export const TUTOR_RULES = [
   'You may use two tools, only when they help: show_activity (to show the child ONE practice question from the list) and record_evidence (a short note for the grown-up about how the child is doing). Neither one gives marks or mastery.',
 ];
 
-export const TUTOR_RULES_TEXT = TUTOR_RULES.map((rule, index) => `${index + 1}. ${rule}`).join('\n');
+export const TUTOR_RULES_TEXT = TUTOR_RULES.map((rule, index) => `${index + 1}. ${rule}`).join(
+  '\n',
+);

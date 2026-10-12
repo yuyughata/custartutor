@@ -38,11 +38,15 @@ export interface ClassifyResult {
 
 const fixedClock = (): Date => new Date(0);
 
-export async function classifyMessage(llm: LlmClient, input: ClassifyInput): Promise<ClassifyResult> {
+export async function classifyMessage(
+  llm: LlmClient,
+  input: ClassifyInput,
+): Promise<ClassifyResult> {
   const now = input.now ?? fixedClock;
   const turns = input.recentTurns.slice(-CLASSIFIER_CONTEXT_TURNS);
   const blocks = [`The child's stage: ${stageNote(input.stage)}.`];
-  if (turns.length > 0) blocks.push(`Earlier messages, oldest first:\n${fenceTurns('earlier', turns)}`);
+  if (turns.length > 0)
+    blocks.push(`Earlier messages, oldest first:\n${fenceTurns('earlier', turns)}`);
   blocks.push(`The message to rate:\n${fenceData('child_message', input.redactedText)}`);
 
   const started = now().getTime();

@@ -35,8 +35,19 @@ function strip(text: string): string {
 describe('platform neutrality', () => {
   it('finds the shipped sources, the fakes, the llm adapter and the pipeline among them', () => {
     expect(shipped.length).toBeGreaterThan(30);
-    for (const part of ['/fakes/', '/llm/', '/pipeline/', '/safety/', '/redact/', '/lite/', '/stream/']) {
-      expect(shipped.some((file) => file.includes(part)), part).toBe(true);
+    for (const part of [
+      '/fakes/',
+      '/llm/',
+      '/pipeline/',
+      '/safety/',
+      '/redact/',
+      '/lite/',
+      '/stream/',
+    ]) {
+      expect(
+        shipped.some((file) => file.includes(part)),
+        part,
+      ).toBe(true);
     }
   });
 
@@ -76,7 +87,12 @@ describe('platform neutrality', () => {
     for (const file of shipped) {
       const text = strip(readFileSync(file, 'utf8'));
       const allowed = file.includes('/fakes/')
-        ? ['zod', '@custar/content-schema', '@custar/content-schema/fixtures', '@custar/authoring-core']
+        ? [
+            'zod',
+            '@custar/content-schema',
+            '@custar/content-schema/fixtures',
+            '@custar/authoring-core',
+          ]
         : ['zod', '@custar/content-schema', '@custar/authoring-core'];
       for (const match of text.matchAll(bare)) {
         expect(allowed, `${relative(SRC, file)} imports ${match[1]}`).toContain(match[1]);

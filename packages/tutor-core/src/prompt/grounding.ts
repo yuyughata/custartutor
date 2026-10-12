@@ -80,7 +80,8 @@ export function buildGrounding(unit: UnitContent, options: GroundingOptions): Tu
   const order: string[] = [];
   for (const section of sections) {
     for (const block of section.blocks) {
-      if (block.type === 'question' && !order.includes(block.question_id)) order.push(block.question_id);
+      if (block.type === 'question' && !order.includes(block.question_id))
+        order.push(block.question_id);
     }
   }
   for (const id of Object.keys(questions)) if (!order.includes(id)) order.push(id);
@@ -128,7 +129,9 @@ export function buildMasteryGuard(unit: UnitContent): string[][] {
     const question = questions[id];
     if (!question) continue;
     for (const group of answerGroups(question)) {
-      const cleaned = group.map((phrase) => stripInlineMarkup(phrase).trim()).filter((p) => p.length >= 3);
+      const cleaned = group
+        .map((phrase) => stripInlineMarkup(phrase).trim())
+        .filter((p) => p.length >= 3);
       if (cleaned.length > 0 && cleaned.length === group.length) groups.push(cleaned);
     }
   }

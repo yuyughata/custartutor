@@ -19,9 +19,15 @@ export function answerText(question: Question): string | null {
     case 'mcq':
       return clip(question.options[question.answer.correct_index] ?? '', MAX_ANSWER_CHARS) || null;
     case 'fill_blank':
-      return clip(question.answer.blanks.map((blank) => blank.accepted[0] ?? '').join('; '), MAX_ANSWER_CHARS);
+      return clip(
+        question.answer.blanks.map((blank) => blank.accepted[0] ?? '').join('; '),
+        MAX_ANSWER_CHARS,
+      );
     case 'match':
-      return clip(question.answer.pairs.map((pair) => `${pair.left} - ${pair.right}`).join('; '), MAX_ANSWER_CHARS);
+      return clip(
+        question.answer.pairs.map((pair) => `${pair.left} - ${pair.right}`).join('; '),
+        MAX_ANSWER_CHARS,
+      );
     case 'circle':
       return clip(question.answer.correct.join(', '), MAX_ANSWER_CHARS);
     case 'sort':

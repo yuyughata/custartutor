@@ -3,16 +3,18 @@ import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   LessonSession,
+  getChild,
   loadActiveLesson,
   releaseSuperseded,
   type LoadedLesson,
   type MasterySubmission,
 } from '@custar/learner-core';
-import { UnitView } from '@custar/lesson-renderer';
+import { questionSpeechText, sectionSpeechText, UnitView } from '@custar/lesson-renderer';
 import { palette, space } from '@custar/design-tokens';
 import { assetUri } from '../../../../platform/assetUri';
 import { useRuntime } from '../../../../runtime/RuntimeProvider';
 import { TutorLauncher } from '../../../../tutor/TutorLauncher';
+import { SpeakerButton } from '../../../../voice/SpeakerButton';
 import { Body, Button, Card, ErrorText, Screen, Title, TopBar } from '../../../../ui';
 
 /**
@@ -32,6 +34,7 @@ export default function Player() {
   // The last question the child answered: tells the tutor where in the lesson the child is.
   const [lastQuestionId, setLastQuestionId] = useState<string | null>(null);
   const session = useRef<LessonSession | null>(null);
+  const [readingMode, setReadingMode] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -60,6 +63,16 @@ export default function Player() {
       void releaseSuperseded(runtime.ports, unitId).catch(() => undefined);
     };
   }, [runtime, unitId, childId]);
+
+  useEffect(() => {
+    let alive = true;
+    void getChild(runtime.ports.db, childId)
+      .then((row) => alive && setReadingMode(row?.reading_mode ?? null))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [runtime, childId]);
 
   async function finish() {
     if (!session.current) return;
@@ -136,6 +149,16 @@ export default function Player() {
           const path = lesson.assetPath(assetId);
           return path && runtime.mode === 'live' ? assetUri(path) : undefined;
         }}
+        largeTargets={readingMode === 'pre_reader'}
+        renderSectionExtras={(section) => (
+          <SpeakerButton
+            text={sectionSpeechText(section, lesson.unit.questions)}
+            readingMode={readingMode}
+          />
+        )}
+        renderQuestionExtras={(question) => (
+          <SpeakerButton text={questionSpeechText(question)} readingMode={readingMode} />
+        )}
         onQuestionResult={(_result, response, question) => {
           setLastQuestionId(question.id);
           void session.current

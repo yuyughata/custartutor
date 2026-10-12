@@ -46,7 +46,11 @@ export function runTutorTurn(deps: TutorTurnDeps, input: TutorTurnRunInput): Tut
   return { events: queue, outcome };
 }
 
-async function execute(deps: TutorTurnDeps, input: TutorTurnRunInput, emit: Emit): Promise<TutorTurnOutcome> {
+async function execute(
+  deps: TutorTurnDeps,
+  input: TutorTurnRunInput,
+  emit: Emit,
+): Promise<TutorTurnOutcome> {
   let state: TurnState | null = null;
   try {
     state = newState(prepareTurn(input));
@@ -76,11 +80,17 @@ function isTruncation(stopReason: string | null): boolean {
   return stopReason === 'max_tokens' || stopReason === 'model_context_window_exceeded';
 }
 
-async function drive(deps: TutorTurnDeps, input: TutorTurnRunInput, state: TurnState, emit: Emit): Promise<void> {
+async function drive(
+  deps: TutorTurnDeps,
+  input: TutorTurnRunInput,
+  state: TurnState,
+  emit: Emit,
+): Promise<void> {
   const { settings, now } = deps;
   const prepared = state.prepared;
   const messageId = input.ids?.message_id ?? NIL_UUID;
-  if (input.ids) emit({ type: 'meta', session_id: input.ids.session_id, message_id: input.ids.message_id });
+  if (input.ids)
+    emit({ type: 'meta', session_id: input.ids.session_id, message_id: input.ids.message_id });
   const finish = (): void => emit({ type: 'done', message_id: messageId });
 
   const fail = (retryable: boolean): void => {
@@ -99,7 +109,10 @@ async function drive(deps: TutorTurnDeps, input: TutorTurnRunInput, state: TurnS
     state.status = decision.action === 'safe_reply' ? 'safe_reply' : 'blocked';
     finish();
   };
-  const replace = (reason: 'safety' | 'filter', text = fixedReplyText(settings, 'redirect')): void => {
+  const replace = (
+    reason: 'safety' | 'filter',
+    text = fixedReplyText(settings, 'redirect'),
+  ): void => {
     emit({ type: 'replace', text, reason });
     state.reply = text;
     state.status = 'replaced';
@@ -155,7 +168,11 @@ async function drive(deps: TutorTurnDeps, input: TutorTurnRunInput, state: TurnS
   });
   state.decision = decision;
 
-  if (decision.action === 'safe_reply' || decision.action === 'blocked' || decision.action === 'redirect') {
+  if (
+    decision.action === 'safe_reply' ||
+    decision.action === 'blocked' ||
+    decision.action === 'redirect'
+  ) {
     run.abort();
     await run.settled;
     takeUsage(run);
@@ -164,7 +181,8 @@ async function drive(deps: TutorTurnDeps, input: TutorTurnRunInput, state: TurnS
   if (decision.action !== 'allow') emit({ type: 'safety', action: decision.action });
 
   // The steer note and the privacy reminder are per-turn instructions the first call did not have: ask again.
-  const verdictShared = classified.verdict !== null && classified.verdict.personal_info_shared !== 'none';
+  const verdictShared =
+    classified.verdict !== null && classified.verdict.personal_info_shared !== 'none';
   const needSteer = decision.action === 'steer';
   const needRemind = !remind && verdictShared;
   if (needSteer || needRemind) {
@@ -177,7 +195,10 @@ async function drive(deps: TutorTurnDeps, input: TutorTurnRunInput, state: TurnS
 
   // 5. release the held tokens through the stream sanitiser
   const sanitizeOptions: SanitizeOptions = {
-    maxChars: Math.min(maxReplyChars(prepared.child.stage, prepared.child.reading_mode), settings.max_reply_tokens * 4),
+    maxChars: Math.min(
+      maxReplyChars(prepared.child.stage, prepared.child.reading_mode),
+      settings.max_reply_tokens * 4,
+    ),
     knownNames: prepared.knownNames,
     castNames: input.cast.map((member) => member.name),
     protectedText: [TUTOR_RULES_TEXT],
@@ -256,6 +277,7 @@ async function drive(deps: TutorTurnDeps, input: TutorTurnRunInput, state: TurnS
   const tools = validateToolCalls(calls, input.grounding, prepared.knownNames);
   state.showActivity = tools.show_activity;
   state.evidence = tools.evidence;
-  if (tools.show_activity) emit({ type: 'tool', name: 'show_activity', input: tools.show_activity });
+  if (tools.show_activity)
+    emit({ type: 'tool', name: 'show_activity', input: tools.show_activity });
   finish();
 }

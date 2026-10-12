@@ -43,7 +43,10 @@ export function validateToolCalls(
       if (practice.has(id) && !mastery.has(id)) result.show_activity = { question_id: id };
     } else if (call.name === 'record_evidence') {
       if (result.evidence.length >= MAX_EVIDENCE_PER_TURN) continue;
-      const raw = typeof call.input === 'object' && call.input !== null ? (call.input as Record<string, unknown>) : null;
+      const raw =
+        typeof call.input === 'object' && call.input !== null
+          ? (call.input as Record<string, unknown>)
+          : null;
       if (raw === null || typeof raw['note'] !== 'string') continue;
       const note = cut(redactPii(raw['note'], { knownNames }).text, 200);
       const question = Id.safeParse(raw['question_id']);

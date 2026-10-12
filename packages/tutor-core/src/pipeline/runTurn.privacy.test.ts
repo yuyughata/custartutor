@@ -30,7 +30,9 @@ describe('raw child text never leaves the pipeline', () => {
     for (const secret of ['Testa', 'Sample', '08000000000', '0800 000 0000', RAW]) {
       expect(everything, secret).not.toContain(secret);
     }
-    expect(outcome.child_text_redacted).toBe('my name is [name] and call me on [phone] where do we cook');
+    expect(outcome.child_text_redacted).toBe(
+      'my name is [name] and call me on [phone] where do we cook',
+    );
     expect(outcome.redaction_count).toBe(2);
     expect(rig.tutor.requests[0]?.messages.at(-1)?.content).toBe(outcome.child_text_redacted);
   });
@@ -51,7 +53,9 @@ describe('raw child text never leaves the pipeline', () => {
   it('keeps the pipeline from sending the redaction kinds anywhere but the count', async () => {
     const rig = makeRig({ tutorScript: [replyTurn('Hello.')] });
     script(rig, verdict());
-    const { events } = await collect(runTutorTurn(rig.deps, makeInput({ message: { mode: 'text', text: RAW } })));
+    const { events } = await collect(
+      runTutorTurn(rig.deps, makeInput({ message: { mode: 'text', text: RAW } })),
+    );
     expect(JSON.stringify(events)).not.toContain('phone');
   });
 });
@@ -99,6 +103,10 @@ describe('variants and history', () => {
       ['tutor:output_check', 'moderation'],
     ]);
     expect(outcome.usage.every((u) => u.duration_ms > 0)).toBe(true);
-    expect(outcome.usage[1]).toMatchObject({ input_tokens: 200, cache_read_tokens: 150, stop_reason: 'end_turn' });
+    expect(outcome.usage[1]).toMatchObject({
+      input_tokens: 200,
+      cache_read_tokens: 150,
+      stop_reason: 'end_turn',
+    });
   });
 });

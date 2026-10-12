@@ -63,6 +63,7 @@ const TEXT_SPEAK: Record<string, string> = {
   wont: 'will not',
   im: 'i am',
   ive: 'i have',
+  id: 'i would',
   isnt: 'is not',
   arent: 'are not',
   didnt: 'did not',
@@ -100,9 +101,12 @@ function toWords(text: string, speak = true): string[] {
     .filter((token) => token !== '');
   for (const token of tokens) {
     // symbols between letters stand for letters ("k!ll", "su1c@de"); anywhere else they are punctuation
-    const inner = token.replace(/([a-z])([@$!|+])(?=[a-z])/g, (_all, left: string, symbol: string) => {
-      return `${left}${LEET[symbol] ?? ''}`;
-    });
+    const inner = token.replace(
+      /([a-z])([@$!|+])(?=[a-z])/g,
+      (_all, left: string, symbol: string) => {
+        return `${left}${LEET[symbol] ?? ''}`;
+      },
+    );
     for (const piece of inner.split(/[^a-z0-9]+/)) {
       if (piece === '') continue;
       for (const word of flattenPiece(piece, speak).split(' ')) if (word !== '') words.push(word);

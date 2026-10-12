@@ -64,7 +64,8 @@ describe('createStreamSanitizer', () => {
   });
 
   it('never splits a link or a number across two releases', () => {
-    const reply = 'Visit https://example.com/some/long/path today. Then call 0800 000 0000 now. Bye.';
+    const reply =
+      'Visit https://example.com/some/long/path today. Then call 0800 000 0000 now. Bye.';
     const next = lcg(11);
     for (let i = 0; i < 40; i += 1) {
       const result = run(chunked(reply, next));
@@ -98,7 +99,12 @@ describe('createStreamSanitizer', () => {
   it('stops at the length limit, on a sentence end', () => {
     const sanitizer = createStreamSanitizer({ maxChars: 60 });
     const out: string[] = [];
-    for (const sentence of ['This is one. ', 'This is two. ', 'This is three. ', 'This is four. ']) {
+    for (const sentence of [
+      'This is one. ',
+      'This is two. ',
+      'This is three. ',
+      'This is four. ',
+    ]) {
       const step = sanitizer.push(sentence);
       out.push(step.text);
       if (step.done) break;

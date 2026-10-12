@@ -182,7 +182,10 @@ function classify(run: RawRun): DigitRunKind | null {
   if (total >= 14) return 'number';
 
   // A block of six or more digits in a row: account numbers, BVN, one-time codes, ids.
-  const longest = run.groups.reduce((best, group) => (group.length > best.length ? group : best), '');
+  const longest = run.groups.reduce(
+    (best, group) => (group.length > best.length ? group : best),
+    '',
+  );
   if (longest.length >= 6 && !isRoundNumber(longest)) return 'number';
   return null;
 }

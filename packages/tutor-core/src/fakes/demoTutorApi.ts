@@ -6,11 +6,7 @@
 import { DEFAULT_CAST } from '@custar/authoring-core';
 import type { CastMember } from '@custar/authoring-core';
 import type { UnitContent } from '@custar/content-schema';
-import {
-  CURRENT_TUTOR_CONSENT_VERSION,
-  DEFAULT_TUTOR_SETTINGS,
-  TutorApiError,
-} from '../contract';
+import { CURRENT_TUTOR_CONSENT_VERSION, DEFAULT_TUTOR_SETTINGS, TutorApiError } from '../contract';
 import type {
   TutorApi,
   TutorChatRequest,
@@ -66,7 +62,12 @@ interface Session {
 }
 
 export const WITHHELD_PLACEHOLDER = 'This message is being looked at by a reviewer.';
-const DEFAULT_CHILD: TutorTurnInput['child'] = { alias: 'Friend', level_code: 'P1', stage: 'absorb', reading_mode: 'pre_reader' };
+const DEFAULT_CHILD: TutorTurnInput['child'] = {
+  alias: 'Friend',
+  level_code: 'P1',
+  stage: 'absorb',
+  reading_mode: 'pre_reader',
+};
 
 export function createDemoTutorApi(options: DemoTutorOptions): DemoTutorApi {
   const now = options.now ?? (() => new Date(0));
@@ -76,10 +77,12 @@ export function createDemoTutorApi(options: DemoTutorOptions): DemoTutorApi {
   const turns = new Map<string, TutorTurnResult>();
   const daily = new Map<string, number>();
   let counter = 0;
-  const uuid = (): string => `00000000-0000-4000-8000-${(counter += 1).toString(16).padStart(12, '0')}`;
+  const uuid = (): string =>
+    `00000000-0000-4000-8000-${(counter += 1).toString(16).padStart(12, '0')}`;
   const elevated = (): boolean =>
     typeof options.elevated === 'function' ? options.elevated() : (options.elevated ?? true);
-  const granted = (childId: string): boolean => consent.get(childId) ?? options.initialConsent ?? false;
+  const granted = (childId: string): boolean =>
+    consent.get(childId) ?? options.initialConsent ?? false;
 
   return {
     isDemo: true,
@@ -94,12 +97,17 @@ export function createDemoTutorApi(options: DemoTutorOptions): DemoTutorApi {
     },
 
     setConsent(childId: string, action: 'grant' | 'withdraw'): Promise<void> {
-      if (action === 'grant' && !elevated()) return Promise.reject(new TutorApiError('elevation_required'));
+      if (action === 'grant' && !elevated())
+        return Promise.reject(new TutorApiError('elevation_required'));
       consent.set(childId, action === 'grant');
       return Promise.resolve();
     },
 
-    async sendTurn(request: TutorChatRequest, onEvent: (event: TutorStreamEvent) => void, signal?: AbortSignal): Promise<TutorTurnResult> {
+    async sendTurn(
+      request: TutorChatRequest,
+      onEvent: (event: TutorStreamEvent) => void,
+      signal?: AbortSignal,
+    ): Promise<TutorTurnResult> {
       const stored = turns.get(`${request.child_id}:${request.client_turn_id}`);
       if (stored) {
         if (stored.reply !== null) onEvent({ type: 'delta', text: stored.reply });
@@ -109,7 +117,8 @@ export function createDemoTutorApi(options: DemoTutorOptions): DemoTutorApi {
       if (!settings.enabled) throw new TutorApiError('tutor_disabled');
       if (!granted(request.child_id)) throw new TutorApiError('consent_required');
       const day = `${request.child_id}:${now().toISOString().slice(0, 10)}`;
-      if ((daily.get(day) ?? 0) >= settings.daily_turns_per_child) throw new TutorApiError('daily_limit');
+      if ((daily.get(day) ?? 0) >= settings.daily_turns_per_child)
+        throw new TutorApiError('daily_limit');
       const found = await options.getUnit(request.unit_id, request.version_no);
       if (!found) throw new TutorApiError('unit_not_found');
 
@@ -151,7 +160,9 @@ export function createDemoTutorApi(options: DemoTutorOptions): DemoTutorApi {
             ...(request.section_id ? { section_id: request.section_id } : {}),
             ...(request.question_id ? { question_id: request.question_id } : {}),
           },
-          history: session.messages.filter((m) => !m.withheld).map((m) => ({ role: m.role, text: m.text })),
+          history: session.messages
+            .filter((m) => !m.withheld)
+            .map((m) => ({ role: m.role, text: m.text })),
           message: { mode: request.input.mode, text: request.input.text },
           helper_present: request.helper_present,
           cast: options.cast ?? DEFAULT_CAST,
@@ -168,8 +179,20 @@ export function createDemoTutorApi(options: DemoTutorOptions): DemoTutorApi {
 
       const at = now().toISOString();
       const withheld = outcome.safety.withhold_from_guardian;
-      session.messages.push({ id: uuid(), role: 'child', text: outcome.child_text_redacted, created_at: at, withheld });
-      session.messages.push({ id: messageId, role: 'tutor', text: outcome.reply_text ?? '', created_at: at, withheld });
+      session.messages.push({
+        id: uuid(),
+        role: 'child',
+        text: outcome.child_text_redacted,
+        created_at: at,
+        withheld,
+      });
+      session.messages.push({
+        id: messageId,
+        role: 'tutor',
+        text: outcome.reply_text ?? '',
+        created_at: at,
+        withheld,
+      });
       session.tutorReplies += 1;
       const result: TutorTurnResult = {
         session_id: session.id,

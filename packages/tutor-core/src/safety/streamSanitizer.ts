@@ -53,7 +53,7 @@ function releasePoint(pending: string): number {
   while (end > 0) {
     const before = pending.lastIndexOf(' ', end - 1);
     const word = pending.slice(before + 1, end);
-    if (before > 0 && /^[\d().+\-]+$/.test(word)) end = before;
+    if (before > 0 && /^[\d().+-]+$/.test(word)) end = before;
     else break;
   }
   return end > 0 ? end + 1 : 0;

@@ -87,9 +87,16 @@ export function makeRig(options: RigOptions = {}): Rig {
 }
 
 /** Scripts the classifier (and the output check, approving by default). */
-export function script(rig: Rig, verdictValue: ModerationVerdict | Error, check: { ok: boolean } | Error = { ok: true }): void {
+export function script(
+  rig: Rig,
+  verdictValue: ModerationVerdict | Error,
+  check: { ok: boolean } | Error = { ok: true },
+): void {
   rig.llm.on(CLASSIFIER_LABEL, verdictValue);
-  rig.llm.on(OUTPUT_CHECK_LABEL, check instanceof Error ? check : { ok: check.ok, reason: check.ok ? 'none' : 'unsafe_content' });
+  rig.llm.on(
+    OUTPUT_CHECK_LABEL,
+    check instanceof Error ? check : { ok: check.ok, reason: check.ok ? 'none' : 'unsafe_content' },
+  );
 }
 
 export interface Collected {

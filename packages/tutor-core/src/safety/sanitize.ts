@@ -31,7 +31,8 @@ export interface SanitizeResult {
 
 function fixesFor(input: string, cleaned: string): SanitizeResult['fixes'] {
   const fixes: SanitizeResult['fixes'] = [];
-  if (/[*_`#>]|<\/?[a-z]|&[a-z]+;|\]\(/i.test(input) && !sameText(input, cleaned)) fixes.push('markup');
+  if (/[*_`#>]|<\/?[a-z]|&[a-z]+;|\]\(/i.test(input) && !sameText(input, cleaned))
+    fixes.push('markup');
   if (/https?:|www\.|\.(?:com|ng|org|net)\b/i.test(input)) fixes.push('link');
   if (/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(input)) fixes.push('emoji');
   return fixes;

@@ -38,7 +38,9 @@ export const SCRIPTED_USAGE: LlmUsage = {
   cache_creation_tokens: 0,
 };
 
-export function doneStep(options: { usage?: Partial<LlmUsage>; model?: string; stopReason?: string } = {}): TutorLlmEvent {
+export function doneStep(
+  options: { usage?: Partial<LlmUsage>; model?: string; stopReason?: string } = {},
+): TutorLlmEvent {
   return {
     type: 'done',
     usage: { ...SCRIPTED_USAGE, ...options.usage },
@@ -59,12 +61,20 @@ export function textSteps(text: string, chunkSize = 7): TutorLlmEvent[] {
 /** A normal reply: the text, optional tool calls, then `done`. */
 export function replyTurn(
   text: string,
-  options: { tools?: Array<{ name: string; input: unknown }>; stopReason?: string; usage?: Partial<LlmUsage> } = {},
+  options: {
+    tools?: Array<{ name: string; input: unknown }>;
+    stopReason?: string;
+    usage?: Partial<LlmUsage>;
+  } = {},
 ): TutorScriptTurn {
   return {
     steps: [
       ...textSteps(text),
-      ...(options.tools ?? []).map((tool): TutorLlmEvent => ({ type: 'tool', name: tool.name, input: tool.input })),
+      ...(options.tools ?? []).map((tool): TutorLlmEvent => ({
+        type: 'tool',
+        name: tool.name,
+        input: tool.input,
+      })),
       doneStep({
         ...(options.stopReason ? { stopReason: options.stopReason } : {}),
         ...(options.usage ? { usage: options.usage } : {}),
@@ -91,7 +101,8 @@ export function refusalTurn(prefix = ''): TutorScriptTurn {
   };
 }
 
-export type TutorScript = TutorScriptTurn[] | ((request: TutorLlmRequest, index: number) => TutorScriptTurn);
+export type TutorScript =
+  TutorScriptTurn[] | ((request: TutorLlmRequest, index: number) => TutorScriptTurn);
 
 export class ScriptedTutorLlm implements TutorLlm {
   /** Every request received, in order. */
@@ -105,9 +116,12 @@ export class ScriptedTutorLlm implements TutorLlm {
   stream(request: TutorLlmRequest): AsyncIterable<TutorLlmEvent> {
     const index = this.requests.length;
     this.requests.push(request);
-    const turn = typeof this.script === 'function' ? this.script(request, index) : this.script[index];
+    const turn =
+      typeof this.script === 'function' ? this.script(request, index) : this.script[index];
     if (!turn) {
-      throw new Error(`ScriptedTutorLlm: nothing scripted for call ${index + 1} ("${request.label}")`);
+      throw new Error(
+        `ScriptedTutorLlm: nothing scripted for call ${index + 1} ("${request.label}")`,
+      );
     }
     const markAborted = (): LlmError => {
       this.aborted += 1;

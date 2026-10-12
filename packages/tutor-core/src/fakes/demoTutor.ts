@@ -15,19 +15,31 @@ import { SCRIPTED_USAGE, doneStep, textSteps } from './scriptedTutorLlm';
 export const DEMO_TUTOR_MODEL_ID = 'demo-scripted-tutor';
 export const DEMO_REPLY_PREFIX = 'Demo tutor (not Claude):';
 
-const NO_USAGE = { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_creation_tokens: 0 };
+const NO_USAGE = {
+  input_tokens: 0,
+  output_tokens: 0,
+  cache_read_tokens: 0,
+  cache_creation_tokens: 0,
+};
 
 function firstSentence(text: string, max: number): string {
   const sentence = /^[^.!?]*[.!?]?/.exec(text.trim())?.[0] ?? text;
-  const cut = sentence.length > max ? `${sentence.slice(0, max).replace(/\s+\S*$/, '')}.` : sentence;
+  const cut =
+    sentence.length > max ? `${sentence.slice(0, max).replace(/\s+\S*$/, '')}.` : sentence;
   return cut.trim();
 }
 
 /** The lines of the tutor script of a section (or of the first section that has one). */
-export function demoLines(unit: UnitContent, sectionId?: string): { say: string[]; hint: string[] } {
+export function demoLines(
+  unit: UnitContent,
+  sectionId?: string,
+): { say: string[]; hint: string[] } {
   const scripts = sectionsOf(unit).filter((section) => section.tutor_script !== undefined);
   const chosen = scripts.find((section) => section.id === sectionId) ?? scripts[0];
-  const nodes = chosen?.tutor_script?.nodes ?? ('tutor_script' in unit ? unit.tutor_script?.nodes : undefined) ?? [];
+  const nodes =
+    chosen?.tutor_script?.nodes ??
+    ('tutor_script' in unit ? unit.tutor_script?.nodes : undefined) ??
+    [];
   return {
     say: nodes.map((node) => node.say),
     hint: nodes.flatMap((node) => node.hint),
@@ -48,7 +60,8 @@ export function demoReplyText(input: DemoReplyInput): string {
   let body: string;
   if (wantsHint && hint.length > 0) body = hint[input.turnIndex % hint.length] as string;
   else if (say.length > 0) body = say[input.turnIndex % say.length] as string;
-  else body = `We are learning this: ${firstSentence(input.unit.header.objective, 140)} What do you think?`;
+  else
+    body = `We are learning this: ${firstSentence(input.unit.header.objective, 140)} What do you think?`;
   return `${DEMO_REPLY_PREFIX} ${body.replace(/\*\*/g, '')}`;
 }
 
@@ -95,7 +108,8 @@ export function createDemoModerationLlm(rawText: string): LlmClient {
   const verdict = demoVerdict(demoHits(rawText));
   return {
     async generate<T>(request: LlmRequest<T>): Promise<LlmResult<T>> {
-      const raw = request.schemaName === 'ModerationVerdict' ? verdict : { ok: true, reason: 'none' };
+      const raw =
+        request.schemaName === 'ModerationVerdict' ? verdict : { ok: true, reason: 'none' };
       return {
         value: request.schema.parse(raw),
         usage: NO_USAGE,

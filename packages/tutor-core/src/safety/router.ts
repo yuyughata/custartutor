@@ -171,4 +171,3 @@ export function fixedReplyKey(decision: SafetyDecision): SafeReplyKey | null {
       return null;
   }
 }
-

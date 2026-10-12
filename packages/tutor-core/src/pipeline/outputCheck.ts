@@ -67,7 +67,10 @@ export interface OutputCheckOutcome {
 
 const fixedClock = (): Date => new Date(0);
 
-export async function checkOutput(llm: LlmClient, input: OutputCheckInput): Promise<OutputCheckOutcome> {
+export async function checkOutput(
+  llm: LlmClient,
+  input: OutputCheckInput,
+): Promise<OutputCheckOutcome> {
   const now = input.now ?? fixedClock;
   const mastery =
     input.masteryPrompts.length === 0

@@ -36,7 +36,6 @@ export const LITE_COPY = {
   finished: 'You finished this part.',
   again: 'Start this part again',
   welcomeBack: 'Welcome back! Let us carry on.',
-  hintsOut: 'There are no more hints for this one.',
 } as const;
 
 /** Quick replies for children who cannot read or type yet (live chat). Plain statements the tutor can answer. */

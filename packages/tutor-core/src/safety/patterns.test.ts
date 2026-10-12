@@ -57,7 +57,14 @@ describe('every definition', () => {
 
   it('marks explicit intent and ongoing harm as high', () => {
     const high = new Set(SAFETY_PATTERN_DEFS.filter((d) => d.severity === 'high').map((d) => d.id));
-    for (const id of ['sh_intent', 'sh_will', 'sh_not_live', 'ab_someone', 'ab_carer', 'ab_pidgin']) {
+    for (const id of [
+      'sh_intent',
+      'sh_will',
+      'sh_not_live',
+      'ab_someone',
+      'ab_carer',
+      'ab_pidgin',
+    ]) {
       expect(high.has(id), id).toBe(true);
     }
   });
@@ -92,7 +99,8 @@ describe('detectSafetyPatterns', () => {
   });
 
   it('finds a hit that is buried in a longer message', () => {
-    const text = 'hello teacher, we did the kitchen today. sometimes i feel i wan die. what is next?';
+    const text =
+      'hello teacher, we did the kitchen today. sometimes i feel i wan die. what is next?';
     expect(detectSafetyPatterns(text).map((hit) => hit.id)).toContain('sh_intent');
   });
 
