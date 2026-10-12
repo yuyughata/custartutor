@@ -42,7 +42,9 @@ const result = await build({
 
 const next = result.outputFiles[0].text;
 
-const forbidden = /\bfrom\s*["'](?:node:|npm:|@anthropic-ai\/)|\brequire\(|\bprocess\.env\b/.exec(next);
+const forbidden = /\bfrom\s*["'](?:node:|npm:|@anthropic-ai\/)|\brequire\(|\bprocess\.env\b/.exec(
+  next,
+);
 if (forbidden) {
   console.error(`The bundle is not platform neutral (found "${forbidden[0]}").`);
   process.exit(1);

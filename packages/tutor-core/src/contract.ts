@@ -346,6 +346,13 @@ export interface TutorTurnInput {
   cast: CastMember[];
   /** Names that must never leave the server (guardian-supplied real names), replaced if they appear. */
   known_names?: string[];
+  /**
+   * The ids of the session and of the tutor message being written. When present the pipeline emits `meta` first
+   * and puts the message id on `done`; when absent it emits `done` with the nil UUID and no `meta`.
+   */
+  ids?: { session_id: string; message_id: string };
+  /** Mastery-check answers for the reply sanitiser (`buildMasteryGuard(unit)`). Never sent to a model. */
+  mastery_guard?: readonly (readonly string[])[];
 }
 
 export interface TutorTurnOutcome {

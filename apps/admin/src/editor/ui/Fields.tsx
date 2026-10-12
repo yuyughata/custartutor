@@ -2,16 +2,16 @@
 // beside it, numbers, choices, flags, lists of strings, the small toolbar of an item (move, duplicate, remove) and
 // the collapsible card. Each one reads its value from its parent (so only the field being typed in re-renders) and
 // writes through the editor's actions (so every change is one undo step and one autosave).
-import { createElement, memo, useContext, type ReactNode } from 'react';
+import { createElement, memo, useContext, useRef, useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
-import { NumberField, Toggle } from '../../ui/Fields';
+import { Toggle } from '../../ui/Fields';
 import { Select } from '../../ui/Select';
 import type { SelectOption } from '../../ui/selectTypes';
 import { Small } from '../../ui/Text';
 import { colors, radii, space } from '../../ui/theme';
-import { appendAt, moveItem, pathKey, removeAt, samePath, type Path } from '../path';
+import { appendAt, getAt, insertAt, moveItem, pathKey, removeAt, samePath, type Path } from '../path';
 import type { EditorIssue } from '../validate';
 import { IssuesContext, useActions, useEnv, useIssuesAt } from './context';
 import { TextEditor } from './TextEditor';
@@ -110,6 +110,8 @@ export interface TxtProps {
   hideLabel?: boolean;
   /** For a field that is not the author's to change here (ids, numbers set by the planner). */
   locked?: boolean;
+  /** An optional field: emptying the box removes it from the unit (an empty text would not parse). */
+  optional?: boolean;
 }
 
 export const Txt = memoPath(function Txt({
@@ -124,6 +126,7 @@ export const Txt = memoPath(function Txt({
   counts,
   hideLabel,
   locked,
+  optional,
 }: TxtProps): ReactNode {
   const actions = useActions();
   const env = useEnv();
@@ -133,7 +136,7 @@ export const Txt = memoPath(function Txt({
       <TextEditor
         label={label}
         value={value}
-        onChange={(next) => actions.setField(path, next)}
+        onChange={(next) => actions.setField(path, optional && next === '' ? undefined : next)}
         fieldKey={pathKey(path)}
         readOnly={env.readOnly || locked === true}
         invalid={issues.some((issue) => issue.severity === 'error')}
@@ -159,20 +162,40 @@ export interface NumProps {
   width?: number;
 }
 
+/**
+ * A number box. The text is kept as typed ("1." stays "1." while the person is still typing) and the number is
+ * written to the working copy as soon as the text is one; an empty box removes the value.
+ */
 export const Num = memoPath(function Num({ path, label, value, hint, locked, width }: NumProps): ReactNode {
   const actions = useActions();
   const env = useEnv();
   const issues = useIssuesAt(path);
+  const shown = typeof value === 'number' ? String(value) : '';
+  const [text, setText] = useState(shown);
+  const last = useRef(shown);
+  // The value changed from outside this box (undo, restore, a button): show it.
+  if (last.current !== shown) {
+    last.current = shown;
+    const typed = text.trim() === '' ? null : Number(text);
+    const typedValue = typed !== null && Number.isFinite(typed) ? String(typed) : '';
+    if (typedValue !== shown) setText(shown);
+  }
   return (
-    <View style={{ gap: space[1], ...(width ? { width } : {}) }} {...({ dataSet: { field: pathKey(path) } } as object)}>
-      <NumberField
+    <View style={{ gap: space[1], ...(width ? { width } : { minWidth: 110 }) }}>
+      <TextEditor
         label={label}
-        value={typeof value === 'number' ? value : null}
-        onNumber={(next) => actions.setField(path, next === null ? undefined : next)}
+        value={text}
+        fieldKey={pathKey(path)}
+        readOnly={env.readOnly || locked === true}
+        invalid={issues.some((issue) => issue.severity === 'error')}
+        onChange={(next) => {
+          setText(next);
+          const trimmed = next.trim();
+          if (trimmed === '') return actions.setField(path, undefined);
+          const parsed = Number(trimmed);
+          if (Number.isFinite(parsed)) actions.setField(path, parsed);
+        }}
         {...(hint ? { hint } : {})}
-        error={null}
-        allowDecimal
-        {...(env.readOnly || locked ? {} : {})}
       />
       <IssueLines issues={issues} />
     </View>
@@ -234,10 +257,10 @@ export interface BarProps {
   noun: string;
   canUp?: boolean;
   canDown?: boolean;
-  onUp?: () => void;
-  onDown?: () => void;
-  onDuplicate?: () => void;
-  onRemove?: () => void;
+  onUp?: (() => void) | undefined;
+  onDown?: (() => void) | undefined;
+  onDuplicate?: (() => void) | undefined;
+  onRemove?: (() => void) | undefined;
   /** Why the remove button is disabled (for example a published id). */
   removeBlockedReason?: string | null;
 }
@@ -443,6 +466,97 @@ export function Note({ children }: { children: ReactNode }): ReactNode {
   return (
     <View style={{ padding: space[3], borderRadius: radii.md, backgroundColor: colors.page, borderWidth: 1, borderColor: colors.border }}>
       <Small>{children}</Small>
+    </View>
+  );
+}
+
+// --- a list of structured items ----------------------------------------------------------------------------------------
+
+export interface RowsProps {
+  path: Path;
+  label?: string;
+  /** How one item is called in button names ("line", "step", "pair"). */
+  noun: string;
+  count: number;
+  min?: number;
+  max?: number;
+  /** What a new item looks like. */
+  blank: () => unknown;
+  /** The fields of one item. */
+  renderItem: (itemPath: Path, index: number) => ReactNode;
+  hint?: string;
+  addLabel?: string;
+  /** Why an item cannot be removed (for example a published id); null when it may. */
+  removeBlocked?: (index: number) => string | null;
+}
+
+/** Items made of several fields (a dialogue line, an activity step): each with its own move, duplicate and remove. */
+export function Rows({
+  path,
+  label,
+  noun,
+  count,
+  min = 1,
+  max = 99,
+  blank,
+  renderItem,
+  hint,
+  addLabel,
+  removeBlocked,
+}: RowsProps): ReactNode {
+  const actions = useActions();
+  const env = useEnv();
+  const issues = useIssuesAt(path);
+  const items = Array.from({ length: count }, (_, index) => index);
+  return (
+    <View style={{ gap: space[2] }} {...({ dataSet: { field: pathKey(path) } } as object)}>
+      {label ? <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSoft }}>{label}</Text> : null}
+      {hint ? <Small>{hint}</Small> : null}
+      <IssueLines issues={issues} />
+      {items.map((index) => (
+        <View
+          key={index}
+          style={{
+            gap: space[2],
+            padding: space[3],
+            borderRadius: radii.md,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.page,
+          }}
+        >
+          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.subtle }}>
+            {noun.charAt(0).toUpperCase() + noun.slice(1)} {index + 1}
+          </Text>
+          {renderItem([...path, index], index)}
+          <ItemBar
+            noun={`${noun} ${index + 1}`}
+            canUp={index > 0}
+            canDown={index < count - 1}
+            onUp={() => actions.commit((u) => moveItem(u, path, index, index - 1))}
+            onDown={() => actions.commit((u) => moveItem(u, path, index, index + 1))}
+            onDuplicate={
+              count < max
+                ? () =>
+                    actions.commit((u) => {
+                      const list = (getAt(u, path) as unknown[] | undefined) ?? [];
+                      return insertAt(u, path, index + 1, structuredClone(list[index]));
+                    })
+                : undefined
+            }
+            onRemove={count > min ? () => actions.commit((u) => removeAt(u, [...path, index])) : undefined}
+            removeBlockedReason={removeBlocked?.(index) ?? null}
+          />
+        </View>
+      ))}
+      {!env.readOnly ? (
+        <AddButton
+          label={addLabel ?? `Add ${noun}`}
+          disabled={count >= max}
+          reason={count >= max ? `At most ${max}.` : null}
+          onPress={() => actions.commit((u) => appendAt(u, path, blank()))}
+        />
+      ) : null}
     </View>
   );
 }

@@ -22475,6 +22475,7 @@ var TEXT_SPEAK = {
   wont: "will not",
   im: "i am",
   ive: "i have",
+  id: "i would",
   isnt: "is not",
   arent: "are not",
   didnt: "did not",
@@ -22545,8 +22546,8 @@ function normalizeViews(text) {
 // packages/tutor-core/src/safety/patternData.ts
 var WANT = "(want|wish|need|decided|ready|plan|planning|wan|going|about)";
 var END = "(die|kill myself|end my life|end it all|hurt myself|be dead|disappear)";
-var CARER = "(mum|mummy|dad|daddy|uncle|aunty|auntie|teacher|stepmother|stepfather|master|madam|oga|neighbour)";
-var HURT = "(hits|hit|beats|beat|slaps|slapped|hurts|hurt|punches|punched|locks|locked)";
+var CARER = "(mum|mummy|mom|mother|dad|daddy|father|papa|mama|stepmother|stepfather|stepmum|stepdad|uncle|aunty|auntie|grandma|grandmother|grandpa|grandfather|guardian|teacher|master|madam|oga|boss|neighbour|landlord|pastor|imam|driver|caretaker)";
+var HURT = "(hits|hit|hitting|beats|beat|beating|slaps|slapped|slapping|hurts|hurt|hurting|punches|punched|punching|locks|locked|locking)";
 var SAFETY_PATTERN_DEFS = [
   // --- self-harm -----------------------------------------------------------------------------------
   {
@@ -22560,7 +22561,7 @@ var SAFETY_PATTERN_DEFS = [
     id: "sh_will",
     category: "self_harm",
     severity: "high",
-    template: `i (will|might|may|could|go|shall) ${END}`,
+    template: `i (will|might|may|could|should|go|shall) ${END}`,
     examples: ["I will kill myself", "i go die"]
   },
   {
@@ -22640,6 +22641,48 @@ var SAFETY_PATTERN_DEFS = [
     template: "(everyone|everybody|they) (would be|will be) better [off] without me",
     examples: ["everyone would be better without me"]
   },
+  {
+    id: "sh_kill_me",
+    category: "self_harm",
+    severity: "medium",
+    template: "(please|just|someone|somebody) kill me",
+    examples: ["please kill me"]
+  },
+  {
+    id: "sh_other",
+    category: "self_harm",
+    severity: "medium",
+    template: "(he|she|they|my friend|my brother|my sister) (wants|want|wanted) to (die|kill himself|kill herself|kill themselves|hurt himself|hurt herself|hurt themselves)",
+    examples: ["my friend wants to hurt himself", "she wants to die"]
+  },
+  {
+    id: "sh_rather_dead",
+    category: "self_harm",
+    severity: "medium",
+    template: "i would rather (be dead|die|not be alive|not be here)",
+    examples: ["I'd rather be dead"]
+  },
+  {
+    id: "sh_done_with_life",
+    category: "self_harm",
+    severity: "medium",
+    template: "i am done with (life|everything|this life)",
+    examples: ["I am done with life"]
+  },
+  {
+    id: "sh_not_worth",
+    category: "self_harm",
+    severity: "medium",
+    template: "life is not worth ...",
+    examples: ["life is not worth living"]
+  },
+  {
+    id: "sh_sleep_forever",
+    category: "self_harm",
+    severity: "medium",
+    template: "i want to sleep forever",
+    examples: ["I want to sleep forever"]
+  },
   // --- abuse or neglect ----------------------------------------------------------------------------
   {
     id: "ab_someone",
@@ -22652,7 +22695,7 @@ var SAFETY_PATTERN_DEFS = [
     id: "ab_carer",
     category: "abuse_disclosure",
     severity: "high",
-    template: `my ${CARER} ${HURT} me`,
+    template: `my ${CARER} [is|was|always|keeps|keep|dey|dey always] ${HURT} me`,
     examples: ["my uncle beats me", "my teacher hit me"]
   },
   {
@@ -22673,7 +22716,7 @@ var SAFETY_PATTERN_DEFS = [
     id: "ab_touch",
     category: "abuse_disclosure",
     severity: "medium",
-    template: "(touched|touches) me",
+    template: "(touched|touches|touching) me",
     examples: ["he touched me"]
   },
   {
@@ -22731,6 +22774,20 @@ var SAFETY_PATTERN_DEFS = [
     severity: "medium",
     template: "(locked|lock) me (in|out|inside)",
     examples: ["they locked me out"]
+  },
+  {
+    id: "ab_he_hits",
+    category: "abuse_disclosure",
+    severity: "medium",
+    template: "(he|she|they|someone|somebody) (always|often|sometimes|keeps|keep) (hits|hit|hitting|beats|beat|beating|slaps|slap|slapping|punches|punching|hurts|hurt|hurting) me",
+    examples: ["he always hits me", "they keep beating me"]
+  },
+  {
+    id: "ab_not_eaten",
+    category: "abuse_disclosure",
+    severity: "low",
+    template: "i have not eaten (for|since) ...",
+    examples: ["I have not eaten for two days"]
   },
   // --- strong distress -----------------------------------------------------------------------------
   {
@@ -22809,6 +22866,13 @@ var SAFETY_PATTERN_DEFS = [
     severity: "low",
     template: "i want (my mummy|my mum|my daddy|to go home)",
     examples: ["I want my mummy"]
+  },
+  {
+    id: "di_hopeless",
+    category: "distress",
+    severity: "medium",
+    template: "i (am|feel) [so|very] (depressed|hopeless|worthless|useless)",
+    examples: ["I feel so worthless"]
   }
 ];
 
@@ -22823,6 +22887,14 @@ function literal2(text) {
   return collapseRepeats(text.trim()).replace(/[^a-z0-9 ]/g, (char) => `\\${char}`).replace(/ +/g, " ");
 }
 function compileTemplate(template) {
+  if (!/^[a-z0-9 ()[\]|.]+$/.test(template)) {
+    throw new Error(
+      `Safety template "${template}" may only hold a-z, 0-9, spaces and ( ) [ ] | ...`
+    );
+  }
+  if (/\([^)]*[([]|\[[^\]]*[([]/.test(template)) {
+    throw new Error(`Safety template "${template}" has a nested group, which is not supported`);
+  }
   let source = "";
   let index = 0;
   while (index < template.length) {
@@ -24006,10 +24078,11 @@ function unique(hits) {
   const seen = /* @__PURE__ */ new Set();
   return hits.filter((hit) => seen.has(hit.id) ? false : (seen.add(hit.id), true));
 }
+var MAX_RAW_CHARS = 1e3;
 function prepareTurn(input2) {
   const knownNames = [...input2.known_names ?? []];
-  const redaction = redactPii(input2.message.text, { knownNames });
-  const raw = input2.message.text;
+  const raw = input2.message.text.slice(0, MAX_RAW_CHARS);
+  const redaction = redactPii(raw, { knownNames });
   const safetyHits = unique([
     ...detectSafetyPatterns(raw),
     ...detectSafetyPatterns(redaction.text)

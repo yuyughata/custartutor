@@ -42,7 +42,9 @@ describe('hostile input cannot make the text layers slow or throw', () => {
     expect(time(() => detectSafetyPatterns(text))).toBeLessThan(400);
     expect(time(() => detectGuardPatterns(text))).toBeLessThan(400);
     expect(time(() => sanitizeReply(text))).toBeLessThan(400);
-    expect(time(() => prepareTurn(makeInput({ message: { mode: 'text', text } })))).toBeLessThan(800);
+    expect(time(() => prepareTurn(makeInput({ message: { mode: 'text', text } })))).toBeLessThan(
+      800,
+    );
   });
 
   it('a stream of one-character chunks stays cheap', () => {
@@ -57,7 +59,9 @@ describe('hostile input cannot make the text layers slow or throw', () => {
   });
 
   it('cuts a message that is far longer than the server allows before it reaches any layer', () => {
-    const prepared = prepareTurn(makeInput({ message: { mode: 'text', text: 'word '.repeat(5000) } }));
+    const prepared = prepareTurn(
+      makeInput({ message: { mode: 'text', text: 'word '.repeat(5000) } }),
+    );
     expect(prepared.childText.length).toBeLessThanOrEqual(MAX_RAW_CHARS);
   });
 });

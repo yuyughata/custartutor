@@ -9,15 +9,8 @@ import { detectGuardPatterns, detectSafetyPatterns } from '../safety/patterns';
 import type { SafetyHit } from '../safety/patterns';
 import { isUnclearMessage } from '../safety/unclear';
 
-export interface TutorTurnExtras {
-  /**
-   * The ids of the session and of the tutor message being written. When present the pipeline emits `meta` first
-   * and puts the message id on `done`; when absent it emits `done` with the nil UUID and no `meta`.
-   */
-  ids?: { session_id: string; message_id: string };
-  /** Mastery-check answers for the reply sanitiser (`buildMasteryGuard`). Never sent to a model. */
-  mastery_guard?: readonly (readonly string[])[];
-}
+/** The optional fields of `TutorTurnInput` the server fills in (see the contract). */
+export type TutorTurnExtras = Pick<TutorTurnInput, 'ids' | 'mastery_guard'>;
 
 export type TutorTurnRunInput = TutorTurnInput & TutorTurnExtras;
 
