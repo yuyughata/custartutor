@@ -47,9 +47,28 @@ allowed_mime_types = [
   "audio/wav",
 ]
 
+# Private bucket for uploaded schemes of work (M2 content engine): PDF, DOCX or plain text, 20 MiB. Objects live
+# under <auth.uid()>/...; the policies on storage.objects (content staff at aal2, own prefix only, insert/select
+# only) come from the m2_scheme_uploads_bucket migration. On the hosted project that migration creates the bucket
+# too; this block creates it for `supabase start`.
+[storage.buckets.scheme-uploads]
+public = false
+file_size_limit = "20MiB"
+allowed_mime_types = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+]
+
 # Edge functions. The platform verifies the JWT; each function also asks the database who the caller is.
 [functions.get-pack-download]
 verify_jwt = true
 
 [functions.publish-pack]
+verify_jwt = true
+
+# Content engine (M2): one request per job step (ADR 0007). The function checks the caller's role and aal2 itself
+# and uses the service role only for the ai_job_* lease/state/usage RPCs. Secrets: ANTHROPIC_API_KEY (Edge
+# Function secret) and, optionally, ALLOWED_ORIGINS (comma-separated browser origins of the admin app).
+[functions.ai-job]
 verify_jwt = true

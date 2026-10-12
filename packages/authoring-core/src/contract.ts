@@ -203,6 +203,20 @@ export const UsageRecord = z.object({
 });
 export type UsageRecord = z.infer<typeof UsageRecord>;
 
+/**
+ * The price entry for a model id: an exact match, else the longest entry whose key is a prefix of the id (the
+ * API may report a dated snapshot such as `claude-opus-5-5-20261001` for the alias `claude-opus-5-5`).
+ */
+export function priceFor(model: string, prices: AiSettings['prices']): Price | undefined {
+  const exact = prices[model];
+  if (exact) return exact;
+  let best: string | undefined;
+  for (const key of Object.keys(prices)) {
+    if (model.startsWith(key) && (best === undefined || key.length > best.length)) best = key;
+  }
+  return best === undefined ? undefined : prices[best];
+}
+
 /** Estimated US-dollar cost of one call, or null when the model has no price entered. */
 export function estimateCostUsd(
   usage: Pick<
@@ -211,7 +225,7 @@ export function estimateCostUsd(
   >,
   prices: AiSettings['prices'],
 ): number | null {
-  const price = prices[usage.model];
+  const price = priceFor(usage.model, prices);
   if (!price) return null;
   const mtok = 1_000_000;
   return (
@@ -552,12 +566,19 @@ export class StepError extends Error {
   readonly retryable: boolean;
   readonly retryAfterMs?: number;
   readonly step: string;
+  /** Model calls that were made and billed before the step failed (a refusal or a bad reply still costs tokens). */
+  readonly usage: UsageRecord[];
 
   constructor(
     step: string,
     code: StepErrorCode,
     message: string,
-    options: { retryable?: boolean; retryAfterMs?: number; cause?: unknown } = {},
+    options: {
+      retryable?: boolean;
+      retryAfterMs?: number;
+      cause?: unknown;
+      usage?: UsageRecord[];
+    } = {},
   ) {
     super(message, options.cause === undefined ? undefined : { cause: options.cause });
     this.name = 'StepError';
@@ -565,6 +586,7 @@ export class StepError extends Error {
     this.code = code;
     this.retryable = options.retryable ?? (code === 'transport' || code === 'aborted');
     if (options.retryAfterMs !== undefined) this.retryAfterMs = options.retryAfterMs;
+    this.usage = options.usage ?? [];
   }
 }
 

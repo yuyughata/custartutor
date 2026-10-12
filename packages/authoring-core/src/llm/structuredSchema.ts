@@ -12,6 +12,10 @@ import { LlmRequestError } from './errors';
 
 type Schema = Record<string, unknown>;
 
+// Converting a big schema is not free and an edge function has about 2 s of CPU per request; the engine
+// reuses the same schema objects for every call, so the result is kept per schema object.
+const converted = new WeakMap<object, Schema>();
+
 const SUPPORTED_STRING_FORMATS: ReadonlySet<string> = new Set([
   'date-time',
   'time',
@@ -30,6 +34,9 @@ const SUPPORTED_STRING_FORMATS: ReadonlySet<string> = new Set([
  * the schema cannot be expressed, naming `schemaName` and the JSON pointer of the offending node.
  */
 export function toStructuredJsonSchema(schema: z.ZodType, schemaName: string): Schema {
+  const cached = converted.get(schema);
+  if (cached) return cached;
+
   const fail = (path: string, why: string): never => {
     throw new LlmRequestError(
       `Schema "${schemaName}" cannot be sent as a structured output: ${path === '' ? '(root)' : path} ${why}`,
@@ -54,7 +61,9 @@ export function toStructuredJsonSchema(schema: z.ZodType, schemaName: string): S
     fail('', 'must be an object (wrap arrays and unions in an object with one property)');
   }
   assertAcyclic(root, fail);
-  return root;
+  const result = inlineRefs(root);
+  converted.set(schema, result);
+  return result;
 }
 
 type Fail = (path: string, why: string) => never;
@@ -76,7 +85,10 @@ function convertNode(node: unknown, path: string, fail: Fail): Schema {
   const defs = take('$defs');
   if (isRecord(defs)) {
     out['$defs'] = Object.fromEntries(
-      Object.entries(defs).map(([name, def]) => [name, convertNode(def, `${path}/$defs/${name}`, fail)]),
+      Object.entries(defs).map(([name, def]) => [
+        name,
+        convertNode(def, `${path}/$defs/${name}`, fail),
+      ]),
     );
   }
 
@@ -110,7 +122,8 @@ function convertNode(node: unknown, path: string, fail: Fail): Schema {
   if (Array.isArray(anyOf) && Array.isArray(oneOf)) return fail(path, 'has both anyOf and oneOf');
   const union = Array.isArray(anyOf) ? anyOf : Array.isArray(oneOf) ? oneOf : undefined;
   if (union) out['anyOf'] = union.map((v, i) => convertNode(v, `${path}/anyOf/${i}`, fail));
-  if (Array.isArray(allOf)) out['allOf'] = allOf.map((v, i) => convertNode(v, `${path}/allOf/${i}`, fail));
+  if (Array.isArray(allOf))
+    out['allOf'] = allOf.map((v, i) => convertNode(v, `${path}/allOf/${i}`, fail));
 
   const hasValueKeyword = 'enum' in rest || 'const' in rest;
   if (typeof type === 'string') {
@@ -138,7 +151,10 @@ function convertNode(node: unknown, path: string, fail: Fail): Schema {
       if (Array.isArray(required) && required.length > 0) out['required'] = required;
       const extra = take('additionalProperties');
       if (isRecord(extra) && Object.keys(extra).length > 0) {
-        return fail(path, 'allows arbitrary keys (z.record or catchall); use a fixed set of properties');
+        return fail(
+          path,
+          'allows arbitrary keys (z.record or catchall); use a fixed set of properties',
+        );
       }
       if (take('propertyNames') !== undefined) {
         return fail(path, 'allows arbitrary keys (z.record); use a fixed set of properties');
@@ -147,7 +163,8 @@ function convertNode(node: unknown, path: string, fail: Fail): Schema {
       break;
     }
     case 'array': {
-      if (take('prefixItems') !== undefined) return fail(path, 'is a tuple; use an array of objects');
+      if (take('prefixItems') !== undefined)
+        return fail(path, 'is a tuple; use an array of objects');
       const items = take('items');
       if (!isRecord(items)) return fail(path, 'is an array without an item schema');
       out['items'] = convertNode(items, `${path}/items`, fail);
@@ -169,7 +186,8 @@ function convertNode(node: unknown, path: string, fail: Fail): Schema {
       // Zod writes the safe-integer range on every `.int()`; it says nothing useful to the model.
       for (const key of ['minimum', 'maximum'] as const) {
         const bound = rest[key];
-        if (bound === Number.MAX_SAFE_INTEGER || bound === Number.MIN_SAFE_INTEGER) delete rest[key];
+        if (bound === Number.MAX_SAFE_INTEGER || bound === Number.MIN_SAFE_INTEGER)
+          delete rest[key];
       }
       break;
     }
@@ -214,7 +232,10 @@ function assertAcyclic(root: Schema, fail: Fail): void {
     refsIn(node).map((ref) => {
       const name = ref.startsWith(prefix) ? ref.slice(prefix.length) : undefined;
       if (name === undefined || !(name in defs)) {
-        return fail(where, `has a $ref (${ref}) that does not point into $defs (recursion is not supported)`);
+        return fail(
+          where,
+          `has a $ref (${ref}) that does not point into $defs (recursion is not supported)`,
+        );
       }
       return name;
     });
@@ -235,6 +256,70 @@ function assertAcyclic(root: Schema, fail: Fail): void {
   };
   for (const name of rootTargets) visit(name);
   for (const name of edges.keys()) visit(name);
+}
+
+const DEFS_PREFIX = '#/$defs/';
+/** A definition this small (and without further structure) reads better inline than behind a $ref. */
+const INLINE_LEAF_CHARS = 160;
+
+/**
+ * Zod's `reused: 'ref'` turns every shared sub-schema, down to `{ "type": "string" }`, into a numbered
+ * definition, which is noise for the model and for the API's schema compiler. Inline definitions that are used
+ * once or are tiny leaves; keep the genuinely shared structures. The schema is acyclic here (assertAcyclic).
+ */
+function inlineRefs(root: Schema): Schema {
+  const defs = root['$defs'];
+  if (!isRecord(defs)) return root;
+
+  const counts = new Map<string, number>();
+  const countIn = (node: unknown): void => {
+    if (Array.isArray(node)) node.forEach(countIn);
+    else if (isRecord(node)) {
+      for (const [key, value] of Object.entries(node)) {
+        if (key === '$ref' && typeof value === 'string') {
+          counts.set(value, (counts.get(value) ?? 0) + 1);
+        } else if (key !== '$defs') countIn(value);
+      }
+    }
+  };
+  countIn(root);
+  Object.values(defs).forEach(countIn);
+
+  const isLeaf = (def: unknown): boolean =>
+    isRecord(def) &&
+    !['$ref', 'properties', 'items', 'anyOf', 'allOf'].some((key) => key in def) &&
+    JSON.stringify(def).length <= INLINE_LEAF_CHARS;
+  const inline = new Set(
+    Object.entries(defs)
+      .filter(([name, def]) => (counts.get(`${DEFS_PREFIX}${name}`) ?? 0) <= 1 || isLeaf(def))
+      .map(([name]) => name),
+  );
+
+  const rewrite = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(rewrite);
+    if (!isRecord(node)) return node;
+    const ref = node['$ref'];
+    if (typeof ref === 'string' && ref.startsWith(DEFS_PREFIX)) {
+      const name = ref.slice(DEFS_PREFIX.length);
+      return inline.has(name) ? rewrite(defs[name]) : node;
+    }
+    return Object.fromEntries(
+      Object.entries(node)
+        .filter(([key]) => key !== '$defs')
+        .map(([key, value]) => [key, rewrite(value)]),
+    );
+  };
+
+  const { $defs: _defs, ...body } = root;
+  const kept = Object.entries(defs).filter(([name]) => !inline.has(name));
+  const result = rewrite(body) as Schema;
+  if (kept.length > 0) {
+    return {
+      $defs: Object.fromEntries(kept.map(([name, def]) => [name, rewrite(def)])),
+      ...result,
+    };
+  }
+  return result;
 }
 
 function isRecord(value: unknown): value is Schema {

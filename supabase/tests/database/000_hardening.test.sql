@@ -62,25 +62,28 @@ select is(
     where n.nspname = 'private'
       and has_function_privilege('authenticated', p.oid, 'EXECUTE')),
   array[
-    'accept_invite', 'authorize_pack_download', 'can_access_child', 'create_household',
-    'create_invite', 'elevate_grownup', 'end_grownup_elevation', 'get_grownup_pin_status',
-    'get_pack_source', 'grant_child_access', 'has_admin_role', 'has_grownup_elevation',
-    'ingest_progress_events', 'is_granted_tutor', 'is_household_member', 'member_display_name',
-    'publish_unit_version', 'remove_member', 'revoke_child_access', 'set_grownup_pin',
-    'set_pack_info', 'sync_pull'
+    'accept_invite', 'apply_chapter_plan', 'approve_scheme', 'authorize_pack_download',
+    'can_access_child', 'cancel_ai_job', 'create_ai_job', 'create_household', 'create_invite',
+    'create_unit_version_draft', 'elevate_grownup', 'end_grownup_elevation', 'get_ai_settings',
+    'get_ai_usage_summary', 'get_grownup_pin_status', 'get_pack_source', 'grant_child_access',
+    'has_admin_role', 'has_grownup_elevation', 'ingest_progress_events', 'is_granted_tutor',
+    'is_household_member', 'member_display_name', 'publish_unit_version', 'remove_member',
+    'revoke_child_access', 'save_scheme_draft', 'set_app_setting', 'set_grownup_pin',
+    'set_pack_info', 'set_unit_version_status', 'sync_pull'
   ]::name[],
   'authenticated can execute exactly the intended private helpers and RPC implementations'
 );
 
--- the service role (edge functions, CI jobs) resolves exactly one private function
+-- the service role (edge functions, CI jobs) resolves exactly the pack-info writer and the four ai_job_* RPCs
 select is(
   (select array_agg(p.proname order by p.proname)
      from pg_proc p
      join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'private'
       and has_function_privilege('service_role', p.oid, 'EXECUTE')),
-  array['set_pack_info']::name[],
-  'service_role can execute exactly one private function (set_pack_info)'
+  array['ai_job_acquire_lease', 'ai_job_budget_check', 'ai_job_complete_step', 'ai_job_fail_step',
+        'set_pack_info']::name[],
+  'service_role can execute exactly set_pack_info and the four ai_job_* functions'
 );
 
 select is(
@@ -179,11 +182,18 @@ select is(
   'core subject slugs match the plan'
 );
 
+-- M2 wrote the owner's facts (age, gender, pronouns) into the two traits objects; nothing else about the
+-- characters is known, so the voice stays empty and no relationship or personality has been invented
 select is(
   (select count(*)::int from public.characters
-    where slug in ('zari', 'zuri') and traits = '{}'::jsonb and voice = '{}'::jsonb),
+    where slug in ('zari', 'zuri')
+      and voice = '{}'::jsonb
+      and not (traits ? 'relationship_note')
+      and traits -> 'personality' = '[]'::jsonb
+      and (select bool_and(k in ('age_years', 'age_note', 'gender', 'pronouns', 'personality', 'derived_guidance'))
+             from jsonb_object_keys(traits) k)),
   2,
-  'Zari and Zuri are seeded as empty stubs (character bible pending)'
+  'Zari and Zuri carry only the owner''s facts: no relationship note, no personality, empty voice'
 );
 
 -- anon is rejected at the door ------------------------------------------------------------------------
