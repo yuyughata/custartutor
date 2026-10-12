@@ -53,13 +53,21 @@ describe('gradeMasteryCheck', () => {
   });
 
   it('passes with everything right', () => {
-    const outcome = gradeMasteryCheck(unit, responsesFor(unit, () => 'right'));
+    const outcome = gradeMasteryCheck(
+      unit,
+      responsesFor(unit, () => 'right'),
+    );
     expect(outcome).toMatchObject({ score: 1, passed: true, question_count: 3 });
     expect(outcome.items.every((item) => item.result === 'correct')).toBe(true);
   });
 
   it('fails with everything wrong, or nothing answered', () => {
-    expect(gradeMasteryCheck(unit, responsesFor(unit, () => 'wrong'))).toMatchObject({
+    expect(
+      gradeMasteryCheck(
+        unit,
+        responsesFor(unit, () => 'wrong'),
+      ),
+    ).toMatchObject({
       score: 0,
       passed: false,
     });
@@ -90,7 +98,8 @@ describe('gradeMasteryCheck', () => {
     };
     const outcome = gradeMasteryCheck(unit, responses);
     const people = outcome.items.find((item) => item.question_id === 'mc_people');
-    expect(people).toMatchObject({ result: 'partial', score: 0.6667 - 0.0000333333 });
+    expect(people?.result).toBe('partial');
+    expect(people?.score).toBeCloseTo(2 / 3, 4);
     expect(outcome.score).toBeCloseTo((2 + 2 / 3) / 3, 4);
     expect(outcome.passed).toBe(true); // 0.8889
   });
@@ -269,8 +278,14 @@ describe('deriveUnitProgress', () => {
   });
 
   it('breaks timestamp ties by event id, whatever the arrival order', () => {
-    const a = sectionEvent('first', { client_event_id: uuidN(1), occurred_at: '2026-10-12T08:00:00Z' });
-    const b = sectionEvent('second', { client_event_id: uuidN(2), occurred_at: '2026-10-12T08:00:00Z' });
+    const a = sectionEvent('first', {
+      client_event_id: uuidN(1),
+      occurred_at: '2026-10-12T08:00:00Z',
+    });
+    const b = sectionEvent('second', {
+      client_event_id: uuidN(2),
+      occurred_at: '2026-10-12T08:00:00Z',
+    });
     expect(deriveUnitProgress([a, b])?.last_section).toBe('second');
     expect(deriveUnitProgress([b, a])?.last_section).toBe('second');
   });
@@ -294,7 +309,9 @@ describe('deriveUnitProgress', () => {
         const half = Math.floor(events.length / 2);
         const left = events.slice(0, half);
         const right = events.slice(half);
-        expect(deriveUnitProgress([...left, ...right])).toEqual(deriveUnitProgress([...right, ...left]));
+        expect(deriveUnitProgress([...left, ...right])).toEqual(
+          deriveUnitProgress([...right, ...left]),
+        );
       });
 
       it(`seed ${seed}: more events never lower the status`, () => {
@@ -327,7 +344,11 @@ describe('effectiveProgress', () => {
 
   it('shows local progress when the server knows nothing yet', () => {
     const result = effectiveProgress(null, [sectionEvent('intro')]);
-    expect(result).toMatchObject({ status: 'in_progress', last_section: 'intro', has_pending: true });
+    expect(result).toMatchObject({
+      status: 'in_progress',
+      last_section: 'intro',
+      has_pending: true,
+    });
   });
 
   it('shows a pending passing check as mastered right away', () => {
@@ -415,7 +436,13 @@ describe('unlockStates', () => {
   });
 
   it('opens a leading project and handles an empty chain', () => {
-    const states = unlockStates([{ id: 'p0', kind: 'term_project' }, { id: 'u1', kind: 'lesson' }], new Map());
+    const states = unlockStates(
+      [
+        { id: 'p0', kind: 'term_project' },
+        { id: 'u1', kind: 'lesson' },
+      ],
+      new Map(),
+    );
     expect(states.get('p0')).toBe('available');
     expect(states.get('u1')).toBe('available');
     expect(unlockStates([], new Map()).size).toBe(0);
@@ -435,7 +462,9 @@ describe('compareUnitOrder', () => {
       { level_code: 'P1', term: 1, chapter_number: 1, unit_no: 3 },
       { level_code: 'P1', term: 1, chapter_number: 1, unit_no: 2 },
     ];
-    expect([...list].sort(compareUnitOrder).map((u) => [u.term, u.chapter_number, u.unit_no])).toEqual([
+    expect(
+      [...list].sort(compareUnitOrder).map((u) => [u.term, u.chapter_number, u.unit_no]),
+    ).toEqual([
       [1, 1, 2],
       [1, 1, 3],
       [1, 2, 1],
