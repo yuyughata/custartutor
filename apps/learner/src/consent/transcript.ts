@@ -19,9 +19,14 @@ export interface TranscriptLine {
  * placeholder, never with the `text` the server sent: even a mistake on the server cannot leak a held turn.
  */
 export function transcriptLines(messages: readonly TutorTranscriptMessage[]): TranscriptLine[] {
-  return [...messages]
-    .sort((a, b) => a.created_at.localeCompare(b.created_at))
-    .map((message) => ({
+  // By time; messages with the same (or unreadable) time keep the order the server gave them.
+  return messages
+    .map((message, index) => ({ message, index, time: Date.parse(message.created_at) }))
+    .sort((a, b) => {
+      const byTime = Number.isNaN(a.time) || Number.isNaN(b.time) ? 0 : a.time - b.time;
+      return byTime !== 0 ? byTime : a.index - b.index;
+    })
+    .map(({ message }) => ({
       id: message.id,
       role: message.role,
       text: message.withheld ? WITHHELD_PLACEHOLDER : message.text,

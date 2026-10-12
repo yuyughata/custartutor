@@ -12,7 +12,10 @@ vi.mock('react-native', () => ({ Platform: platform }));
 
 const { createExpoSpeechSynthesizer } = await import('./expoSpeech');
 
-type SpeakArgs = [string, { language?: string; rate?: number; voice?: string; onDone?: () => void }];
+type SpeakArgs = [
+  string,
+  { language?: string; rate?: number; voice?: string; onDone?: () => void },
+];
 
 beforeEach(() => {
   platform.OS = 'android';

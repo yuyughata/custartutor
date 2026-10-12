@@ -49,10 +49,13 @@ export function createNativeSpeechBackend(speech: ExpoSpeechModule): SpeechBacke
           pending.delete(finish);
           resolve();
         };
-        const timer = setTimeout(() => {
-          void speech.stop().catch(() => undefined);
-          finish();
-        }, speechWatchdogMs(text, options.rate));
+        const timer = setTimeout(
+          () => {
+            void speech.stop().catch(() => undefined);
+            finish();
+          },
+          speechWatchdogMs(text, options.rate),
+        );
         pending.add(finish);
         try {
           speech.speak(text, {

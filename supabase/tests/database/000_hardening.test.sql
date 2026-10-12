@@ -62,19 +62,23 @@ select is(
     where n.nspname = 'private'
       and has_function_privilege('authenticated', p.oid, 'EXECUTE')),
   array[
-    'accept_invite', 'apply_chapter_plan', 'approve_scheme', 'authorize_pack_download',
+    'accept_invite', 'apply_chapter_plan', 'apply_unit_layout', 'approve_scheme', 'authorize_pack_download',
     'can_access_child', 'cancel_ai_job', 'create_ai_job', 'create_household', 'create_invite',
     'create_unit_version_draft', 'elevate_grownup', 'end_grownup_elevation', 'get_ai_settings',
-    'get_ai_usage_summary', 'get_grownup_pin_status', 'get_pack_source', 'grant_child_access',
+    'get_ai_usage_summary', 'get_grownup_pin_status', 'get_pack_source', 'get_safeguarding_case',
+    'get_tutor_consent', 'get_tutor_transcript', 'grant_child_access',
     'has_admin_role', 'has_grownup_elevation', 'ingest_progress_events', 'is_granted_tutor',
-    'is_household_member', 'member_display_name', 'publish_unit_version', 'remove_member',
+    'is_household_member', 'list_safeguarding_cases', 'list_tutor_sessions', 'member_display_name',
+    'publish_unit_version', 'remove_member',
     'revoke_child_access', 'save_scheme_draft', 'set_app_setting', 'set_grownup_pin',
-    'set_pack_info', 'set_unit_version_status', 'sync_pull'
+    'set_pack_info', 'set_tutor_consent', 'set_tutor_enabled', 'set_unit_version_status', 'sync_pull',
+    'update_safeguarding_case'
   ]::name[],
   'authenticated can execute exactly the intended private helpers and RPC implementations'
 );
 
--- the service role (edge functions, CI jobs) resolves exactly the pack-info writer and the four ai_job_* RPCs
+-- the service role (edge functions, CI jobs) resolves exactly the pack-info writer, the four ai_job_* RPCs and the
+-- nine tutor_* RPCs of the tutor-chat function
 select is(
   (select array_agg(p.proname order by p.proname)
      from pg_proc p
@@ -82,8 +86,10 @@ select is(
     where n.nspname = 'private'
       and has_function_privilege('service_role', p.oid, 'EXECUTE')),
   array['ai_job_acquire_lease', 'ai_job_budget_check', 'ai_job_complete_step', 'ai_job_fail_step',
-        'set_pack_info']::name[],
-  'service_role can execute exactly set_pack_info and the four ai_job_* functions'
+        'set_pack_info', 'tutor_get_ai_settings', 'tutor_get_settings', 'tutor_get_turn', 'tutor_log_usage',
+        'tutor_open_case', 'tutor_open_session', 'tutor_purge_expired', 'tutor_reserve_turn',
+        'tutor_save_turn']::name[],
+  'service_role can execute exactly set_pack_info, the four ai_job_* functions and the nine tutor_* functions'
 );
 
 select is(

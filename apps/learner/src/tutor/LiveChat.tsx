@@ -135,7 +135,7 @@ export function LiveChat({
         }}
       >
         {preReader && !busy && !failed ? (
-          <View style={{ gap: space[2] }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
             {PRE_READER_QUICK_REPLIES.map((reply) => (
               <Button
                 key={reply.label}

@@ -10,7 +10,9 @@ function mockSpeech() {
       calls.push(args);
     }),
     stop: vi.fn(() => Promise.resolve()),
-    getAvailableVoicesAsync: vi.fn(() => Promise.resolve([{ identifier: 'v1', language: 'en-NG' }])),
+    getAvailableVoicesAsync: vi.fn(() =>
+      Promise.resolve([{ identifier: 'v1', language: 'en-NG' }]),
+    ),
   };
   return { module, calls };
 }

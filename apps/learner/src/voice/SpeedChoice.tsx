@@ -1,6 +1,13 @@
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { layerColors, minTouchTarget, palette, radii, space, textColors } from '@custar/design-tokens';
+import {
+  layerColors,
+  minTouchTarget,
+  palette,
+  radii,
+  space,
+  textColors,
+} from '@custar/design-tokens';
 import {
   SPEED_LABELS,
   defaultSpeed,
@@ -31,6 +38,7 @@ export function SpeedChoice({ readingMode }: { readingMode?: string | null }): R
               key={speed}
               accessibilityRole="radio"
               accessibilityState={{ checked: selected }}
+              aria-checked={selected}
               accessibilityLabel={`Reading speed: ${SPEED_LABELS[speed]}`}
               onPress={() => setChoice(speed)}
               style={{
@@ -44,7 +52,11 @@ export function SpeedChoice({ readingMode }: { readingMode?: string | null }): R
               }}
             >
               <Text
-                style={{ fontSize: 18, fontWeight: selected ? '700' : '400', color: textColors.body }}
+                style={{
+                  fontSize: 18,
+                  fontWeight: selected ? '700' : '400',
+                  color: textColors.body,
+                }}
               >
                 {SPEED_LABELS[speed]}
               </Text>

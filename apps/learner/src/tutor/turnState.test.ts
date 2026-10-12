@@ -160,6 +160,26 @@ describe('chatReducer', () => {
     expect(state.bubbles.map((b) => b.id)).toEqual(['c1', 't2']);
   });
 
+  it('clearFailure lets the child ask again after a failure a retry cannot fix', () => {
+    let state = chatReducer(send(), {
+      type: 'failed',
+      failure: { code: 'consent_required', retryable: false },
+    });
+    expect(state.phase).toBe('failed');
+    state = chatReducer(state, { type: 'clearFailure' });
+    expect(state).toMatchObject({ phase: 'idle', turn: null, error: null, failure: null });
+    expect(state.bubbles.map((b) => b.role)).toEqual(['child']);
+    // a failure that can be retried keeps its Try again card
+    const retryable = chatReducer(send(), {
+      type: 'failed',
+      failure: { code: 'upstream', retryable: true },
+    });
+    expect(chatReducer(retryable, { type: 'clearFailure' })).toEqual(retryable);
+    // and it does nothing when nothing failed
+    const idle = chatReducer(initialChatState, { type: 'clearFailure' });
+    expect(idle).toEqual(initialChatState);
+  });
+
   it('ignores actions with no turn in flight', () => {
     const actions: ChatAction[] = [
       { type: 'event', event: { type: 'delta', text: 'x' } },

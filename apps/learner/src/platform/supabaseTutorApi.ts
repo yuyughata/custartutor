@@ -1,7 +1,6 @@
 import {
   CURRENT_TUTOR_CONSENT_VERSION,
   TutorApiError,
-  TutorStreamEvent,
   TutorTurnResult,
   createSseParser,
   type SafetyAction,
@@ -11,6 +10,7 @@ import {
   type TutorConsentState,
   type TutorErrorBody,
   type TutorErrorCode,
+  type TutorStreamEvent,
   type TutorSessionSummary,
   type TutorTranscriptMessage,
 } from '@custar/tutor-core/client';
@@ -267,20 +267,6 @@ function resultFromAccumulator(acc: TurnAccumulator): TutorTurnResult | null {
   };
 }
 
-/** The one place that talks to the stream codec of tutor-core. */
-function newParser(): { push(chunk: string): unknown[]; end(): unknown[] } {
-  return createSseParser() as unknown as { push(chunk: string): unknown[]; end(): unknown[] };
-}
-
-function toEvents(raw: unknown[]): TutorStreamEvent[] {
-  const events: TutorStreamEvent[] = [];
-  for (const item of raw) {
-    const parsed = TutorStreamEvent.safeParse(item);
-    if (parsed.success) events.push(parsed.data); // unknown event types are ignored on purpose
-  }
-  return events;
-}
-
 // ---- the adapter -----------------------------------------------------------------------------------
 
 export function createSupabaseTutorApi(options: SupabaseTutorApiOptions): TutorApi {
@@ -391,7 +377,8 @@ export function createSupabaseTutorApi(options: SupabaseTutorApiOptions): TutorA
       activity: null,
       done: false,
     };
-    const parser = newParser();
+    // The codec validates every event and skips what it does not understand (unknown types, bad JSON).
+    const parser = createSseParser();
     let streamError: TutorApiError | null = null;
 
     const handle = (events: TutorStreamEvent[]): void => {
@@ -410,7 +397,7 @@ export function createSupabaseTutorApi(options: SupabaseTutorApiOptions): TutorA
 
     try {
       if (!response.body) {
-        handle(toEvents(parser.push(await response.text())));
+        handle(parser.push(await response.text()));
       } else {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -419,14 +406,14 @@ export function createSupabaseTutorApi(options: SupabaseTutorApiOptions): TutorA
             if (signal?.aborted) throw abortError();
             const { done, value } = await reader.read();
             if (done) break;
-            handle(toEvents(parser.push(decoder.decode(value, { stream: true }))));
+            handle(parser.push(decoder.decode(value, { stream: true })));
             if (streamError) break;
           }
         } finally {
           if (streamError || signal?.aborted) void reader.cancel().catch(() => undefined);
         }
       }
-      if (!streamError) handle(toEvents(parser.end()));
+      if (!streamError) handle(parser.flush());
     } catch (error) {
       if (signal?.aborted || (error instanceof Error && error.name === 'AbortError')) {
         throw abortError();

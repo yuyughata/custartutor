@@ -9,9 +9,11 @@ import type {
   JobKind,
   JobRow,
   Json,
+  StoredLintReport,
 } from '@custar/authoring-core';
 import type { LevelCode, SchemeWeek, Stage, UnitKind } from '@custar/content-schema';
 import type { AdminRole } from '../lib/roles';
+import type { LayoutDoc } from '../lib/unitLayout';
 import type { VersionStatus } from '../lib/workflow';
 
 export type { AdminRole } from '../lib/roles';
@@ -138,6 +140,39 @@ export interface ChapterRow {
 export interface ApplyPlanResult {
   chapters: number;
   units: number;
+}
+
+/** What apply_unit_layout returns: counts, the ids it created and the resulting layout. */
+export interface ApplyLayoutResult {
+  chapters: number;
+  units: number;
+  units_created: number;
+  units_updated: number;
+  units_moved: number;
+  units_renumbered: number;
+  units_archived: number;
+  chapters_created: number;
+  created_unit_ids: string[];
+  created_chapter_ids: string[];
+  layout: { chapter_id: string; number: number; title: string; units: { id: string; unit_no: number }[] }[];
+}
+
+/** One snapshot from the unit's published history (immutable; content staff can read all of them). */
+export interface PublishedSnapshot {
+  id: string;
+  version_no: number;
+  is_current: boolean;
+  published_at: string;
+  content: Json;
+}
+
+export interface SaveHumanVersionInput {
+  unitId: string;
+  content: Json;
+  /** The deterministic lint of the saved content (no model review). */
+  lintReport: StoredLintReport;
+  /** The latest version the person loaded; null only for a unit without versions. */
+  baseVersionId: string | null;
 }
 
 /** A unit with the chapter, scheme and subject around it, for the workspace header. */
@@ -303,6 +338,16 @@ export interface AdminApi {
     list(schemeId: string): Promise<ChapterRow[]>;
     /** apply_chapter_plan: creates chapters and draft units. */
     applyPlan(schemeId: string, plan: ChapterPlan): Promise<ApplyPlanResult>;
+    /**
+     * apply_unit_layout: one atomic call that adds, removes (archives) and reorders units and sets their numbers.
+     * Without `confirmRenumber` it refuses (`layout_renumbers_versioned_units`) when a unit that already has
+     * versions would change number or chapter.
+     */
+    applyLayout(
+      schemeId: string,
+      layout: LayoutDoc,
+      options?: { confirmRenumber?: boolean },
+    ): Promise<ApplyLayoutResult>;
   };
   readonly units: {
     get(unitId: string): Promise<UnitContext>;
@@ -315,6 +360,14 @@ export interface AdminApi {
     /** The publish-pack edge function: builds the lesson pack of a published snapshot. */
     buildPack(publishedUnitId: string): Promise<PackResult>;
     publication(versionId: string): Promise<PublishedInfo | null>;
+    /** Every published snapshot of the unit, oldest first, with its content (for the stable-id rule). */
+    publishedHistory(unitId: string): Promise<PublishedSnapshot[]>;
+    /**
+     * create_unit_version_draft as a person: a new draft version (generated_by 'human', no model, no prompt version).
+     * `stale_base` when `baseVersionId` is no longer the latest version. Never edits a version in place and never
+     * approves or publishes anything.
+     */
+    saveHumanVersion(input: SaveHumanVersionInput): Promise<{ id: string; version: number }>;
   };
   readonly characters: {
     list(): Promise<CharacterRecord[]>;

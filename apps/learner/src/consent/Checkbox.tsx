@@ -26,6 +26,7 @@ export function Checkbox({
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked, disabled }}
+      aria-checked={checked}
       accessibilityLabel={label}
       disabled={disabled}
       onPress={onToggle}

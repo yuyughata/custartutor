@@ -28,6 +28,16 @@ describe('transcriptLines', () => {
     ]);
   });
 
+  it('keeps the server order for messages with the same time or an unreadable one', () => {
+    const lines = transcriptLines([
+      message('a', 'child', 'one', '2026-10-12T08:00:00Z'),
+      message('b', 'tutor', 'two', '2026-10-12T08:00:00Z'),
+      message('c', 'child', 'three', 'not a time'),
+      message('d', 'tutor', 'four', '2026-10-12T08:00:00Z'),
+    ]);
+    expect(lines.map((l) => l.id)).toEqual(['a', 'b', 'c', 'd']);
+  });
+
   it('shows ONLY a neutral placeholder for a withheld message, never the text the server sent', () => {
     const lines = transcriptLines([
       message(

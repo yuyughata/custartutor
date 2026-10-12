@@ -16,9 +16,9 @@ describe('blockSpeechText', () => {
     expect(
       blockSpeechText({ type: 'definition', term: 'Environment', meaning: 'All around us.' }, none),
     ).toBe('Environment. All around us.');
-    expect(blockSpeechText({ type: 'example', label: 'Example 1:', text: 'A **bin**.' }, none)).toBe(
-      'Example 1: A bin.',
-    );
+    expect(
+      blockSpeechText({ type: 'example', label: 'Example 1:', text: 'A **bin**.' }, none),
+    ).toBe('Example 1: A bin.');
     expect(
       blockSpeechText(
         {

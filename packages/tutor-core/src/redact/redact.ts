@@ -89,7 +89,7 @@ function applySpans(text: string, spans: Span[]): string {
   return out + text.slice(cursor);
 }
 
-const INVISIBLE = /[​-‍⁠﻿­]/g;
+const INVISIBLE = /[\u200b-\u200d\u2060\ufeff\u00ad]/g;
 
 // ---------------------------------------------------------------------------------------------
 // Emails, links, handles
@@ -134,7 +134,7 @@ const SPOKEN_DOMAIN = new RegExp(
   'giu',
 );
 const SPACED_DOMAIN = new RegExp(
-  String.raw`\b[\p{L}\p{N}-]{2,}\s*\.\s*(?:${SAFE_SPACED_TLDS})\b`,
+  String.raw`\b[\p{L}\p{N}-]{2,}\s+\.\s+(?:${SAFE_SPACED_TLDS})\b`,
   'giu',
 );
 const SPELLED_TLD = /\b[\p{L}\p{N}-]{2,}\s*(?:\.|\bdot\b)\s*c\s+o\s+m\b/giu;
@@ -163,18 +163,17 @@ function redactLinks(text: string, hit: Hit): string {
 
 const HANDLE = /(^|[^\p{L}\p{N}_@.])@[\p{L}\p{N}_]+(?:\.[\p{L}\p{N}_]+)*/gu;
 const USERNAME_PHRASE =
-  /\b(?:user\s?name|handle|gamer\s?tag|insta(?:gram)?|snap(?:chat)?|tik\s?tok|whatsapp)\s*(?:is|na|=|:)\s*@?[\p{L}\p{N}_.]{3,}/giu;
+  /(\b(?:user\s?name|handle|gamer\s?tag|insta(?:gram)?|snap(?:chat)?|tik\s?tok|whatsapp)\s*(?:is|na|=|:)\s*)(@?[\p{L}\p{N}_.]{3,})/giu;
 
 function redactHandles(text: string, hit: Hit): string {
   const token = REDACTION_TOKENS.handle;
   return text
     .replace(HANDLE, (_all, before: string) => (hit('handle'), `${before}${token}`))
-    .replace(USERNAME_PHRASE, (match) => {
+    .replace(USERNAME_PHRASE, (match: string, lead: string, value: string) => {
       // "my insta is cool" must stay: a handle has a digit, an underscore, a dot or an @
-      const value = match.replace(/^.*?(?:is|na|=|:)\s*/iu, '');
       if (!/[\d_.@]/.test(value)) return match;
       hit('handle');
-      return token;
+      return `${lead}${token}`;
     });
 }
 
@@ -363,7 +362,9 @@ function redactAddresses(text: string, hit: Hit): string {
       }
       if (kind.toLowerCase() === 'st' && !/^S/.test(kind)) return match;
       hit('address');
-      return token;
+      // the full stop belongs to the sentence unless the street type is an abbreviation ("Rd.")
+      const sentenceStop = match.endsWith('.') && !/^(?:st|rd|ave)$/i.test(kind);
+      return sentenceStop ? `${token}.` : token;
     },
   );
   return out.replace(UNIT_NUMBER, () => (hit('address'), token));
@@ -400,6 +401,7 @@ function replacePlaceAfter(
 const SCHOOL_PREFIX = new RegExp(
   [
     String.raw`\b(?:i|we)\s+(?:(?:dey|now|still|am|are)\s+)*(?:go(?:ing)?|attend(?:ing)?|school|study(?:ing)?|read(?:ing)?)\s+(?:to|at|in|for)\s+`,
+    String.raw`\b(?:i|we)\s+(?:(?:dey|now|still|am|are)\s+)*attend(?:ing)?\s+`,
     String.raw`\bmy\s+school\s+(?:name\s+)?(?:is|na|be|:)\s*`,
     String.raw`\b(?:i\s+am|i'm|im)\s+(?:a\s+)?(?:pupil|student)\s+(?:of|at|in)\s+`,
     String.raw`\bmy\s+school\s+(?:is\s+called|name)\s+`,
@@ -680,6 +682,15 @@ export function redactPii(input: string, options: RedactOptions = {}): Redaction
     text = redactIntroducedNames(text, hit);
   }
   return { text, count, kinds };
+}
+
+/** True when the text contains one of the given real names (whole word, any case, accents ignored). */
+export function mentionsKnownName(text: string, names: readonly string[]): boolean {
+  let found = false;
+  redactKnownNames(text, names, () => {
+    found = true;
+  });
+  return found;
 }
 
 /** True when the text holds something `redactPii` would replace. Convenience for guards and tests. */

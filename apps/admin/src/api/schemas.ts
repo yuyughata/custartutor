@@ -193,6 +193,39 @@ export const AdminUserRow = z.object({
 
 export const ApplyPlanSchema = z.object({ chapters: numeric, units: numeric });
 
+export const ApplyLayoutSchema = z.object({
+  chapters: numeric,
+  units: numeric,
+  units_created: numeric,
+  units_updated: numeric,
+  units_moved: numeric,
+  units_renumbered: numeric,
+  units_archived: numeric,
+  chapters_created: numeric,
+  created_unit_ids: z.array(z.string()).default([]),
+  created_chapter_ids: z.array(z.string()).default([]),
+  layout: z
+    .array(
+      z.object({
+        chapter_id: Id,
+        number: z.number().int(),
+        title: z.string(),
+        units: z.array(z.object({ id: Id, unit_no: z.number().int() })),
+      }),
+    )
+    .default([]),
+});
+
+export const PublishedSnapshotRow = z.object({
+  id: Id,
+  version_no: z.number().int(),
+  is_current: z.boolean(),
+  published_at: Iso,
+  content: z.custom<Json>((value) => value !== undefined && value !== null),
+});
+
+export const CreatedVersionSchema = z.object({ id: Id, version: z.number().int() });
+
 export const PackResultSchema = z.object({
   published_unit_id: Id,
   unit_id: Id.optional(),

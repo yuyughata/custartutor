@@ -46,7 +46,10 @@ export class ReadAloudController {
 
   private update(patch: Partial<ReadAloudSnapshot>): void {
     const next = { ...this.snapshot, ...patch };
-    if (next.available === this.snapshot.available && next.speakingKey === this.snapshot.speakingKey)
+    if (
+      next.available === this.snapshot.available &&
+      next.speakingKey === this.snapshot.speakingKey
+    )
       return;
     this.snapshot = next;
     for (const listener of [...this.listeners]) listener();

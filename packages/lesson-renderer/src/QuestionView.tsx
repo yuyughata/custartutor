@@ -53,6 +53,7 @@ function Choice({
   disabled,
   large = false,
   marker,
+  grow = false,
 }: {
   label: string;
   selected: boolean;
@@ -61,6 +62,8 @@ function Choice({
   large?: boolean;
   /** A shape shown before the label (large targets only). */
   marker?: string;
+  /** Share a row with its neighbours instead of hugging its text (large targets in wrapped rows). */
+  grow?: boolean;
 }): ReactNode {
   return (
     <Pressable
@@ -80,6 +83,7 @@ function Choice({
         justifyContent: 'center',
         maxWidth: '100%',
         ...(large ? { flexDirection: 'row' as const, alignItems: 'center' as const } : {}),
+        ...(large && grow ? { flexGrow: 1, flexBasis: '45%' as const } : {}),
       }}
     >
       {large && marker ? (
@@ -331,6 +335,7 @@ export function QuestionView({
                 key={option}
                 label={option}
                 large={largeTargets}
+                grow
                 marker={markerFor(index)}
                 selected={selected.includes(option)}
                 onPress={() =>
@@ -360,6 +365,7 @@ export function QuestionView({
                       key={category}
                       label={category}
                       large={largeTargets}
+                      grow
                       marker={markerFor(index)}
                       selected={placements[item] === category}
                       onPress={() =>
@@ -390,6 +396,7 @@ export function QuestionView({
                   key={hotspot.id}
                   label={hotspot.label}
                   large={largeTargets}
+                  grow
                   marker={markerFor(index)}
                   selected={chosen.includes(hotspot.id)}
                   onPress={() =>
@@ -482,7 +489,9 @@ export function QuestionView({
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: palette.white, fontSize: largeTargets ? 22 : 18, fontWeight: '700' }}>
+          <Text
+            style={{ color: palette.white, fontSize: largeTargets ? 22 : 18, fontWeight: '700' }}
+          >
             {question.kind === 'draw' || question.kind === 'free_text' || question.kind === 'spoken'
               ? 'Save'
               : 'Check'}

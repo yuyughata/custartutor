@@ -28,7 +28,6 @@ import { createSupabaseHouseholdApi, type HouseholdApi } from '../platform/house
 import { createSupabase, readSupabaseConfig, type SupabaseConfig } from '../platform/supabase';
 import { createSupabaseSyncApi } from '../platform/supabaseSyncApi';
 import { createSupabaseTutorApi } from '../platform/supabaseTutorApi';
-import { createDemoTutor } from '../tutor/demoTutor';
 import type { AuthPort, Runtime } from './types';
 
 const APP_VERSION = Application.nativeApplicationVersion ?? '1.0.0';
@@ -187,6 +186,9 @@ async function createDemoRuntime(): Promise<Runtime> {
     return elevation;
   };
 
+  // Loaded only in demo mode, so a live build never evaluates the demo tutor and the safety code behind it.
+  const { createDemoTutor } = await import('../tutor/demoTutor');
+
   return assemble({
     mode: 'demo',
     ports: {
@@ -208,7 +210,11 @@ async function createDemoRuntime(): Promise<Runtime> {
       },
     },
     network,
-    tutor: createDemoTutor({ isElevated: () => Date.now() < elevatedUntilMs }),
+    tutor: createDemoTutor({
+      ports: { db, files },
+      appVersion: APP_VERSION,
+      isElevated: () => Date.now() < elevatedUntilMs,
+    }),
     demoHint: { code: DEMO_CODE, pin: DEMO_PIN },
     demoControls: {
       isOnline: () => network.online,

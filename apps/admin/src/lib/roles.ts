@@ -36,6 +36,10 @@ export const CAPABILITIES = [
   'scheme.save',
   'scheme.approve',
   'plan.apply',
+  /** Add, remove and reorder units in the chapters of an approved scheme (apply_unit_layout). */
+  'layout.apply',
+  /** Edit a unit by hand and save the result as a new human version (create_unit_version_draft). */
+  'unit.edit',
   /** draft -> in_review */
   'version.submit',
   /** in_review -> approved, in_review -> draft */
@@ -54,6 +58,8 @@ const MATRIX: Record<Capability, readonly AdminRole[]> = {
   'scheme.save': ['super_admin', 'content_editor'],
   'scheme.approve': ['super_admin', 'reviewer'],
   'plan.apply': ['super_admin', 'content_editor'],
+  'layout.apply': ['super_admin', 'content_editor'],
+  'unit.edit': ['super_admin', 'content_editor'],
   'version.submit': ['super_admin', 'content_editor', 'reviewer'],
   'version.review': ['super_admin', 'reviewer'],
   'version.publish': ['super_admin', 'content_editor', 'reviewer'],

@@ -33,38 +33,42 @@ export function Composer({
   }
 
   return (
-    <View style={{ gap: space[2] }}>
-      <TextInput
-        accessibilityLabel={label}
-        placeholder={TUTOR_COPY.inputPlaceholder}
-        placeholderTextColor={palette.muted}
-        value={text}
-        onChangeText={setText}
-        maxLength={MAX_CHILD_MESSAGE_CHARS}
-        multiline
-        editable={!disabled}
-        autoComplete="off"
-        autoCapitalize="sentences"
-        importantForAutofill="no"
-        style={{
-          minHeight: minTouchTarget + 8,
-          maxHeight: 128,
-          borderWidth: 2,
-          borderColor: palette.placeholderBorder,
-          borderRadius: radii.md,
-          paddingHorizontal: space[4],
-          paddingVertical: space[3],
-          fontSize: 20,
-          color: textColors.body,
-          backgroundColor: disabled ? palette.placeholderBg : palette.white,
-        }}
-      />
+    <View style={{ gap: space[1] }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>
+        <TextInput
+          accessibilityLabel={label}
+          placeholder={TUTOR_COPY.inputPlaceholder}
+          placeholderTextColor={palette.muted}
+          value={text}
+          onChangeText={setText}
+          maxLength={MAX_CHILD_MESSAGE_CHARS}
+          multiline
+          editable={!disabled}
+          autoComplete="off"
+          autoCapitalize="sentences"
+          importantForAutofill="no"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            minHeight: minTouchTarget + 8,
+            maxHeight: 128,
+            borderWidth: 2,
+            borderColor: palette.placeholderBorder,
+            borderRadius: radii.md,
+            paddingHorizontal: space[3],
+            paddingVertical: space[3],
+            fontSize: 20,
+            color: textColors.body,
+            backgroundColor: disabled ? palette.placeholderBg : palette.white,
+          }}
+        />
+        <Button label={sendLabel} onPress={submit} disabled={disabled || empty} />
+      </View>
       {text.length >= SHOW_COUNT_FROM ? (
         <Text style={{ fontSize: 14, color: palette.muted, textAlign: 'right' }}>
           {MAX_CHILD_MESSAGE_CHARS - text.length} left
         </Text>
       ) : null}
-      <Button label={sendLabel} onPress={submit} disabled={disabled || empty} />
     </View>
   );
 }

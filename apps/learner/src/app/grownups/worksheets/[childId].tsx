@@ -1,15 +1,18 @@
 import { View } from 'react-native';
-import { Body, Screen, Title, TopBar } from '../../../ui';
+import { useLocalSearchParams } from 'expo-router';
+import { GrownupGate } from '../../../helper/GrownupGate';
+import { TopBar } from '../../../ui';
+import { WorksheetsScreen } from '../../../worksheets/WorksheetsScreen';
 
-// Placeholder route: replaced by the M3.3 work package that owns this screen.
-export default function Placeholder() {
+/** Grown-ups area: printable worksheets of a child's downloaded lessons. Re-asks the PIN if the elevation has lapsed. */
+export default function WorksheetsRoute() {
+  const { childId } = useLocalSearchParams<{ childId: string }>();
   return (
     <View style={{ flex: 1 }}>
       <TopBar title="Worksheets" />
-      <Screen>
-        <Title>Worksheets</Title>
-        <Body muted>Coming soon.</Body>
-      </Screen>
+      <GrownupGate title="Grown-ups only" body="Enter your PIN to open the worksheets.">
+        <WorksheetsScreen childId={childId} />
+      </GrownupGate>
     </View>
   );
 }

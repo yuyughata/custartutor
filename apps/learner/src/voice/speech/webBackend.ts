@@ -98,21 +98,26 @@ export function createWebSpeechBackend(env: WebSpeechEnv | null): SpeechBackend 
           pending.delete(finish);
           resolve();
         };
-        const timer = setTimeout(() => {
-          try {
-            synth.cancel();
-          } catch {
-            // ignore
-          }
-          finish();
-        }, speechWatchdogMs(text, options.rate));
+        const timer = setTimeout(
+          () => {
+            try {
+              synth.cancel();
+            } catch {
+              // ignore
+            }
+            finish();
+          },
+          speechWatchdogMs(text, options.rate),
+        );
         pending.add(finish);
         try {
           const utterance = env.createUtterance(text);
           if (options.lang) utterance.lang = options.lang;
           if (options.rate !== undefined) utterance.rate = options.rate;
           if (options.voice) {
-            const voice = synth.getVoices().find((candidate) => candidate.voiceURI === options.voice);
+            const voice = synth
+              .getVoices()
+              .find((candidate) => candidate.voiceURI === options.voice);
             if (voice) utterance.voice = voice;
           }
           utterance.onend = finish;

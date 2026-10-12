@@ -32,7 +32,7 @@ export const LITE_COPY = {
   skip: 'Skip',
   typeAnswer: 'Type your answer',
   send: 'Send',
-  change: 'Choose another part',
+  change: 'Another part',
   finished: 'You finished this part.',
   again: 'Start this part again',
   welcomeBack: 'Welcome back! Let us carry on.',

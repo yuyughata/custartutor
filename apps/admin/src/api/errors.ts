@@ -94,11 +94,64 @@ const KNOWN: Record<string, { kind: AdminErrorKind; message: string }> = {
   unit_has_versions: {
     kind: 'conflict',
     message:
-      'A unit in this plan already has a draft version, so its plan cannot be changed here. Edit that unit in its workspace instead.',
+      'A unit that already has a draft version cannot be changed or removed here. Edit that unit in its workspace instead (Edit by hand makes a new version).',
   },
   chapter_unit_count_invalid: {
     kind: 'invalid',
     message: 'Every chapter needs 3 to 5 units.',
+  },
+  invalid_unit_layout: {
+    kind: 'invalid',
+    message: 'The server could not read that layout. Reload the page and try again.',
+  },
+  invalid_layout_unit: {
+    kind: 'invalid',
+    message: 'The server rejected a unit in the layout. Check its title, objective, kind, stage and periods.',
+  },
+  duplicate_unit_in_layout: {
+    kind: 'invalid',
+    message: 'A unit appears twice in the layout. Reload the page and try again.',
+  },
+  unit_not_in_scheme: {
+    kind: 'not_found',
+    message: 'A unit in the layout is no longer part of this scheme. Reload the page.',
+  },
+  chapter_not_in_scheme: {
+    kind: 'not_found',
+    message: 'A chapter in the layout is no longer part of this scheme. Reload the page.',
+  },
+  chapter_order_changed: {
+    kind: 'invalid',
+    message: 'Chapters keep their order; a new chapter goes after the existing ones.',
+  },
+  layout_out_of_date: {
+    kind: 'conflict',
+    message:
+      'Someone changed the chapters or units since you opened this page. Reload to see their changes, then make your edit again. Nothing was applied.',
+  },
+  layout_renumbers_versioned_units: {
+    kind: 'conflict',
+    message: 'This layout renumbers units that already have drafts. Confirm to continue.',
+  },
+  published_unit_cannot_move: {
+    kind: 'conflict',
+    message: 'A unit that has been published stays in its chapter.',
+  },
+  unit_not_editable: {
+    kind: 'conflict',
+    message: 'This unit was removed from its chapter, so it cannot get new versions.',
+  },
+  invalid_unit_content: {
+    kind: 'invalid',
+    message: 'The server did not accept that content. Fix the problems shown in the editor first.',
+  },
+  unit_content_too_large: {
+    kind: 'invalid',
+    message: 'This unit is too large to save (over 5 MB).',
+  },
+  invalid_lint_report: {
+    kind: 'invalid',
+    message: 'The server did not accept the lint report that goes with the version.',
   },
   stale_base: {
     kind: 'conflict',
@@ -373,4 +426,25 @@ export function toAdminError(error: unknown): AdminApiError {
     undefined,
     error,
   );
+}
+
+/**
+ * The units with versions that a layout would renumber, from the DETAIL of a `layout_renumbers_versioned_units`
+ * refusal (the server sends them as JSON), or null for any other error. The planner computes the same list before it
+ * calls, so this is only the fallback when the page's idea of the layout was out of step with the server's.
+ */
+export function renumberDetail(
+  error: unknown,
+): { id: string; title: string; from: number; to: number }[] | null {
+  if (!isAdminApiError(error) || error.code !== 'layout_renumbers_versioned_units') return null;
+  const cause = error.cause as { details?: unknown } | undefined;
+  const raw = cause?.details;
+  if (Array.isArray(raw)) return raw as { id: string; title: string; from: number; to: number }[];
+  if (typeof raw !== 'string') return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as { id: string; title: string; from: number; to: number }[]) : [];
+  } catch {
+    return [];
+  }
 }

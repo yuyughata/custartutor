@@ -7,7 +7,7 @@
 --   * apply_chapter_plan and publish_unit_version keep working next to it
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(145);
+select plan(141);
 
 -- sa f8..01 super_admin | ed ..02 content_editor | rv ..03 reviewer | sup ..04 support | ana ..05 analyst | pl ..06 plain
 insert into auth.users (id, email) values
@@ -50,6 +50,12 @@ create function t120.nums(p_scheme uuid) returns text language sql stable securi
    where c.scheme_id = p_scheme and u.deleted_at is null and u.status <> 'archived';
 $f$;
 -- a new-unit entry
+-- the same without labels
+create function t120.plain(p_scheme uuid) returns text language sql stable security definer set search_path = public, pg_temp as $f$
+  select string_agg(c.number || ':' || u.unit_no, ' ' order by c.number, u.unit_no)
+    from public.units u join public.chapters c on c.id = u.chapter_id
+   where c.scheme_id = p_scheme and u.deleted_at is null and u.status <> 'archived';
+$f$;
 create function t120.fresh(p_title text, p_extra jsonb default '{}') returns jsonb language sql immutable as $f$
   select jsonb_build_object('new', jsonb_build_object('title', p_title, 'objective', 'Objective for ' || p_title,
                                                       'kind', 'lesson', 'stage', 'absorb') || p_extra)
@@ -295,6 +301,9 @@ select is(
 select is(jsonb_array_length((select r -> 'layout' from res where label = 'noop')), 2, 'the result always carries the resulting layout');
 
 -- F. locking: the call takes the scheme row FOR UPDATE (its xmax becomes this transaction), units that do not change stay free --------
+-- the probe rows are inserted with foreign-key triggers off: a chapter insert would otherwise take a FOR KEY SHARE lock
+-- on its scheme row (xmax = this transaction) and hide whether the RPC locks the row itself
+set local session_replication_role = replica;
 insert into public.schemes (id, subject_id, level_code, term, status)
   values ('f8000000-0000-4000-8000-0000000000a1', (select id from public.subjects where slug = 'mathematics'), 'P4', 1, 'approved');
 insert into sch values ('probe', 'f8000000-0000-4000-8000-0000000000a1');
@@ -303,6 +312,7 @@ insert into public.units (id, chapter_id, unit_no, kind, title, objective, stage
   ('f8000000-0000-4000-8000-0000000000c1', 'f8000000-0000-4000-8000-0000000000b1', 1, 'lesson', 'P1', 'o', 'absorb'),
   ('f8000000-0000-4000-8000-0000000000c2', 'f8000000-0000-4000-8000-0000000000b1', 2, 'lesson', 'P2', 'o', 'absorb'),
   ('f8000000-0000-4000-8000-0000000000c3', 'f8000000-0000-4000-8000-0000000000b1', 3, 'lesson', 'P3', 'o', 'absorb');
+set local session_replication_role = origin;
 select is((select s.xmax::text from public.schemes s where s.id = t120.s('probe')), '0', 'before: nothing holds the probe scheme row');
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}';
@@ -499,19 +509,19 @@ insert into ids select 'n10', (r -> 'created_unit_ids' ->> 0)::uuid from res whe
 select is(t120.nums(t120.s()), '1:1/u2 1:2/u1 1:3/u4 1:4/u3 1:5/n5 2:6/u5 2:7/u6 2:8/u7 2:9/u8 2:10/n10', 'live numbers are dense again');
 
 -- M. moving between chapters ---------------------------------------------------------------------------------------------------------
--- (n10 leaves chapter 2 and n5 moves from chapter 1 to the top of chapter 2: 4 and 5 units)
+-- (n5 and n10 swap chapters: both chapters keep 5 units and nothing with versions changes number)
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}';
 select lives_ok(
-  $$insert into res select 'move', public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u2","u1","u4","u3","n10"],["n5","u5","u6","u7","u8"]]'))$$,
-  'a unit without versions moves to the next chapter (n5) while another takes its place (n10)'
+  $$insert into res select 'move', public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u2","u1","u4","u3","n10"],["u5","u6","u7","u8","n5"]]'))$$,
+  'two units without versions swap chapters (n5 goes to chapter 2, n10 to chapter 1)'
 );
 reset role;
-select is(t120.nums(t120.s()), '1:1/u2 1:2/u1 1:3/u4 1:4/u3 1:5/n10 2:6/n5 2:7/u5 2:8/u6 2:9/u7 2:10/u8', 'both chapters keep 5 units and the numbers stay dense');
+select is(t120.nums(t120.s()), '1:1/u2 1:2/u1 1:3/u4 1:4/u3 1:5/n10 2:6/u5 2:7/u6 2:8/u7 2:9/u8 2:10/n5', 'both chapters keep 5 units and the numbers stay dense');
 select results_eq(
   $$select r ->> 'units_moved', r ->> 'units_renumbered' from res where label = 'move'$$,
-  $$values ('2', '5')$$,
-  'two units changed chapter; five numbers changed'
+  $$values ('2', '2')$$,
+  'two units changed chapter and number'
 );
 select is(
   (select count(*)::int from public.theme_units tu where tu.unit_id = t120.u('n5')), 0,
@@ -522,23 +532,23 @@ select is(
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}';
 select throws_ok(
-  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["n10","u1","u4","u3"],["u2","n5","u5","u6","u7","u8"]]'))$$,
+  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["n10","u1","u4","u3"],["u2","u5","u6","u7","u8","n5"]]'))$$,
   '22023', 'chapter_unit_count_invalid', 'swapping u2 into chapter 2 would make that chapter 6: count refused first'
 );
 select throws_ok(
-  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["n5","u1","u4","u3","n10"],["u2","u5","u6","u7","u8"]]'), true)$$,
+  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["n5","u1","u4","u3","n10"],["u5","u6","u7","u8","u2"]]'), true)$$,
   '22023', 'published_unit_cannot_move', 'a published unit cannot leave its chapter, even with the confirmation'
 );
 select throws_ok(
-  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["n5","u5","u1","u7","u8"]]'))$$,
+  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["u5","u1","u7","u8","n5"]]'))$$,
   '22023', 'layout_renumbers_versioned_units', 'a unit with a draft version may move chapter, but only with the confirmation'
 );
 select lives_ok(
-  $$insert into res select 'swap_chapters', public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["n5","u5","u1","u7","u8"]]'), true)$$,
+  $$insert into res select 'swap_chapters', public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["u5","u1","u7","u8","n5"]]'), true)$$,
   'confirmed, u6 moves to chapter 1 and u1 to chapter 2'
 );
 reset role;
-select is(t120.nums(t120.s()), '1:1/u2 1:2/u6 1:3/u4 1:4/u3 1:5/n10 2:6/n5 2:7/u5 2:8/u1 2:9/u7 2:10/u8', 'u6 is Unit 2 of chapter 1; u1 is Unit 8 of chapter 2');
+select is(t120.nums(t120.s()), '1:1/u2 1:2/u6 1:3/u4 1:4/u3 1:5/n10 2:6/u5 2:7/u1 2:8/u7 2:9/u8 2:10/n5', 'u6 is Unit 2 of chapter 1; u1 is Unit 7 of chapter 2');
 select results_eq(
   $$select c.number from public.units u join public.chapters c on c.id = u.chapter_id where u.id in (t120.u('u6'), t120.u('u1')) order by u.unit_no desc$$,
   $$values (2), (1)$$,
@@ -554,27 +564,27 @@ select is(
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}';
 select throws_ok(
-  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u2","u4","u3","n10"],["n5","u5","u1","u7","u8"]]', '["u6"]'), true)$$,
+  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u2","u4","u3","n10"],["u5","u1","u7","u8","n5"]]', '["u6"]'), true)$$,
   '22023', 'unit_has_versions', 'a unit with a draft version cannot be removed, even with the confirmation'
 );
 select throws_ok(
-  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u6","u4","u3","n10"],["n5","u5","u1","u7","u8"]]', '["u2"]'), true)$$,
+  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u6","u4","u3","n10"],["u5","u1","u7","u8","n5"]]', '["u2"]'), true)$$,
   '22023', 'unit_has_versions', 'the published unit cannot be removed'
 );
 select throws_ok(
   $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(),
-      '[[{"label":"u2","set":{"title":"A new title"}},"u6","u4","u3","n10"],["n5","u5","u1","u7","u8"]]'), true)$$,
+      '[[{"label":"u2","set":{"title":"A new title"}},"u6","u4","u3","n10"],["u5","u1","u7","u8","n5"]]'), true)$$,
   '22023', 'unit_has_versions', 'the title of a unit with versions is not edited here (that is what new versions are for)'
 );
 reset role;
-select is(t120.nums(t120.s()), '1:1/u2 1:2/u6 1:3/u4 1:4/u3 1:5/n10 2:6/n5 2:7/u5 2:8/u1 2:9/u7 2:10/u8', 'the refused layouts changed nothing');
+select is(t120.nums(t120.s()), '1:1/u2 1:2/u6 1:3/u4 1:4/u3 1:5/n10 2:6/u5 2:7/u1 2:8/u7 2:9/u8 2:10/n5', 'the refused layouts changed nothing');
 
 -- P. editing the fields of units without versions -------------------------------------------------------------------------------------------
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}';
 select lives_ok(
   $$insert into res select 'edit', public.apply_unit_layout(t120.s(), t120.lay(t120.s(),
-      '[["u2","u6","u4",{"label":"u3","set":{"title":"Counting objects","objective":"Count to ten.","kind":"revision","stage":"connect","periods":3,"week_no":null}},"n10"],["n5","u5","u1","u7","u8"]]'))$$,
+      '[["u2","u6","u4",{"label":"u3","set":{"title":"Counting objects","objective":"Count to ten.","kind":"revision","stage":"connect","periods":3,"week_no":null}},"n10"],["u5","u1","u7","u8","n5"]]'))$$,
   'the fields of a unit without versions are edited'
 );
 reset role;
@@ -592,12 +602,12 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}';
 select lives_ok(
   $$insert into res select 'edit_again', public.apply_unit_layout(t120.s(), t120.lay(t120.s(),
-      '[["u2","u6","u4",{"label":"u3","set":{"title":"Counting objects","objective":"Count to ten.","kind":"revision"}},"n10"],["n5","u5","u1","u7","u8"]]'))$$,
+      '[["u2","u6","u4",{"label":"u3","set":{"title":"Counting objects","objective":"Count to ten.","kind":"revision"}},"n10"],["u5","u1","u7","u8","n5"]]'))$$,
   'the same edit again'
 );
 select lives_ok(
   $$insert into res select 'same_on_versioned', public.apply_unit_layout(t120.s(), t120.lay(t120.s(),
-      '[[{"label":"u2","set":{"title":"Unit 2"}},"u6","u4","u3","n10"],["n5","u5","u1","u7","u8"]]'), true)$$,
+      '[[{"label":"u2","set":{"title":"Unit 2"}},"u6","u4","u3","n10"],["u5","u1","u7","u8","n5"]]'), true)$$,
   'values equal to the stored ones are not an edit, even on a unit with versions'
 );
 reset role;
@@ -611,19 +621,19 @@ select results_eq(
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}';
 select throws_ok(
-  $$select public.apply_unit_layout(t120.s(), jsonb_insert(t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["n5","u5","u1","u7","u8"]]'), '{chapters,0}',
+  $$select public.apply_unit_layout(t120.s(), jsonb_insert(t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["u5","u1","u7","u8","n5"]]'), '{chapters,0}',
       jsonb_build_object('new', jsonb_build_object('title', 'First'), 'units', jsonb_build_array(t120.fresh('a'), t120.fresh('b'), t120.fresh('c')))))$$,
   '22023', 'chapter_order_changed', 'a new chapter goes after the existing ones'
 );
 select throws_ok(
   $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), jsonb_build_array(
-      '["u2","u6","u4","u3","n10"]'::jsonb, '["n5","u5","u1","u7","u8"]'::jsonb,
+      '["u2","u6","u4","u3","n10"]'::jsonb, '["u5","u1","u7","u8","n5"]'::jsonb,
       jsonb_build_object('new', 'Our Community', 'units', jsonb_build_array(t120.fresh('a'), t120.fresh('b'))))))$$,
   '22023', 'chapter_unit_count_invalid', 'a new chapter also needs at least 3 units'
 );
 select lives_ok(
   $$insert into res select 'new_chapter', public.apply_unit_layout(t120.s(), t120.lay(t120.s(), jsonb_build_array(
-      '["u2","u6","u4","u3","n10"]'::jsonb, '["n5","u5","u1","u7","u8"]'::jsonb,
+      '["u2","u6","u4","u3","n10"]'::jsonb, '["u5","u1","u7","u8","n5"]'::jsonb,
       jsonb_build_object('new', 'Our Community', 'units', jsonb_build_array(t120.fresh('Neighbours'), t120.fresh('Helpers', '{"lens":"Value"}'), t120.fresh('Safety'))))))$$,
   'a new chapter is added with three new units'
 );
@@ -642,7 +652,7 @@ select results_eq(
   $$values (3, 'Our Community', 'draft', true)$$,
   'the new chapter is number 3, a draft, without a theme'
 );
-select is(t120.nums(t120.s()), '1:1/u2 1:2/u6 1:3/u4 1:4/u3 1:5/n10 2:6/n5 2:7/u5 2:8/u1 2:9/u7 2:10/u8 3:11/q1 3:12/q2 3:13/q3', 'its units continue the term numbering');
+select is(t120.nums(t120.s()), '1:1/u2 1:2/u6 1:3/u4 1:4/u3 1:5/n10 2:6/u5 2:7/u1 2:8/u7 2:9/u8 2:10/n5 3:11/q1 3:12/q2 3:13/q3', 'its units continue the term numbering');
 select is(
   (select count(*)::int from public.theme_units tu where tu.unit_id = t120.u('q2')), 0,
   'a lens in a chapter without a theme links nothing'
@@ -654,7 +664,7 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}';
 select throws_ok(
   $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), jsonb_insert(
-      '[[{"label":"u2","set":{"title":"Changed"}},"u6","u4","u3","n10"],["n5","u5","u1","u7","u8"],["q1","q2","q3"]]', '{2,-1}',
+      '[[{"label":"u2","set":{"title":"Changed"}},"u6","u4","u3","n10"],["u5","u1","u7","u8","n5"],["q1","q2","q3"]]', '{2,-1}',
       t120.fresh('Atomic'), true)))$$,
   '22023', 'unit_has_versions', 'a valid new unit next to an invalid edit: the whole layout is refused'
 );
@@ -675,7 +685,7 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000002","role":"authenticated","aal":"aal2"}';
 select throws_ok(
   $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), jsonb_insert(jsonb_insert(
-      '[["u2","u6","u4","u3","n10"],["n5","u5","u1","u7","u8"],["q1","q2","q3"]]', '{2,-1}', t120.fresh('Fine'), true),
+      '[["u2","u6","u4","u3"],["u5","u1","u7","u8","n5"],["q1","q2","q3"]]', '{2,-1}', t120.fresh('Fine'), true),
       '{2,-1}', t120.fresh('boom'), true), '["n10"]'), true)$$,
   'P0001', 'boom', 'a late failure (the last insert) is raised'
 );
@@ -689,12 +699,12 @@ select results_eq(
 alter table public.units disable trigger t120_boom;
 
 -- S. a stale page can never archive or overwrite a colleague's work -----------------------------------------------------------------------------
-insert into snap select 'stale', t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["n5","u5","u1","u7","u8"],["q1","q2","q3"]]')::text;
+insert into snap select 'stale', t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["u5","u1","u7","u8","n5"],["q1","q2","q3"]]')::text;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}';
 select lives_ok(
   $$insert into res select 'colleague', public.apply_unit_layout(t120.s(), t120.lay(t120.s(),
-      jsonb_insert('[["u2","u6","u4","u3","n10"],["n5","u5","u1","u7","u8"],["q1","q2","q3"]]', '{2,-1}', t120.fresh('Colleague unit'), true)))$$,
+      jsonb_insert('[["u2","u6","u4","u3","n10"],["u5","u1","u7","u8","n5"],["q1","q2","q3"]]', '{2,-1}', t120.fresh('Colleague unit'), true)))$$,
   'a colleague adds a unit to chapter 3'
 );
 select throws_ok(
@@ -704,11 +714,11 @@ select throws_ok(
 reset role;
 insert into ids select 'c1', (r -> 'created_unit_ids' ->> 0)::uuid from res where label = 'colleague';
 select is((select status from public.units where id = t120.u('c1')), 'draft', 'the colleague''s unit is still live');
-insert into snap select 'stale2', t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["n5","u5","u1","u7","u8"],["q1","q2","q3","c1"]]')::text;
+insert into snap select 'stale2', t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["u5","u1","u7","u8","n5"],["q1","q2","q3","c1"]]')::text;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}';
 select lives_ok(
-  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["n5","u5","u1","u7","u8"],["q1","q2","q3"]]', '["c1"]'))$$,
+  $$select public.apply_unit_layout(t120.s(), t120.lay(t120.s(), '[["u2","u6","u4","u3","n10"],["u5","u1","u7","u8","n5"],["q1","q2","q3"]]', '["c1"]'))$$,
   'the colleague removes it again'
 );
 select throws_ok(
@@ -736,7 +746,7 @@ select results_eq(
   'applying the original plan again restores 4 + 4; the archived unit and the surplus one are removed (nothing had versions)'
 );
 reset role;
-select is(t120.nums(t120.s('plan2')), '1:1 1:2 1:3 1:4 2:5 2:6 2:7 2:8', 'plan2 is back to 4 + 4 numbered 1 to 8');
+select is(t120.plain(t120.s('plan2')), '1:1 1:2 1:3 1:4 2:5 2:6 2:7 2:8', 'plan2 is back to 4 + 4 numbered 1 to 8');
 select is(
   (select count(*)::int from public.units u join public.chapters c on c.id = u.chapter_id where c.scheme_id = t120.s('plan2')), 8,
   'no archived leftover: the plan removed the archived row (it had no version)'
@@ -787,7 +797,7 @@ select results_eq(
   'public.apply_unit_layout is a SECURITY INVOKER wrapper with a pinned search_path'
 );
 select results_eq(
-  $$select p.proname::text, p.prosecdef, coalesce(array_to_string(p.proconfig, ','), '') like '%search_path=%'
+  $$select p.proname::text collate "default", p.prosecdef, coalesce(array_to_string(p.proconfig, ','), '') like '%search_path=%'
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'private' and p.proname in ('apply_unit_layout', 'layout_unit_fields', 'unit_layout_result', 'json_uuid')
      order by p.proname$$,

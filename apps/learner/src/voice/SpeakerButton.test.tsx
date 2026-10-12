@@ -61,7 +61,8 @@ describe('SpeakerButton', () => {
     const mine = render(s, { text: 'Hello', speakKey: 'mine' });
     expect(mine).toContain('aria-label="Stop reading aloud"');
     expect(mine).toContain('aria-pressed="true"');
-    expect(mine).toContain('⏹');
+    expect(mine).toContain('■');
+    expect(mine).not.toContain('🔊');
 
     const other = render(s, { text: 'Other', speakKey: 'other' });
     expect(other).toContain('aria-label="Read this aloud"');

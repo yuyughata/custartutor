@@ -32,6 +32,8 @@ export function unitsInOrder(state: DemoState, subjectId: string, levelCode: str
     .map((unit) => ({ unit, chapter: chapterOf(state, unit) }))
     .map(({ unit, chapter }) => ({ unit, scheme: schemeOf(state, chapter) }))
     .filter(({ scheme }) => scheme.subject_id === subjectId && scheme.level_code === levelCode)
+    // A removed (archived) unit is not part of the teaching order.
+    .filter(({ unit }) => unit.status !== 'archived')
     .sort((a, b) => a.scheme.term - b.scheme.term || a.unit.unit_no - b.unit.unit_no)
     .map(({ unit }) => unit);
 }

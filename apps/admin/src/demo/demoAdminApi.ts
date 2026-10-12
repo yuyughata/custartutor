@@ -15,17 +15,19 @@ import {
 } from '@custar/authoring-core';
 import { ChapterPlan } from '@custar/authoring-core';
 import { SchemeWeek } from '@custar/content-schema';
-import { AdminApiError, toAdminError } from '../api/errors';
+import { AdminApiError, fromPostgrest, toAdminError } from '../api/errors';
 import { validateJobParams } from '../api/jobParams';
 import type {
   AdminApi,
   AdminJobs,
+  ApplyLayoutResult,
   ApplyPlanResult,
   ChapterRow,
   HomeSummary,
   JobListFilter,
   JobSummary,
   PackResult,
+  PublishedSnapshot,
   ReviewItem,
   SchemeDetail,
   SchemeSummary,
@@ -38,7 +40,8 @@ import type {
   UsageRange,
 } from '../api/types';
 import { can, type AdminRole, type Capability } from '../lib/roles';
-import { createDemoAuth } from './demoAuth';
+import { LayoutRefusal, planLayout, type LayoutModel, type LayoutPlan } from '../lib/unitLayout';
+import { DEMO_USER_ID, createDemoAuth } from './demoAuth';
 import { createDemoJobHooks, type DemoJobHooks } from './jobHooks';
 import { chapterOf, latestVersionOf, schemeOf, versionsOf } from './queries';
 import { createDemoState, type DemoScheme, type DemoState } from './state';
@@ -331,7 +334,7 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
           counts: {
             schemes: state.schemes.length,
             schemesApproved: state.schemes.filter((scheme) => scheme.status === 'approved').length,
-            units: state.units.length,
+            units: state.units.filter((unit) => unit.status !== 'archived').length,
             versionsInReview: inReview.length,
             versionsReadyToPublish: approved.length,
             jobsRunning: active.filter((job) => job.status === 'running' || job.status === 'queued')
@@ -457,7 +460,7 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
             title: chapter.title,
             status: chapter.status,
             units: state.units
-              .filter((unit) => unit.chapter_id === chapter.id)
+              .filter((unit) => unit.chapter_id === chapter.id && unit.status !== 'archived')
               .sort((a, b) => a.unit_no - b.unit_no)
               .map((unit) => unitRow(unit.id)),
           }));
@@ -513,6 +516,30 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
             );
           }
         }
+        // Units the plan no longer contains: without a version they go (as on the server), with one the apply is refused.
+        const inPlan = (unit: (typeof state.units)[number]): boolean =>
+          parsed.data.chapters.some((planned, index) => {
+            const chapter = state.chapters.find(
+              (candidate) => candidate.scheme_id === scheme.id && candidate.number === index + 1,
+            );
+            return (
+              chapter !== undefined &&
+              chapter.id === unit.chapter_id &&
+              planned.units.some((plannedUnit) => plannedUnit.unit_no === unit.unit_no)
+            );
+          });
+        const schemeChapterIds = new Set(
+          state.chapters.filter((candidate) => candidate.scheme_id === scheme.id).map((c) => c.id),
+        );
+        const dropped = state.units.filter(
+          (unit) => schemeChapterIds.has(unit.chapter_id) && !inPlan(unit),
+        );
+        if (dropped.some((unit) => versionsOf(state, unit.id).length > 0)) {
+          throw conflict(
+            'unit_has_versions',
+            'A unit in this plan already has a draft version, so its plan cannot be changed here.',
+          );
+        }
         let units = 0;
         parsed.data.chapters.forEach((planned, index) => {
           const number = index + 1;
@@ -558,7 +585,128 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
             }
           }
         });
+        for (const unit of dropped) {
+          const at = state.units.indexOf(unit);
+          if (at >= 0) state.units.splice(at, 1);
+        }
         return { chapters: parsed.data.chapters.length, units };
+      },
+      async applyLayout(schemeId, layout, options): Promise<ApplyLayoutResult> {
+        needs('layout.apply');
+        const scheme = findScheme(schemeId);
+        if (scheme.status !== 'approved') {
+          throw conflict('scheme_not_approved', 'The scheme must be approved before chapters can be planned.');
+        }
+        const chapters = state.chapters.filter((chapter) => chapter.scheme_id === scheme.id);
+        const live = state.units.filter(
+          (unit) => unit.status !== 'archived' && chapters.some((chapter) => chapter.id === unit.chapter_id),
+        );
+        const model: LayoutModel = {
+          chapters: chapters.map((chapter) => ({ id: chapter.id, number: chapter.number, title: chapter.title })),
+          units: live.map((unit) => ({
+            id: unit.id,
+            chapter_id: unit.chapter_id,
+            unit_no: unit.unit_no,
+            title: unit.title,
+            objective: unit.objective ?? '',
+            kind: unit.kind,
+            stage: unit.stage,
+            periods: unit.periods,
+            week_no: unit.week_no,
+            hasVersions: versionsOf(state, unit.id).length > 0,
+            published: state.published.some((entry) => entry.unit_id === unit.id),
+          })),
+          weeks: scheme.weeks.map((week) => week.week_no),
+        };
+        let plan: LayoutPlan;
+        try {
+          plan = planLayout(model, layout, { confirmRenumber: options?.confirmRenumber === true });
+        } catch (error) {
+          if (error instanceof LayoutRefusal) {
+            // The same typed error the live adapter makes from the server's message (and DETAIL).
+            throw fromPostgrest(
+              { message: error.code, ...(error.detail ? { details: JSON.stringify(error.detail) } : {}) },
+              'The layout was refused.',
+            );
+          }
+          throw error;
+        }
+        const createdUnitIds: string[] = [];
+        const createdChapterIds: string[] = [];
+        if (plan.changes) {
+          const chapterIds: string[] = [];
+          for (const planned of plan.chapters) {
+            if (planned.id !== null) {
+              chapterIds.push(planned.id);
+              continue;
+            }
+            const created = {
+              id: newId(),
+              scheme_id: scheme.id,
+              number: planned.number,
+              title: planned.title,
+              status: 'draft' as const,
+            };
+            state.chapters.push(created);
+            chapterIds.push(created.id);
+            createdChapterIds.push(created.id);
+          }
+          // Removed units are archived (kept, number parked), never deleted.
+          for (const id of plan.archived) {
+            const unit = state.units.find((candidate) => candidate.id === id);
+            if (!unit) continue;
+            const parked = state.units
+              .filter((other) => other.chapter_id === unit.chapter_id && other.unit_no >= 10000)
+              .reduce((max, other) => Math.max(max, other.unit_no), 9999);
+            unit.status = 'archived';
+            unit.unit_no = parked + 1;
+          }
+          plan.chapters.forEach((planned, index) => {
+            const chapterId = chapterIds[index] as string;
+            for (const entry of planned.units) {
+              const { lens: _lens, ...fields } = entry.fields;
+              if (entry.id !== null) {
+                const unit = state.units.find((candidate) => candidate.id === entry.id);
+                if (unit) Object.assign(unit, fields, { chapter_id: chapterId, unit_no: entry.unit_no });
+              } else {
+                const unit = {
+                  id: newId(),
+                  chapter_id: chapterId,
+                  unit_no: entry.unit_no,
+                  week_no: fields.week_no ?? null,
+                  kind: fields.kind ?? 'lesson',
+                  title: fields.title ?? '',
+                  objective: fields.objective ?? null,
+                  stage: fields.stage ?? 'absorb',
+                  periods: fields.periods ?? 1,
+                  status: 'draft' as const,
+                };
+                state.units.push(unit);
+                createdUnitIds.push(unit.id);
+              }
+            }
+          });
+        }
+        const layoutOut = state.chapters
+          .filter((chapter) => chapter.scheme_id === scheme.id)
+          .sort((a, b) => a.number - b.number)
+          .map((chapter) => ({
+            chapter_id: chapter.id,
+            number: chapter.number,
+            title: chapter.title,
+            units: state.units
+              .filter((unit) => unit.chapter_id === chapter.id && unit.status !== 'archived')
+              .sort((a, b) => a.unit_no - b.unit_no)
+              .map((unit) => ({ id: unit.id, unit_no: unit.unit_no })),
+          }));
+        return {
+          chapters: layoutOut.length,
+          units: layoutOut.reduce((sum, chapter) => sum + chapter.units.length, 0),
+          ...plan.counts,
+          created_unit_ids: createdUnitIds,
+          created_chapter_ids: createdChapterIds,
+          layout: layoutOut,
+        };
       },
     },
 
@@ -634,7 +782,9 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
         const unit = state.units.find((candidate) => candidate.id === version.unit_id);
         if (!unit) throw notFound('not_found', 'That unit no longer exists.');
         const chapter = chapterOf(state, unit);
-        const count = state.units.filter((candidate) => candidate.chapter_id === chapter.id).length;
+        const count = state.units.filter(
+          (candidate) => candidate.chapter_id === chapter.id && candidate.status !== 'archived',
+        ).length;
         if (count < 3 || count > 5) {
           throw new AdminApiError(
             'invalid',
@@ -695,6 +845,58 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
         if (!entry) return null;
         const { unit_version_id: _unused, ...info } = entry;
         return info;
+      },
+      async publishedHistory(unitId): Promise<PublishedSnapshot[]> {
+        needs('content.view');
+        return state.published
+          .filter((entry) => entry.unit_id === unitId)
+          .sort((a, b) => a.version_no - b.version_no)
+          .map((entry) => ({
+            id: entry.id,
+            version_no: entry.version_no,
+            is_current: entry.is_current,
+            published_at: entry.published_at,
+            content: structuredClone(findVersion(entry.unit_version_id).content),
+          }));
+      },
+      async saveHumanVersion(input) {
+        needs('unit.edit');
+        const unit = state.units.find((candidate) => candidate.id === input.unitId);
+        if (!unit) throw notFound('unit_not_found', 'That unit no longer exists.');
+        if (unit.status === 'archived') {
+          throw conflict('unit_not_editable', 'This unit was removed from its chapter, so it cannot get new versions.');
+        }
+        const content = input.content as { schema_version?: unknown; header?: unknown } | null;
+        if (
+          typeof content !== 'object' ||
+          content === null ||
+          typeof content.header !== 'object' ||
+          content.header === null ||
+          typeof content.schema_version !== 'number'
+        ) {
+          throw fromPostgrest({ message: 'invalid_unit_content' }, 'The server did not accept that content.');
+        }
+        const latest = latestVersionOf(state, unit.id);
+        if ((input.baseVersionId ?? null) !== (latest?.id ?? null)) {
+          throw conflict('stale_base', 'A newer version of this unit exists. Reload the page and try again.');
+        }
+        const created = {
+          id: newId(),
+          unit_id: unit.id,
+          version: (latest?.version ?? 0) + 1,
+          schema_version: content.schema_version,
+          status: 'draft' as const,
+          generated_by: 'human' as const,
+          model: null,
+          prompt_version: null,
+          lint_report: structuredClone(input.lintReport) as unknown,
+          base_version_id: input.baseVersionId,
+          created_by: DEMO_USER_ID,
+          created_at: now().toISOString(),
+          content: structuredClone(input.content),
+        };
+        state.versions.push(created);
+        return { id: created.id, version: created.version };
       },
     },
 

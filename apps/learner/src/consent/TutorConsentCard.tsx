@@ -111,7 +111,6 @@ export function TutorConsentCard({
   return (
     <View style={{ gap: space[4] }}>
       <Card tone={on ? 'core' : 'plain'}>
-        <Body role="lead">AI tutor for {alias}</Body>
         {state.load === 'loading' ? <Body muted>Checking…</Body> : null}
         {state.load === 'failed' ? (
           <ErrorText>

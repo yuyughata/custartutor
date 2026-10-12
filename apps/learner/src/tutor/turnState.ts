@@ -67,7 +67,8 @@ export type ChatAction =
   | { type: 'failed'; failure: TutorFailure }
   /** Retry after a failure: a new tutor bubble; the turn keeps (or is given) the client turn id to use. */
   | { type: 'retry'; tutorBubbleId: string; request?: TutorChatRequest }
-  | { type: 'dismissError' };
+  /** Forget a failure that retrying cannot fix (consent was off, the limit was reached), so the child can ask again. A retryable failure keeps its Try again card. */
+  | { type: 'clearFailure' };
 
 export function isBusy(state: ChatState): boolean {
   return state.phase === 'waiting' || state.phase === 'streaming';
@@ -221,7 +222,9 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       };
     }
 
-    case 'dismissError':
-      return { ...state, error: null };
+    case 'clearFailure':
+      return state.phase === 'failed' && !state.error?.canRetry
+        ? { ...state, phase: 'idle', turn: null, error: null, failure: null }
+        : state;
   }
 }

@@ -1,15 +1,18 @@
 import { View } from 'react-native';
-import { Body, Screen, Title, TopBar } from '../../../ui';
+import { useLocalSearchParams } from 'expo-router';
+import { GrownupGate } from '../../../helper/GrownupGate';
+import { HelperLauncher } from '../../../helper/HelperLauncher';
+import { TopBar } from '../../../ui';
 
-// Placeholder route: replaced by the M3.3 work package that owns this screen.
-export default function Placeholder() {
+/** Grown-ups area: start a helper session for a child. Re-asks the PIN if the grown-up elevation has lapsed. */
+export default function HelperLauncherRoute() {
+  const { childId } = useLocalSearchParams<{ childId: string }>();
   return (
     <View style={{ flex: 1 }}>
       <TopBar title="Helper mode" />
-      <Screen>
-        <Title>Helper mode</Title>
-        <Body muted>Coming soon.</Body>
-      </Screen>
+      <GrownupGate title="Grown-ups only" body="Enter your PIN to start a helper session.">
+        <HelperLauncher childId={childId} />
+      </GrownupGate>
     </View>
   );
 }

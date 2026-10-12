@@ -65,9 +65,9 @@ export function TutorLauncher({
 }) {
   const { runtime } = useRuntime();
   const insets = useSafeAreaInsets();
-  const voice = useReadAloud();
   const [open, setOpen] = useState(false);
   const [child, setChild] = useState<LocalChild | null>(null);
+  const voice = useReadAloud({ readingMode: child?.reading_mode ?? null });
   const [mode, setMode] = useState<TutorMode>({ kind: 'checking' });
   const [forceLite, setForceLite] = useState(false);
   const [recheck, setRecheck] = useState(0);
@@ -111,6 +111,8 @@ export function TutorLauncher({
     questions,
   });
 
+  const clearFailure = chat.clearFailure;
+
   // Each time the sheet opens, decide which tutor to offer.
   useEffect(() => {
     if (!open) return undefined;
@@ -120,19 +122,32 @@ export function TutorLauncher({
       isOnline: () => runtime.network.isOnline(),
       api: runtime.tutor,
       childId,
-    }).then((resolved) => alive && setMode(resolved));
+    }).then((resolved) => {
+      if (!alive) return;
+      // Back in the live chat after a failure that a retry cannot fix (consent was off, the limit was reached):
+      // start fresh, so a grown-up turning the tutor on is noticed the next time the sheet opens.
+      if (resolved.kind === 'live') clearFailure();
+      setMode(resolved);
+    });
     return () => {
       alive = false;
     };
-  }, [open, recheck, runtime, childId]);
+  }, [open, recheck, runtime, childId, clearFailure]);
 
   const inLite = mode.kind === 'lite' || (forceLite && mode.kind !== 'checking');
 
   // In the offline tutor, start straight away on the part the child was last working on, if it has a script.
+  // Only once per opening of the sheet: "Another part" must be able to go back to the list.
+  const autoStarted = useRef(false);
   const chooseLite = lite.choose;
   const hasTarget = lite.state.target !== null;
   useEffect(() => {
-    if (!open || !inLite || hasTarget) return;
+    if (!open) {
+      autoStarted.current = false;
+      return;
+    }
+    if (!inLite || hasTarget || autoStarted.current) return;
+    autoStarted.current = true;
     const preferred = defaultLiteTarget(unit, lastQuestion.current);
     if (preferred) chooseLite(preferred);
     else if (targets.length === 1 && targets[0]) chooseLite(targets[0]);
@@ -200,23 +215,31 @@ export function TutorLauncher({
           ) : (
             <Notice tone="plain">{TUTOR_COPY.notice}</Notice>
           )}
-          {demo ? <Notice tone="demo">{TUTOR_COPY.demoNotice}</Notice> : null}
+          {demo && mode.kind === 'live' && !inLite ? (
+            <Notice tone="demo">{TUTOR_COPY.demoNotice}</Notice>
+          ) : null}
           {controls ? (
-            <View style={{ paddingHorizontal: space[4], paddingTop: space[2] }}>
-              <Button
-                label={
-                  controls.isOnline()
-                    ? 'Demo only: pretend the internet is off'
-                    : 'Demo only: pretend the internet is back'
-                }
-                variant="ghost"
-                onPress={() => {
-                  controls.setOnline(!controls.isOnline());
-                  setForceLite(false);
-                  setRecheck((value) => value + 1);
-                }}
-              />
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                controls.setOnline(!controls.isOnline());
+                setForceLite(false);
+                setRecheck((value) => value + 1);
+              }}
+              style={{
+                minHeight: minTouchTarget,
+                justifyContent: 'center',
+                paddingHorizontal: space[4],
+              }}
+            >
+              <Text
+                style={{ ...typeScale.label, color: teal.text, textDecorationLine: 'underline' }}
+              >
+                {controls.isOnline()
+                  ? 'Demo only: pretend the internet is off'
+                  : 'Demo only: pretend the internet is back'}
+              </Text>
+            </Pressable>
           ) : null}
 
           <View style={{ flex: 1, width: '100%', maxWidth: 720, alignSelf: 'center' }}>

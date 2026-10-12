@@ -7,9 +7,17 @@ import { createElement, type ReactNode } from 'react';
  */
 interface MockProps {
   children?: ReactNode;
+  'aria-pressed'?: boolean;
+  'aria-checked'?: boolean;
+  'aria-selected'?: boolean;
   accessibilityLabel?: string;
   accessibilityRole?: string;
-  accessibilityState?: { selected?: boolean; disabled?: boolean; busy?: boolean; checked?: boolean };
+  accessibilityState?: {
+    selected?: boolean;
+    disabled?: boolean;
+    busy?: boolean;
+    checked?: boolean;
+  };
   disabled?: boolean;
   testID?: string;
   value?: string;
@@ -23,9 +31,15 @@ function host(tag: string, roleFallback?: string) {
     accessibilityState,
     disabled,
     testID,
+    ...aria
   }: MockProps): ReactNode {
     const role = accessibilityRole ?? roleFallback;
-    const pressed = accessibilityState?.selected ?? accessibilityState?.checked;
+    const pressed =
+      aria['aria-pressed'] ??
+      aria['aria-checked'] ??
+      aria['aria-selected'] ??
+      accessibilityState?.selected ??
+      accessibilityState?.checked;
     return createElement(
       tag,
       {

@@ -19,13 +19,16 @@ import { validateJobParams } from './jobParams';
 import {
   AiJobResponseSchema,
   AiSettingsSchema,
+  ApplyLayoutSchema,
   ApplyPlanSchema,
   CharacterRow,
   ChapterListRow,
+  CreatedVersionSchema,
   JobRowLoose,
   JobSummaryRow,
   LevelRow,
   PackResultSchema,
+  PublishedSnapshotRow,
   PublishedUnitRow,
   ReviewItemRow,
   SchemeDetailRow,
@@ -46,6 +49,7 @@ import type {
   HomeSummary,
   JobListFilter,
   JobSummary,
+  PublishedSnapshot,
   ReviewItem,
   SchemeSummary,
   UnitContext,
@@ -455,6 +459,18 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
         );
         return { chapters: out.chapters, units: out.units };
       },
+      async applyLayout(schemeId, layout, options) {
+        return rpc(
+          'apply_unit_layout',
+          {
+            p_scheme_id: schemeId,
+            p_layout: layout,
+            p_confirm_renumber: options?.confirmRenumber === true,
+          },
+          ApplyLayoutSchema,
+          'apply the layout',
+        );
+      },
     },
 
     units: {
@@ -562,6 +578,33 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
           .maybeSingle();
         const row = unwrap(result as QueryResult<unknown>, 'Could not read the publication.');
         return row ? parseResponse(PublishedUnitRow, row, 'the publication') : null;
+      },
+      async publishedHistory(unitId): Promise<PublishedSnapshot[]> {
+        const result = await supabase
+          .from('published_units')
+          .select('id,version_no,is_current,published_at,content')
+          .eq('unit_id', unitId)
+          .order('version_no', { ascending: true });
+        return listOf(result, 'Could not read the published history.').map(
+          (row) => parseResponse(PublishedSnapshotRow, row, 'a published snapshot') as PublishedSnapshot,
+        );
+      },
+      async saveHumanVersion(input) {
+        const created = await rpc(
+          'create_unit_version_draft',
+          {
+            p_unit_id: input.unitId,
+            p_content: input.content,
+            p_lint_report: input.lintReport,
+            p_generated_by: 'human',
+            p_model: null,
+            p_prompt_version: null,
+            p_base_version_id: input.baseVersionId,
+          },
+          CreatedVersionSchema,
+          'save the new version',
+        );
+        return { id: created.id, version: created.version };
       },
     },
 

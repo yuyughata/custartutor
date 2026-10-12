@@ -1,6 +1,6 @@
 import { useRef } from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { palette, space, typeScale } from '@custar/design-tokens';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { layerColors, minTouchTarget, palette, space, typeScale } from '@custar/design-tokens';
 import { Button } from '../ui';
 import { ChildBubble, TutorBubble, type ReadAloudProps } from './Bubble';
 import { Composer } from './Composer';
@@ -68,19 +68,36 @@ export function LiteChatView({
       <View
         style={{
           paddingHorizontal: space[4],
-          paddingVertical: space[2],
           flexDirection: 'row',
           alignItems: 'center',
-          gap: space[2],
+          gap: space[3],
           borderBottomWidth: 1,
           borderBottomColor: palette.placeholderBorder,
+          minHeight: minTouchTarget,
         }}
       >
-        <Text numberOfLines={2} style={{ ...typeScale.label, flex: 1, color: palette.ink }}>
+        <Text
+          numberOfLines={2}
+          style={{ ...typeScale.body, fontWeight: '700', flex: 1, color: palette.ink }}
+        >
           {state.target.heading}
         </Text>
         {targets.length > 1 ? (
-          <Button label={LITE_COPY.change} variant="ghost" onPress={lite.change} />
+          <Pressable
+            accessibilityRole="button"
+            onPress={lite.change}
+            style={{ minHeight: minTouchTarget, justifyContent: 'center' }}
+          >
+            <Text
+              style={{
+                ...typeScale.label,
+                color: layerColors.CORE.text,
+                textDecorationLine: 'underline',
+              }}
+            >
+              {LITE_COPY.change}
+            </Text>
+          </Pressable>
         ) : null}
       </View>
       <ScrollView

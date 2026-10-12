@@ -9,6 +9,8 @@ export interface UseTutorChat {
   send(rawText: string): boolean;
   /** After a failure: asks the server whether the turn finished, and only then resends. */
   retry(): void;
+  /** Drops a failure that a retry cannot fix, so the child can ask a new question. */
+  clearFailure(): void;
 }
 
 /**
@@ -69,5 +71,7 @@ export function useTutorChat(options: {
     });
   }, [api, newId]);
 
-  return { state, send, retry };
+  const clearFailure = useCallback(() => dispatch({ type: 'clearFailure' }), []);
+
+  return { state, send, retry, clearFailure };
 }

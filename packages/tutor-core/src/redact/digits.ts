@@ -17,7 +17,7 @@ export interface DigitRun {
   kind: DigitRunKind;
 }
 
-const SEPARATORS = new Set([' ', '-', '–', '—', '.', '(', ')', '_', ' ', ' ', ' ']);
+const SEPARATORS = new Set([' ', '-', '–', '—', '.', '(', ')', '_', '\u00a0', '\u2009', '\u202f']);
 
 function isDigit(char: string | undefined): boolean {
   return char !== undefined && char >= '0' && char <= '9';
@@ -39,11 +39,16 @@ function digitLikeAt(text: string, index: number): boolean {
   const char = text[index];
   if (isDigit(char)) return true;
   if (!isOLike(char)) return false;
-  const before = text[index - 1];
-  const after = text[index + 1];
-  // "O" must touch a digit or another O that touches a digit; do not eat the "o" of a word.
-  if (isDigit(before) || isDigit(after)) return !isLetter(before) || isDigit(before);
-  return false;
+  // find the block of O's this one belongs to and look at what touches it
+  let first = index;
+  while (isOLike(text[first - 1])) first -= 1;
+  let last = index;
+  while (isOLike(text[last + 1])) last += 1;
+  const before = text[first - 1];
+  const after = text[last + 1];
+  if (!isDigit(before) && !isDigit(after)) return false;
+  // "go8" is a word; "08O3" and "O803" are digits
+  return !isLetter(before);
 }
 
 interface RawRun {
@@ -103,7 +108,7 @@ function scan(text: string): RawRun[] {
         sep += text[k];
         k += 1;
       }
-      const nonSpace = sep.replace(/[    ]/g, '');
+      const nonSpace = sep.replace(/[ \u00a0\u2009\u202f]/g, '');
       if (sep !== '' && nonSpace.length <= 1 && digitLikeAt(text, k)) {
         if (group !== '') groups.push(group);
         group = '';

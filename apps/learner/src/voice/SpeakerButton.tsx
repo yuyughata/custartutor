@@ -41,6 +41,7 @@ export function SpeakerButton({
       accessibilityRole="button"
       accessibilityLabel={speaking ? 'Stop reading aloud' : 'Read this aloud'}
       accessibilityState={{ selected: speaking }}
+      aria-pressed={speaking}
       onPress={() => read.toggle(key, text)}
       style={{
         alignSelf: 'flex-start',
@@ -57,9 +58,23 @@ export function SpeakerButton({
         gap: space[2],
       }}
     >
-      <Text accessibilityElementsHidden importantForAccessibility="no" style={{ fontSize: large ? 28 : 22 }}>
-        {speaking ? '⏹' : '🔊'}
-      </Text>
+      {speaking ? (
+        <Text
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+          style={{ fontSize: large ? 26 : 20, color: palette.white, fontWeight: '700' }}
+        >
+          ■
+        </Text>
+      ) : (
+        <Text
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+          style={{ fontSize: large ? 28 : 22 }}
+        >
+          🔊
+        </Text>
+      )}
       {label ? (
         <Text
           accessibilityElementsHidden

@@ -14,7 +14,10 @@ export interface SpeechBackend {
    * Speaks ONE piece of text. Resolves when it finishes, is stopped, fails, or runs far longer than it should
    * (a watchdog). Never rejects.
    */
-  speakChunk(text: string, options: { lang?: string; rate?: number; voice?: string }): Promise<void>;
+  speakChunk(
+    text: string,
+    options: { lang?: string; rate?: number; voice?: string },
+  ): Promise<void>;
   /** Stops what is speaking and resolves every pending `speakChunk`. Never rejects. */
   stop(): Promise<void>;
   /** The longest piece this engine should be given. */
