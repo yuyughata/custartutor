@@ -11,10 +11,11 @@ Master Development Brief (`docs/brief/master-development-brief.md`). The build p
 - `apps/admin` - Expo web-first admin (content engine, users, analytics, support). Never shipped to phones.
 - `packages/content-schema` - Zod schemas, lint rules, `migrate_vN` for lesson content. Pure TS, no RN imports.
 - `packages/lesson-renderer` - React Native components rendering unit content (learner app + admin preview).
+- `packages/authoring-core` - the content engine: model port, Anthropic adapter, prompts, resumable step engine (ADR 0007). Pure TS; runs in Deno, Node and the admin app's demo mode.
 - `packages/design-tokens` - colours, type, spacing from the unit template (CORE teal, ENRICH amber).
 - `packages/supabase` - generated DB types and typed RPC wrappers.
 - `supabase/` - migrations, pgTAP tests, seeds, edge functions (`_shared/vendor` is generated).
-- `scripts/` - `vendor-schema` (bundles content-schema for Deno), `check-peer-deps`.
+- `scripts/` - `vendor-schema` / `vendor-authoring` (bundle packages for Deno), `check-peer-deps`.
 
 ## Commands
 
