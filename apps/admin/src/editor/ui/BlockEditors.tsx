@@ -40,7 +40,7 @@ export const BLOCK_MENU = BLOCK_TYPES.filter((type) => type !== 'question').map(
 }));
 
 /** The optional language tag of a block: shown once it is set, or on request. */
-function LangField({ path, value }: { path: Path; value: unknown }): ReactNode {
+export function LangField({ path, value }: { path: Path; value: unknown }): ReactNode {
   const actions = useActions();
   const env = useEnv();
   if (typeof value === 'string') {

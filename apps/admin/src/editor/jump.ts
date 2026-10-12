@@ -121,3 +121,61 @@ export function jumpPlan(unit: unknown, path: Path): JumpPlan {
 export function tabForKind(kind: UnitKind, plan: JumpPlan): EditorTab {
   return tabsFor(kind).includes(plan.tab) ? plan.tab : 'overview';
 }
+
+// --- where a problem is, in words -------------------------------------------------------------------------------------
+
+function snippet(text: string, max = 32): string {
+  const plain = text.replace(/\*\*/g, '').replace(/\s+/g, ' ').trim();
+  return plain.length > max ? `${plain.slice(0, max - 1).trimEnd()}…` : plain;
+}
+
+/** "Section 3 (Practice time), block 2" for a path, so the summary panel says where each problem is. */
+export function describeLocation(unit: unknown, path: Path): string {
+  const root = path[0];
+  switch (root) {
+    case undefined:
+      return 'The unit';
+    case 'header':
+      return 'Overview, header';
+    case 'scoring':
+      return 'Overview, scoring';
+    case 'sections': {
+      const index = path[1];
+      if (typeof index !== 'number') return 'Sections';
+      const heading = snippet(stringAt(unit, ['sections', index, 'heading']));
+      let out = `Section ${index + 1}${heading ? ` (${heading})` : ''}`;
+      if (path[2] === 'blocks' && typeof path[3] === 'number') out += `, block ${path[3] + 1}`;
+      if (path[2] === 'tutor_script') {
+        out += ', tutor script';
+        if (path[3] === 'nodes' && typeof path[4] === 'number') out += `, line ${path[4] + 1}`;
+      }
+      return out;
+    }
+    case 'questions': {
+      const id = path[1];
+      return typeof id === 'string' ? `Question ${id}` : 'Questions';
+    }
+    case 'session_plan':
+      return typeof path[1] === 'number' ? `Session plan, period ${path[1] + 1}` : 'Session plan';
+    case 'workbook':
+      return 'Workbook';
+    case 'teacher_manual': {
+      if (path[1] === 'script' && typeof path[2] === 'number') return `Teacher's manual, script row ${path[2] + 1}`;
+      if (path[1] === 'helper_script' && typeof path[2] === 'number') return `Teacher's manual, helper script row ${path[2] + 1}`;
+      return "Teacher's manual";
+    }
+    case 'tutor_script':
+      return typeof path[2] === 'number' ? `Project tutor script, line ${path[2] + 1}` : 'Project tutor script';
+    case 'steps':
+      return typeof path[1] === 'number' ? `Project step ${path[1] + 1}` : 'Project steps';
+    case 'rubric':
+      return typeof path[1] === 'number' ? `Rubric, criterion ${path[1] + 1}` : 'Rubric';
+    case 'brief':
+    case 'materials':
+    case 'evidence_options':
+    case 'reflection_prompts':
+      return 'The project';
+    default:
+      return String(root);
+  }
+}

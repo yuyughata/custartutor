@@ -20,6 +20,8 @@ export interface DeleteRequest {
 }
 
 export interface EditorActions {
+  /** The working copy as it is right now (for operations that need to know a result, such as the id they created). */
+  current(): Unit;
   /** Applies a change to the working copy. Edits with the same `key` in quick succession are one undo step. */
   commit(update: (unit: Unit) => Unit, key?: string | null): void;
   setField(path: Path, value: unknown): void;

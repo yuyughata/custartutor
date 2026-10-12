@@ -563,3 +563,35 @@ export function Rows({
     </View>
   );
 }
+
+/** A button that is on or off ("Correct answer"), with the state in its name, not only its colour. */
+export function Mark({ label, on, onPress, name }: { label: string; on: boolean; onPress: () => void; name: string }): ReactNode {
+  const env = useEnv();
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityLabel={name}
+      accessibilityState={{ checked: on, disabled: env.readOnly }}
+      disabled={env.readOnly}
+      onPress={onPress}
+      style={{
+        minHeight: 36,
+        paddingHorizontal: space[3],
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+        borderRadius: radii.md,
+        borderWidth: 1.5,
+        borderColor: on ? colors.success : colors.borderStrong,
+        backgroundColor: on ? colors.successTint : colors.white,
+        alignSelf: 'flex-start',
+      }}
+    >
+      <Text aria-hidden style={{ fontSize: 15, color: on ? colors.success : colors.subtle }}>
+        {on ? '✓' : '○'}
+      </Text>
+      <Text style={{ fontSize: 14, fontWeight: '700', color: on ? colors.success : colors.textSoft }}>{label}</Text>
+    </Pressable>
+  );
+}
+

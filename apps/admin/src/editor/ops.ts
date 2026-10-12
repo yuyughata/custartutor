@@ -444,6 +444,32 @@ export function removePeriod(unit: Unit, index: number): Unit {
   );
 }
 
+/**
+ * Puts a section into a period of the session plan, or takes it out. The sections of a period are kept in the order of
+ * the textbook; an id that is not a section of the unit (a leftover) is kept at the end, where the person can see it.
+ */
+export function setPeriodSection(unit: Unit, periodIndex: number, sectionId: string, on: boolean): Unit {
+  const current = listAt<string>(unit, ['session_plan', periodIndex, 'sections']);
+  const chosen = new Set(current.filter((id) => id !== sectionId));
+  if (on) chosen.add(sectionId);
+  const known = sections(unit).map((s) => String(s.id ?? ''));
+  const ordered = [...known.filter((id) => chosen.has(id)), ...[...chosen].filter((id) => !known.includes(id))];
+  return setAt(unit, ['session_plan', periodIndex, 'sections'], ordered);
+}
+
+/** The segments (Start, Teach, ...) a period does not list yet. */
+export function missingSegments(unit: Unit, periodIndex: number): string[] {
+  const have = new Set(listAt<Rec>(unit, ['session_plan', periodIndex, 'minutes']).map((m) => m.segment));
+  return SEGMENTS.filter((segment) => !have.has(segment));
+}
+
+/** Adds a segment to a period, after the segments it already has, with a sensible number of minutes. */
+export function addSegment(unit: Unit, periodIndex: number, segment: string): Unit {
+  if (!(SEGMENTS as readonly string[]).includes(segment)) return unit;
+  if (!missingSegments(unit, periodIndex).includes(segment)) return unit;
+  return appendAt(unit, ['session_plan', periodIndex, 'minutes'], { segment, minutes: 10 });
+}
+
 export function periodMinutes(unit: Unit, index: number): number {
   return listAt<Rec>(unit, ['session_plan', index, 'minutes']).reduce(
     (sum, m) => sum + (typeof m.minutes === 'number' && Number.isFinite(m.minutes) ? m.minutes : 0),
@@ -457,6 +483,45 @@ export function sectionsOutsidePlan(unit: Unit): string[] {
   return sections(unit)
     .map((s) => String(s.id ?? ''))
     .filter((id) => id !== '' && !planned.has(id));
+}
+
+// --- project steps and evidence ---------------------------------------------------------------------------------------
+
+/** The steps of a project must be numbered 1, 2, 3 in order: every change to the list renumbers it. */
+export function renumberSteps(unit: Unit): Unit {
+  const steps = listAt<Rec>(unit, ['steps']);
+  return setAt(
+    unit,
+    ['steps'],
+    steps.map((step, index) => ({ ...step, n: index + 1 })),
+  );
+}
+
+export function addStep(unit: Unit): Unit {
+  return renumberSteps(appendAt(unit, ['steps'], { n: 0, text: '' }));
+}
+
+export function removeStep(unit: Unit, index: number): Unit {
+  if (listAt(unit, ['steps']).length <= 1) return unit;
+  return renumberSteps(removeAt(unit, ['steps', index]));
+}
+
+export function moveStep(unit: Unit, from: number, to: number): Unit {
+  return renumberSteps(moveItem(unit, ['steps'], from, to));
+}
+
+export const EVIDENCE_CHOICES = ['photo', 'drawing', 'audio', 'text'] as const;
+
+/** Turns one way of showing the work on or off; the list stays in a fixed order, with at least one choice. */
+export function setEvidence(unit: Unit, option: string, on: boolean): Unit {
+  const have = new Set(listAt<string>(unit, ['evidence_options']));
+  if (on) have.add(option);
+  else if (have.size > 1) have.delete(option);
+  return setAt(
+    unit,
+    ['evidence_options'],
+    [...EVIDENCE_CHOICES.filter((choice) => have.has(choice)), ...[...have].filter((o) => !(EVIDENCE_CHOICES as readonly string[]).includes(o))],
+  );
 }
 
 // --- workbook and manual -------------------------------------------------------------------------------------------

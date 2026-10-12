@@ -4,6 +4,12 @@ import { Id, parseUnit, type UnitContent } from '@custar/content-schema';
 import {
   addBlock,
   addMissingScriptRows,
+  addSegment,
+  addStep,
+  moveStep,
+  removeStep,
+  renumberSteps,
+  setEvidence,
   addNode,
   addPeriod,
   addQuestion,
@@ -14,6 +20,7 @@ import {
   duplicateQuestion,
   duplicateSection,
   moveBlock,
+  missingSegments,
   moveSection,
   periodMinutes,
   questionIds,
@@ -27,6 +34,7 @@ import {
   sectionUsage,
   sections,
   sectionsOutsidePlan,
+  setPeriodSection,
   setSectionType,
 } from './ops';
 import { getAt, listAt, setAt } from './path';
@@ -243,6 +251,72 @@ describe('session plan, workbook and manual', () => {
     const filled = addMissingScriptRows(grown);
     expect(listAt(filled, ['teacher_manual', 'script']).at(-1)).toMatchObject({ section_id: 'concept_1', say: '' });
     expect(addMissingScriptRows(filled)).toBe(filled);
+  });
+});
+
+describe('session plan periods', () => {
+  it('puts a section into a period and takes it out, in textbook order', () => {
+    const first = String(sections(gold)[0]?.id);
+    const without = setPeriodSection(gold, 0, first, false);
+    expect(listAt<string>(without, ['session_plan', 0, 'sections'])).not.toContain(first);
+    const back = setPeriodSection(without, 0, first, true);
+    const list = listAt<string>(back, ['session_plan', 0, 'sections']);
+    expect(list).toContain(first);
+    const order = ids(gold);
+    expect(list.map((id) => order.indexOf(id))).toEqual([...list.map((id) => order.indexOf(id))].sort((a, b) => a - b));
+  });
+
+  it('keeps an id that is not a section at the end, so it can be seen and unticked', () => {
+    const leftover = setAt(gold, ['session_plan', 0, 'sections'], [...listAt<string>(gold, ['session_plan', 0, 'sections']), 'gone_section']);
+    const touched = setPeriodSection(leftover, 0, String(sections(gold)[0]?.id), true);
+    expect(listAt<string>(touched, ['session_plan', 0, 'sections']).at(-1)).toBe('gone_section');
+    const removed = setPeriodSection(touched, 0, 'gone_section', false);
+    expect(listAt<string>(removed, ['session_plan', 0, 'sections'])).not.toContain('gone_section');
+  });
+
+  it('adds a missing segment once', () => {
+    const fewer = setAt(gold, ['session_plan', 0, 'minutes'], listAt(gold, ['session_plan', 0, 'minutes']).slice(0, 3));
+    expect(missingSegments(fewer, 0)).toEqual(['practice', 'close']);
+    const more = addSegment(fewer, 0, 'close');
+    expect(listAt(more, ['session_plan', 0, 'minutes'])).toHaveLength(4);
+    expect(addSegment(more, 0, 'close')).toBe(more);
+    expect(addSegment(more, 0, 'nonsense')).toBe(more);
+  });
+});
+
+describe('project steps and evidence', () => {
+  const project = {
+    kind: 'mini_project',
+    steps: [
+      { n: 1, text: 'one' },
+      { n: 2, text: 'two' },
+      { n: 3, text: 'three' },
+    ],
+    evidence_options: ['photo', 'text'],
+  } as unknown as UnitContent;
+
+  it('renumbers after every change so the steps always read 1, 2, 3', () => {
+    const moved = moveStep(project, 2, 0);
+    expect(listAt(moved, ['steps']).map((s) => (s as { n: number; text: string }).text)).toEqual(['three', 'one', 'two']);
+    expect(listAt(moved, ['steps']).map((s) => (s as { n: number }).n)).toEqual([1, 2, 3]);
+    const removed = removeStep(project, 0);
+    expect(listAt(removed, ['steps']).map((s) => (s as { n: number }).n)).toEqual([1, 2]);
+    const added = addStep(project);
+    expect(listAt(added, ['steps']).at(-1)).toEqual({ n: 4, text: '' });
+    expect(renumberSteps(project)).toEqual(project);
+  });
+
+  it('never removes the last step', () => {
+    const one = removeStep(removeStep(project, 0), 0);
+    expect(listAt(one, ['steps'])).toHaveLength(1);
+    expect(removeStep(one, 0)).toBe(one);
+  });
+
+  it('keeps the evidence choices in a fixed order and never empty', () => {
+    expect(getAt(setEvidence(project, 'audio', true), ['evidence_options'])).toEqual(['photo', 'audio', 'text']);
+    expect(getAt(setEvidence(project, 'photo', false), ['evidence_options'])).toEqual(['text']);
+    const single = setEvidence(project, 'photo', false);
+    expect(getAt(setEvidence(single, 'text', false), ['evidence_options'])).toEqual(['text']);
   });
 });
 

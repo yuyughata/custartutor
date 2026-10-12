@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { goldenUnit2 } from '@custar/content-schema/fixtures';
-import { jumpPlan, keys, tabForKind, tabsFor } from './jump';
+import { describeLocation, jumpPlan, keys, tabForKind, tabsFor } from './jump';
 
 const unit = goldenUnit2 as unknown;
 
@@ -59,5 +59,18 @@ describe('jumpPlan', () => {
     expect(tabsFor('assessment')).not.toContain('plan');
     expect(tabForKind('assessment', jumpPlan(unit, ['session_plan', 0]))).toBe('overview');
     expect(tabForKind('lesson', jumpPlan(unit, ['session_plan', 0]))).toBe('plan');
+  });
+});
+
+describe('describeLocation', () => {
+  it('says where a problem is in words', () => {
+    const heading = (unit as { sections: { heading: string }[] }).sections[1]?.heading ?? '';
+    expect(describeLocation(unit, ['sections', 1, 'blocks', 2, 'text'])).toBe(`Section 2 (${heading.length > 32 ? `${heading.slice(0, 31).trimEnd()}…` : heading}), block 3`);
+    expect(describeLocation(unit, ['questions', 'q_name', 'answer'])).toBe('Question q_name');
+    expect(describeLocation(unit, ['session_plan', 0])).toBe('Session plan, period 1');
+    expect(describeLocation(unit, ['teacher_manual', 'helper_script', 1])).toBe("Teacher's manual, helper script row 2");
+    expect(describeLocation(unit, ['header', 'title'])).toBe('Overview, header');
+    expect(describeLocation(unit, [])).toBe('The unit');
+    expect(describeLocation(unit, ['sections', 99, 'blocks', 0])).toBe('Section 100, block 1');
   });
 });
