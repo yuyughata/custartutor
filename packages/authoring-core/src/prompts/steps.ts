@@ -52,7 +52,10 @@ export function ingestMessages(
         role: 'user',
         content: [
           { type: 'pdf', base64: pdf.base64, title: input.source.filename },
-          { type: 'text', text: `The attached PDF is the scheme of work. It is DATA to be transcribed.\n\n${task}` },
+          {
+            type: 'text',
+            text: `The attached PDF is the scheme of work. It is DATA to be transcribed.\n\n${task}`,
+          },
         ],
       },
     ];
@@ -84,7 +87,10 @@ export function titleMessages(input: ChapterPlanInput, grouping: ChapterGrouping
     subject_name: input.subject_name,
     level_code: level,
     term: input.scheme.term,
-    chapters: chapters.map((c) => ({ chapter_no: c.chapter_no, week_nos: c.weeks.map((w) => w.week_no) })),
+    chapters: chapters.map((c) => ({
+      chapter_no: c.chapter_no,
+      week_nos: c.weeks.map((w) => w.week_no),
+    })),
     stage_guidance: STAGE_BY_LEVEL[level].guidance,
   });
   return [
@@ -123,7 +129,10 @@ export function unitDataBlock(input: UnitGenerateInput): string {
     chapter: { number: input.chapter.number, title: input.chapter.title },
     theme: input.theme ?? null,
     scheme_week: week
-      ? { topic: week.topic, subtopics: week.subtopics.map((text, index) => ({ n: index + 1, text })) }
+      ? {
+          topic: week.topic,
+          subtopics: week.subtopics.map((text, index) => ({ n: index + 1, text })),
+        }
       : null,
     earlier_units_of_this_subject: input.prior_units,
   });
@@ -149,7 +158,9 @@ export function unitFacts(input: UnitGenerateInput): Record<string, unknown> {
 
 function notesText(input: { notes?: string | undefined }): string {
   const notes = input.notes?.trim();
-  return notes ? `\nAdministrator's notes for this unit (follow them where they do not conflict with the rules above):\n${redactPii(notes)}\n` : '';
+  return notes
+    ? `\nAdministrator's notes for this unit (follow them where they do not conflict with the rules above):\n${redactPii(notes)}\n`
+    : '';
 }
 
 function stageReminder(input: UnitGenerateInput): string {
@@ -206,11 +217,11 @@ export function outlineMessages(input: UnitGenerateInput): LlmMessage[] {
 /** What to write for each section type. The system prompt has the format; this has the intent. */
 export const SECTION_BRIEFS: Record<string, string> = {
   story_opener:
-    'Write the opening story: 3 to 6 short paragraphs (or a short dialogue) in an everyday Nigerian scene that leads naturally into this unit\'s first concept. Open with a scene or a question; let the key idea appear in action; introduce the key word gently; end by inviting the child into the lesson. The cast may appear (give them only what the cast bible lists; other people are unnamed roles). Include one illustration block (brief and alt). Do not teach the whole concept here. Tutor script: 2 or 3 lines: a welcome that listens to the story, ONE simple comprehension question the child can answer from the story (accepted answers with variants), and an invitation to go on.',
+    "Write the opening story: 3 to 6 short paragraphs (or a short dialogue) in an everyday Nigerian scene that leads naturally into this unit's first concept. Open with a scene or a question; let the key idea appear in action; introduce the key word gently; end by inviting the child into the lesson. The cast may appear (give them only what the cast bible lists; other people are unnamed roles). Include one illustration block (brief and alt). Do not teach the whole concept here. Tutor script: 2 or 3 lines: a welcome that listens to the story, ONE simple comprehension question the child can answer from the story (accepted answers with variants), and an invitation to go on.",
   remember:
     'A spiral callback to an earlier unit of this subject. Use ONLY the earlier units listed in the unit text (title, objective, key terms); never invent what they taught. 2 or 3 short paragraphs: what we learned (in the child\'s words), a quick recall question in bold, and a bridge ("Today we ..."). Tutor script: 1 or 2 lines asking for ONE thing from the earlier unit (accepted answers).',
   concept:
-    'Teach the part of the objective assigned to this section (the subtopics listed as covers), plainly, in child language: what it is, then how it works. Cover every assigned subtopic, use the scheme\'s own words for the key terms, and stay inside the assigned subtopics. Define each new word in a definition block or in bold where it first appears. A short opening line, then bullets or short paragraphs with concrete Nigerian examples; a table only to compare. You may add an illustration (brief and alt). You may own 0 to 2 check questions (placed with question blocks, graded by the tutor). Tutor script: 1 to 3 lines that ask the child something from this section and listen (accepted answers, or question_ref of one of this section\'s questions).',
+    "Teach the part of the objective assigned to this section (the subtopics listed as covers), plainly, in child language: what it is, then how it works. Cover every assigned subtopic, use the scheme's own words for the key terms, and stay inside the assigned subtopics. Define each new word in a definition block or in bold where it first appears. A short opening line, then bullets or short paragraphs with concrete Nigerian examples; a table only to compare. You may add an illustration (brief and alt). You may own 0 to 2 check questions (placed with question blocks, graded by the tutor). Tutor script: 1 to 3 lines that ask the child something from this section and listen (accepted answers, or question_ref of one of this section's questions).",
   worked_examples:
     'Two or three worked examples (example blocks) that move from concrete to abstract and show the objective in use. Label them like "Example 1 — Places". Each text is 1 to 3 short sentences with the question and its answer. Every answer must be exactly right. The last example may ask the child to try one with something they can see right now. No questions array needed.',
   across_subjects:
@@ -224,11 +235,11 @@ export const SECTION_BRIEFS: Record<string, string> = {
   character_values:
     'A neutral virtue moment (honesty, kindness, care, fairness, hard work, respect, safety, sharing) that is honestly part of this unit\'s topic and reinforces the National Values strand. An opening line naming the habit, 3 to 5 short bullets of what a good child does, and a closing line like "When we ..., everyone ...". Shared virtue only: no religion, no preaching, no shaming. Tutor script: 1 line that asks for one habit (accepted answers).',
   practice:
-    'The practice section puts the unit\'s practice questions in the lesson flow; they are also the workbook\'s Tiers 1, 2 and 3. Write 6 to 8 questions: Tier 1 (supported; 2 or 3; mostly match, circle or mcq), Tier 2 (now you try; 2 or 3; mostly fill_blank, mcq or sort), Tier 3 (stretch; 2; free_text asking the child to name, explain or apply in their own words). Each tests the objective as taught in this unit, never new content, with natural variants in accepted answers. Begin with ONE info callout that explains the tiers, then one question block per question in tier order. Do not repeat a question from the sections above.',
+    "The practice section puts the unit's practice questions in the lesson flow; they are also the workbook's Tiers 1, 2 and 3. Write 6 to 8 questions: Tier 1 (supported; 2 or 3; mostly match, circle or mcq), Tier 2 (now you try; 2 or 3; mostly fill_blank, mcq or sort), Tier 3 (stretch; 2; free_text asking the child to name, explain or apply in their own words). Each tests the objective as taught in this unit, never new content, with natural variants in accepted answers. Begin with ONE info callout that explains the tiers, then one question block per question in tier order. Do not repeat a question from the sections above.",
   think_deeper:
-    'One bullets block with 3 or 4 critical-thinking prompts at the reasoning rung of the unit\'s TOP stage (see Stage and voice). Each prompt is a question about something the child has met in this unit, answerable aloud in a sentence. No trick questions. No questions array needed.',
+    "One bullets block with 3 or 4 critical-thinking prompts at the reasoning rung of the unit's TOP stage (see Stage and voice). Each prompt is a question about something the child has met in this unit, answerable aloud in a sentence. No trick questions. No questions array needed.",
   quick_fire:
-    'A 60 to 90 second rapid recall drill: exactly 5 questions, tier 1, answers of one or two words, all auto-gradable (fill_blank with every natural variant, or mcq with two options such as Yes or No). Each prompt is a short question the child can answer aloud at once. They recall facts from this unit\'s concept sections: no new content and no repeats of the practice questions. One question block each and no other text.',
+    "A 60 to 90 second rapid recall drill: exactly 5 questions, tier 1, answers of one or two words, all auto-gradable (fill_blank with every natural variant, or mcq with two options such as Yes or No). Each prompt is a short question the child can answer aloud at once. They recall facts from this unit's concept sections: no new content and no repeats of the practice questions. One question block each and no other text.",
   mastery_check:
     'This decides whether the child has the objective and can move on. A short intro paragraph ("You have mastered this unit when you can:"), then 3 questions written as "I can ..." items, tier 2, each testing a DIFFERENT main part of the objective (together they cover it), each auto-gradable (mcq, fill_blank, match, circle or sort; never free_text or draw). Make every question unambiguous with exactly the right answers: this is the only thing that grants mastery. Then ONE callout with tone not_yet: "**Not yet?**" plus a kind, concrete way to practise again, ending "We move on when you are ready." No tutor script.',
   revision_topic:
@@ -255,11 +266,26 @@ function sectionPlanData(task: SectionTask): string {
   });
 }
 
-function outlineOverview(outline: StoredOutline): string {
-  return contextBlock('outline', {
-    sections: outline.sections.map((section) => ({ id: section.id, type: section.type })),
-    periods: outline.periods.map((period) => ({ period: period.period, sections: period.sections })),
-  });
+function outlineOverview(input: UnitGenerateInput, outline: StoredOutline): string {
+  const subtopics = input.scheme_week?.subtopics ?? [];
+  return [
+    contextBlock('outline', {
+      sections: outline.sections.map((section) => ({ id: section.id, type: section.type })),
+      periods: outline.periods.map((period) => ({
+        period: period.period,
+        sections: period.sections,
+      })),
+    }),
+    dataBlock(
+      'outline_plan',
+      outline.sections.map((section) => ({
+        id: section.id,
+        heading: section.heading,
+        plan: section.plan,
+        covers: section.covers.map((n) => ({ n, text: subtopics[n - 1] ?? '' })),
+      })),
+    ),
+  ].join('\n');
 }
 
 function soFarText(soFar: readonly SectionPart[]): string {
@@ -292,7 +318,7 @@ export function sectionMessages(task: SectionTask): LlmMessage[] {
         facts,
         unitDataBlock(input),
         sectionPlanData(task),
-        outlineOverview(outline),
+        outlineOverview(input, outline),
         '',
         'The unit so far (earlier sections, for continuity of vocabulary, names, numbers and questions; do not repeat their wording or their questions) is DATA:',
         dataText('unit_so_far', soFarText(task.soFar)),
@@ -301,7 +327,8 @@ export function sectionMessages(task: SectionTask): LlmMessage[] {
         '',
         `WHAT THIS SECTION IS: ${brief}`,
         '',
-        'Reminders: write every field the child, helper or tutor will see or hear; keep each sentence short for the stage; link questions with refs; every question you write must be exactly right and unambiguous; a section\'s questions are listed in `questions` and placed with question blocks. Reply with the section body: blocks, questions, tutor_script.',
+        'Other sections cover the other subtopics (see outline_plan): do not teach their subtopics here, and do not repeat what earlier sections already taught beyond a brief link.',
+        "Reminders: write every field the child, helper or tutor will see or hear; keep each sentence short for the stage; link questions with refs; every question you write must be exactly right and unambiguous; a section's questions are listed in `questions` and placed with question blocks. Reply with the section body: blocks, questions, tutor_script.",
       ].join('\n'),
     },
   ];
@@ -335,13 +362,18 @@ export function workbookMessages(
         unitDataBlock(input),
         '',
         'The unit so far is DATA:',
-        dataText('unit_so_far', parts.map((part) => renderSection(part.section, questions, { tutor: false })).join('\n\n')),
+        dataText(
+          'unit_so_far',
+          parts
+            .map((part) => renderSection(part.section, questions, { tutor: false }))
+            .join('\n\n'),
+        ),
         notesText(input),
         stageReminder(input),
         '',
         "The workbook's three tiers ARE the practice section's questions grouped by tier; do not rewrite them. Write:",
         '1. tier1_title, tier2_title, tier3_title: short, child-friendly names (the template uses "Let\'s Start Together", "Now You Try" and "Stretch Yourself"; you may reuse them).',
-        '2. drill: 4 to 6 quick-answer questions for a timed, low-stakes recall page: tier 1, auto-gradable (fill_blank or mcq), answers of one or two words, recalling the unit\'s key facts. They must not repeat the practice or quick-fire questions. drill_seconds: 30 to 90 (about 60 for five questions).',
+        "2. drill: 4 to 6 quick-answer questions for a timed, low-stakes recall page: tier 1, auto-gradable (fill_blank or mcq), answers of one or two words, recalling the unit's key facts. They must not repeat the practice or quick-fire questions. drill_seconds: 30 to 90 (about 60 for five questions).",
         '3. take_it_home: one or two short sentences telling the child what to do at home with a grown-up. application: the same task as a question: kind draw (checks = the things the child ticks) or free_text (checks = rubric criteria), tier 3, prompt starting "Take It Home." and giving the task. The task uses the idea in everyday life with things found at home; nothing unsafe.',
         '4. not_yet: one or two sentences for a child who has not got it yet: a concrete way to practise again, ending "We move on when you are ready."',
         '5. variants: exactly 2 pools of 3 extra practice questions each (the "more practice" pool): tiers 1 to 3 mixed, mostly auto-gradable, each pool on a different skill of the unit.',
@@ -375,7 +407,9 @@ export function manualMessages(
         '',
         contextBlock('manual_facts', {
           section_ids: outline.sections.map((s) => s.id),
-          helper_section_ids: outline.sections.filter((s) => helperTypes.has(s.type)).map((s) => s.id),
+          helper_section_ids: outline.sections
+            .filter((s) => helperTypes.has(s.type))
+            .map((s) => s.id),
           has_theme: input.theme !== undefined,
           own_subject_lens: input.theme?.lens ?? null,
           stage: input.unit.stage,
@@ -384,10 +418,13 @@ export function manualMessages(
         unitDataBlock(input),
         '',
         'The unit so far is DATA:',
-        dataText('unit_so_far', parts.map((part) => renderSection(part.section, questions)).join('\n\n')),
+        dataText(
+          'unit_so_far',
+          parts.map((part) => renderSection(part.section, questions)).join('\n\n'),
+        ),
         '',
         '1. script: one entry for EVERY section, in unit order, using exactly the section ids in manual_facts. say = what the adult says or does (1 to 3 sentences: read, point, act, pause); ask = the one question to put to the child; watch_for = what to watch for and what to do about it. Concrete and warm. For the mastery check say "Do not help with the answers."',
-        "2. theme_lenses and connection_moment: when the unit has a theme, give 3 to 5 subjects that can meet the theme this week through their own lens (Mathematics: Value; English Studies: Language; Social Studies: Community; Basic Science: Observation; Civic Education: Behaviour), this unit's own subject first with its lens, and in general terms what the child does there (do not claim what another subject's official scheme teaches that week). Then connection_moment: two sentences beginning \"Today we looked at ...\". When the unit has no theme: [] and \"\".",
+        '2. theme_lenses and connection_moment: when the unit has a theme, give 3 to 5 subjects that can meet the theme this week through their own lens (Mathematics: Value; English Studies: Language; Social Studies: Community; Basic Science: Observation; Civic Education: Behaviour), this unit\'s own subject first with its lens, and in general terms what the child does there (do not claim what another subject\'s official scheme teaches that week). Then connection_moment: two sentences beginning "Today we looked at ...". When the unit has no theme: [] and "".',
         '3. materials: the low-cost local items the unit needs (for Do & Discover and practice): 3 to 6 short entries; only things most homes and schools have.',
         '4. got_it: 3 short, observable statements of what "got it" looks like (matching the mastery check). not_yet_guidance: what the adult does when the child has not got it; end by saying that mastery sets the pace, not the calendar.',
         '5. helper_script: for the human helper of a pre-reader: an entry for each id in helper_section_ids, plus any other section that needs one. 2 to 4 steps each (read aloud, point, ask, wait, praise). For the mastery check: no hints and no answers.',
@@ -407,11 +444,11 @@ export const REVIEW_TASK = [
   '',
   'Check, and flag with the code in brackets:',
   '- [neutrality] religion, ethnicity, region, income, family shape or gender stereotypes;',
-  '- [reading_level] words or sentences too hard for the unit\'s stage (a program already counts average sentence length; flag real problems, not borderline ones);',
+  "- [reading_level] words or sentences too hard for the unit's stage (a program already counts average sentence length; flag real problems, not borderline ones);",
   '- [facts] anything untrue, doubtful or invented (statistics, dates, species, places); and maths or answer-key errors: check EVERY auto-graded answer against its question;',
   '- [cast] anything said about the characters that the cast bible does not list, or any relationship between them;',
   '- [safety] anything unsafe or frightening for a child, an activity needing fire, sharp tools, deep water or unsupervised roads;',
-  '- [other] coverage (does the unit teach every subtopic of the scheme week, in the scheme\'s words?), content unrelated to the objective, a mastery item that does not test the objective, ambiguous accepted answers, a missing global window.',
+  "- [other] coverage (does the unit teach every subtopic of the scheme week, in the scheme's words?), content unrelated to the objective, a mastery item that does not test the objective, ambiguous accepted answers, a missing global window.",
   '',
   'Return at most 12 flags, the most important first. severity "concern" means a person must look before publishing; "note" means worth a glance. section_id is the section the flag is about, or "" for the whole unit. message is one or two sentences that name the exact text and say why. If you find nothing, return an empty list: do not invent problems to look useful.',
 ].join('\n');
@@ -458,10 +495,10 @@ export function repairMessages(
         contextBlock('errors', errors),
         unitDataBlock(input),
         '',
-        'The sections to repair, as they are now (in the authoring format) are DATA. Use each question\'s current id as its `ref` so the references keep working:',
+        "The sections to repair, as they are now (in the authoring format) are DATA. Use each question's current id as its `ref` so the references keep working:",
         dataBlock('sections_to_repair', sections),
         '',
-        'Return every listed section in full: id, blocks, questions (all of the section\'s questions) and tutor_script. Use exactly the ids listed.',
+        "Return every listed section in full: id, blocks, questions (all of the section's questions) and tutor_script. Use exactly the ids listed.",
       ].join('\n'),
     },
   ];
@@ -515,7 +552,7 @@ export function testMessages(input: UnitGenerateInput): LlmMessage[] {
         revision
           ? 'Write 3 to 5 revision parts (one per main topic group of the objective). Each part: a heading, a short recap (a paragraph or bullets with the key facts) and 3 to 6 questions on that topic.'
           : 'Write 2 to 4 assessment parts (for example Part A objective questions, Part B matching and sorting, Part C short answers). Each part: a heading, a one-line instruction and its questions.',
-        'Most questions must be auto-gradable (mcq, fill_blank, match, circle, sort); free_text only where the answer is open. Place every question with a question block, using its ref. Every answer must be exactly right. Cover the whole objective, in the scheme\'s words, and nothing outside it.',
+        "Most questions must be auto-gradable (mcq, fill_blank, match, circle, sort); free_text only where the answer is open. Place every question with a question block, using its ref. Every answer must be exactly right. Cover the whole objective, in the scheme's words, and nothing outside it.",
       ].join('\n'),
     },
   ];

@@ -3,12 +3,12 @@
 // `q_<section>_<n>` for the questions a section owns, so re-running a step gives the same ids.
 import { z } from 'zod';
 import {
-  ENRICHMENT_MENU,
   Id,
   LAYER_FOR_TYPE,
   SESSION_SEGMENTS,
   SectionType,
   type Layer,
+  type ENRICHMENT_MENU,
 } from '@custar/content-schema';
 
 export type EnrichmentType = (typeof ENRICHMENT_MENU)[number];

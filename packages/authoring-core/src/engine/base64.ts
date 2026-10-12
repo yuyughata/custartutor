@@ -10,7 +10,10 @@ export function bytesToBase64(bytes: Uint8Array): string {
   for (; i + 2 < length; i += 3) {
     const n = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!;
     chunk +=
-      ALPHABET[(n >> 18) & 63]! + ALPHABET[(n >> 12) & 63]! + ALPHABET[(n >> 6) & 63]! + ALPHABET[n & 63]!;
+      ALPHABET[(n >> 18) & 63]! +
+      ALPHABET[(n >> 12) & 63]! +
+      ALPHABET[(n >> 6) & 63]! +
+      ALPHABET[n & 63]!;
     if (chunk.length >= 8192) {
       chunks.push(chunk);
       chunk = '';

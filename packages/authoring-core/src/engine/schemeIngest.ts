@@ -1,11 +1,7 @@
 // scheme_ingest: `extract` (one model call: Claude reads the PDF natively, or the text, and transcribes the weeks)
 // then `check` (no model call: deterministic checks that produce flags for the admin). The scheme text is data to
 // be transcribed exactly. Nothing here rewrites or improves NERDC wording.
-import {
-  Scheme,
-  type WeekKind,
-  formatZodIssues,
-} from '@custar/content-schema';
+import { Scheme, type WeekKind, formatZodIssues } from '@custar/content-schema';
 import {
   StepError,
   type Flag,
@@ -28,7 +24,13 @@ export const INGEST_STEPS = ['extract', 'check'] as const;
 const MAX_PDF_BYTES = 30 * 1024 * 1024;
 
 function isPdf(bytes: Uint8Array): boolean {
-  return bytes.length > 4 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
+  return (
+    bytes.length > 4 &&
+    bytes[0] === 0x25 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x44 &&
+    bytes[3] === 0x46
+  );
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -59,7 +61,11 @@ export async function runExtract(
       throw new StepError('extract', 'invalid_input', 'The uploaded PDF is larger than 30 MB.');
     }
     if (!isPdf(loaded.bytes)) {
-      throw new StepError('extract', 'invalid_input', 'The uploaded file is not a PDF (use a text source for other formats).');
+      throw new StepError(
+        'extract',
+        'invalid_input',
+        'The uploaded file is not a PDF (use a text source for other formats).',
+      );
     }
     pdf = { base64: bytesToBase64(loaded.bytes) };
   }
@@ -74,7 +80,9 @@ export async function runExtract(
     messages: ingestMessages(input, pdf),
     check: (reply) =>
       reply.weeks.flatMap((week, index) =>
-        Number.isInteger(week.week_no) ? [] : [`weeks[${index}].week_no must be a whole number (got ${String(week.week_no)})`],
+        Number.isInteger(week.week_no)
+          ? []
+          : [`weeks[${index}].week_no must be a whole number (got ${String(week.week_no)})`],
       ),
   });
 
@@ -103,10 +111,10 @@ export async function runExtract(
 export function comparable(text: string): string {
   return text
     .normalize('NFKC')
-    .replace(/[‐-―−]/g, '-')
-    .replace(/[‘’ʼ]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/[•·▪●​﻿]/g, ' ')
+    .replace(/[\u2010-\u2015\u2212]/g, '-')
+    .replace(/[\u2018\u2019\u02bc]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/[\u2022\u00b7\u25aa\u25cf\u200b\ufeff]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
@@ -178,26 +186,53 @@ export function runCheck(input: SchemeIngestInput, state: JobState): StepOutcome
   const seen = new Set<number>();
   for (const week of rows) {
     if (seen.has(week.week_no)) {
-      flag('duplicate_week', 'concern', `Week ${week.week_no} appears more than once ("${week.topic}"). Keep one and delete or renumber the other.`, week.week_no);
+      flag(
+        'duplicate_week',
+        'concern',
+        `Week ${week.week_no} appears more than once ("${week.topic}"). Keep one and delete or renumber the other.`,
+        week.week_no,
+      );
     }
     seen.add(week.week_no);
   }
   const max = rows.reduce((m, week) => Math.max(m, week.week_no), 0);
   for (let n = 1; n <= max; n += 1) {
-    if (!seen.has(n)) flag('missing_week', 'concern', `Week ${n} is missing from the extraction. Add it, or confirm the scheme really skips it.`, n);
+    if (!seen.has(n))
+      flag(
+        'missing_week',
+        'concern',
+        `Week ${n} is missing from the extraction. Add it, or confirm the scheme really skips it.`,
+        n,
+      );
   }
 
   // empty topics, week kinds
   for (const week of rows) {
-    if (week.topic === '') flag('empty_topic', 'concern', `Week ${week.week_no} has no topic.`, week.week_no);
+    if (week.topic === '')
+      flag('empty_topic', 'concern', `Week ${week.week_no} has no topic.`, week.week_no);
     const suggested = expectedKind(week.topic);
     if (suggested !== null && suggested !== week.kind) {
-      flag('week_kind', 'concern', `Week ${week.week_no} "${week.topic}" reads like a ${suggested} week but was classified as ${week.kind}. Only teaching weeks become units.`, week.week_no);
+      flag(
+        'week_kind',
+        'concern',
+        `Week ${week.week_no} "${week.topic}" reads like a ${suggested} week but was classified as ${week.kind}. Only teaching weeks become units.`,
+        week.week_no,
+      );
     } else if (suggested === null && week.kind !== 'teaching' && week.topic !== '') {
-      flag('week_kind', 'concern', `Week ${week.week_no} "${week.topic}" was classified as ${week.kind} but reads like a teaching topic.`, week.week_no);
+      flag(
+        'week_kind',
+        'concern',
+        `Week ${week.week_no} "${week.topic}" was classified as ${week.kind} but reads like a teaching topic.`,
+        week.week_no,
+      );
     }
     if (week.kind === 'teaching' && week.subtopics.length === 0 && week.topic !== '') {
-      flag('no_subtopics', 'note', `Week ${week.week_no} has no subtopics (breakdown). The unit objective will rest on the topic alone.`, week.week_no);
+      flag(
+        'no_subtopics',
+        'note',
+        `Week ${week.week_no} has no subtopics (breakdown). The unit objective will rest on the topic alone.`,
+        week.week_no,
+      );
     }
   }
 
@@ -205,9 +240,17 @@ export function runCheck(input: SchemeIngestInput, state: JobState): StepOutcome
   const teaching = rows.filter((week) => week.kind === 'teaching').length;
   if (rows.length > 0) {
     if (teaching < 4 || teaching > 13) {
-      flag('teaching_week_count', 'concern', `${teaching} teaching week(s) found; a term normally has 8 to 10. Check the extraction.`);
+      flag(
+        'teaching_week_count',
+        'concern',
+        `${teaching} teaching week(s) found; a term normally has 8 to 10. Check the extraction.`,
+      );
     } else if (teaching < 6 || teaching > 11) {
-      flag('teaching_week_count', 'note', `${teaching} teaching weeks found; a term normally has 8 to 10.`);
+      flag(
+        'teaching_week_count',
+        'note',
+        `${teaching} teaching weeks found; a term normally has 8 to 10.`,
+      );
     }
   }
 
@@ -215,7 +258,9 @@ export function runCheck(input: SchemeIngestInput, state: JobState): StepOutcome
   if (input.source.type === 'text') {
     const haystack = comparable(input.source.text);
     for (const week of rows) {
-      const missing = [week.topic, ...week.subtopics].filter((line) => line !== '' && !haystack.includes(comparable(line)));
+      const missing = [week.topic, ...week.subtopics].filter(
+        (line) => line !== '' && !haystack.includes(comparable(line)),
+      );
       if (missing.length > 0) {
         flag(
           'not_verbatim',
@@ -232,30 +277,51 @@ export function runCheck(input: SchemeIngestInput, state: JobState): StepOutcome
   const docLevel = levelNumber(says.class_level) ?? levelNumber(says.subject);
   const wantLevel = Number(input.level_code.slice(1));
   if (docLevel !== null && docLevel !== wantLevel) {
-    flag('document_mismatch', 'concern', `The document's heading says class "${says.class_level || says.subject}" but ${input.level_code} was selected.`);
+    flag(
+      'document_mismatch',
+      'concern',
+      `The document's heading says class "${says.class_level || says.subject}" but ${input.level_code} was selected.`,
+    );
   }
   const docTerm = termNumber(says.term);
   if (docTerm !== null && docTerm !== input.term) {
-    flag('document_mismatch', 'concern', `The document's heading says "${says.term}" but term ${input.term} was selected.`);
+    flag(
+      'document_mismatch',
+      'concern',
+      `The document's heading says "${says.term}" but term ${input.term} was selected.`,
+    );
   }
   if (says.subject !== '') {
-    const words = comparable(input.subject_name).split(' ').filter((word) => word.length >= 4);
+    const words = comparable(input.subject_name)
+      .split(' ')
+      .filter((word) => word.length >= 4);
     const heading = comparable(says.subject);
     if (words.length > 0 && !words.some((word) => heading.includes(word))) {
-      flag('document_mismatch', 'note', `The document's heading says subject "${says.subject}" but ${input.subject_name} was selected.`);
+      flag(
+        'document_mismatch',
+        'note',
+        `The document's heading says subject "${says.subject}" but ${input.subject_name} was selected.`,
+      );
     }
   }
 
   for (const note of extract.notes) flag('reader_note', 'note', `The reader noted: ${note}`);
 
   // the strict schema, for anything the checks above did not already name
-  const weeks = [...rows].sort((a, b) => a.week_no - b.week_no).map((week) => ({
-    week_no: week.week_no,
-    kind: week.kind,
-    topic: week.topic,
-    subtopics: week.subtopics,
-  }));
-  const candidate = { subject_slug: input.subject_slug, level_code: input.level_code, term: input.term, weeks };
+  const weeks = [...rows]
+    .sort((a, b) => a.week_no - b.week_no)
+    .map((week) => ({
+      week_no: week.week_no,
+      kind: week.kind,
+      topic: week.topic,
+      subtopics: week.subtopics,
+    }));
+  const candidate = {
+    subject_slug: input.subject_slug,
+    level_code: input.level_code,
+    term: input.term,
+    weeks,
+  };
   const strict = Scheme.safeParse(candidate);
   if (!strict.success) {
     const named = new Set(flags.map((f) => f.code));
@@ -264,13 +330,18 @@ export function runCheck(input: SchemeIngestInput, state: JobState): StepOutcome
         (/duplicate week_no/.test(issue.message) && named.has('duplicate_week')) ||
         (/must not be blank/.test(issue.message) && named.has('empty_topic')) ||
         (/at least 1/i.test(issue.message) && named.has('no_weeks'));
-      if (!known) flag('scheme_invalid', 'concern', `${issue.path === '' ? '' : `${issue.path}: `}${issue.message}`);
+      if (!known)
+        flag(
+          'scheme_invalid',
+          'concern',
+          `${issue.path === '' ? '' : `${issue.path}: `}${issue.message}`,
+        );
     }
   }
 
   const how = input.source.type === 'pdf' ? 'PDF read natively by Claude' : 'text';
   const result: SchemeIngestResult = {
-    scheme: candidate as SchemeIngestResult['scheme'],
+    scheme: candidate,
     flags,
     source_note: `Extracted from "${input.source.filename}" (${how}) for ${input.subject_name}, ${input.level_code}, term ${input.term}. Check every week against the original document before approving.`,
   };

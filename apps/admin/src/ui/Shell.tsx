@@ -28,7 +28,7 @@ function isActive(pathname: string, href: string): boolean {
 function NavLinks({ entries }: { entries: NavEntry[] }): ReactNode {
   const pathname = usePathname();
   return (
-    <View accessibilityRole="navigation" accessibilityLabel="Main" style={{ gap: space[1] }}>
+    <View role="navigation" accessibilityLabel="Main" style={{ gap: space[1] }}>
       {entries.map((entry) => {
         const active = isActive(pathname, entry.href);
         return (
@@ -102,7 +102,7 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
       }}
       keyboardShouldPersistTaps="handled"
     >
-      <View accessibilityRole="main" style={{ width: '100%', maxWidth: CONTENT_MAX_WIDTH, gap: space[5] }}>
+      <View role="main" style={{ width: '100%', maxWidth: CONTENT_MAX_WIDTH, gap: space[5] }}>
         {children}
       </View>
     </ScrollView>

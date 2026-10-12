@@ -10,11 +10,7 @@
 //
 // Every step reads only strictly EARLIER steps' outputs, so running it again with the same (input, state) gives
 // the same output, whatever else is in the state.
-import {
-  parseUnit,
-  type SectionType,
-  type UnitContent,
-} from '@custar/content-schema';
+import { parseUnit, type SectionType, type UnitContent } from '@custar/content-schema';
 import {
   StepError,
   type Flag,
@@ -109,7 +105,8 @@ function readOutline(state: JobState): StoredOutline | null {
 }
 
 function asPart(value: Json | undefined): SectionPart | null {
-  if (!isRecord(value) || !isRecord(value['section']) || !Array.isArray(value['questions'])) return null;
+  if (!isRecord(value) || !isRecord(value['section']) || !Array.isArray(value['questions']))
+    return null;
   return value as unknown as SectionPart;
 }
 
@@ -136,7 +133,11 @@ function latestAssembly(state: JobState, before: number = MAX_REPAIRS + 1): Stor
 }
 
 /** Section parts of a lesson: the `section:<id>` outputs, overlaid with the sections repairs below `before` rewrote. */
-function lessonSections(state: JobState, outline: StoredOutline, before: number): Record<string, SectionPart> {
+function lessonSections(
+  state: JobState,
+  outline: StoredOutline,
+  before: number,
+): Record<string, SectionPart> {
   const parts: Record<string, SectionPart> = {};
   for (const section of outline.sections) {
     const part = asPart(state.outputs[sectionStepName(section.id)]);
@@ -152,7 +153,10 @@ function lessonSections(state: JobState, outline: StoredOutline, before: number)
 /** Section parts of a revision or assessment: the draft's, overlaid with repairs below `before`. */
 function testSections(state: JobState, before: number): SectionPart[] {
   const draft = state.outputs['draft'];
-  const base = isRecord(draft) && Array.isArray(draft['sections']) ? (draft['sections'] as unknown as SectionPart[]) : [];
+  const base =
+    isRecord(draft) && Array.isArray(draft['sections'])
+      ? (draft['sections'] as unknown as SectionPart[])
+      : [];
   const parts = new Map(base.map((part) => [part.section.id, part]));
   for (let n = 1; n < before && n <= MAX_REPAIRS; n += 1) {
     const repaired = asAssembly(state.outputs[repairKey(n)])?.replaced ?? {};
@@ -228,7 +232,10 @@ function storedAssembly(assembled: AssembledUnit, extra: Partial<StoredAssembly>
   return toJson(stored);
 }
 
-async function runOutline(input: UnitGenerateInput, deps: StepDeps): Promise<StepOutcome<'unit_generate'>> {
+async function runOutline(
+  input: UnitGenerateInput,
+  deps: StepDeps,
+): Promise<StepOutcome<'unit_generate'>> {
   const { value, usage } = await callModel(deps, {
     step: 'outline',
     family: 'unit_generate:outline',
@@ -241,7 +248,12 @@ async function runOutline(input: UnitGenerateInput, deps: StepDeps): Promise<Ste
   const outline = normalizeOutline(value, input);
   const problems = validateOutline(outline);
   if (problems.length > 0) {
-    throw new StepError('outline', 'schema', `The outline could not be repaired: ${problems.join('; ')}`, { retryable: false });
+    throw new StepError(
+      'outline',
+      'schema',
+      `The outline could not be repaired: ${problems.join('; ')}`,
+      { retryable: false, usage },
+    );
   }
   return { output: toJson(outline), usage };
 }
@@ -254,10 +266,12 @@ async function runSection(
 ): Promise<StepOutcome<'unit_generate'>> {
   const sectionId = sectionIdOfStep(step);
   const outline = readOutline(state);
-  if (!outline || sectionId === null) throw new StepError(step, 'internal', 'The outline is missing.', { retryable: false });
+  if (!outline || sectionId === null)
+    throw new StepError(step, 'internal', 'The outline is missing.', { retryable: false });
   const index = outline.sections.findIndex((section) => section.id === sectionId);
   const section = outline.sections[index];
-  if (!section) throw new StepError(step, 'internal', `Unknown section "${sectionId}".`, { retryable: false });
+  if (!section)
+    throw new StepError(step, 'internal', `Unknown section "${sectionId}".`, { retryable: false });
 
   const soFar = outline.sections
     .slice(0, index)
@@ -274,25 +288,36 @@ async function runSection(
     system: buildSystem('unit', input.cast),
     messages: sectionMessages({ input, outline, section, soFar }),
     check: (body) => {
-      const result = buildSectionPart({ id: section.id, type: section.type, heading: section.heading, body });
+      const result = buildSectionPart({
+        id: section.id,
+        type: section.type,
+        heading: section.heading,
+        body,
+      });
       built.value = result.part;
       return result.issues;
     },
   });
-  if (!built.value) throw new StepError(step, 'internal', 'The section could not be built.', { retryable: false });
+  if (!built.value)
+    throw new StepError(step, 'internal', 'The section could not be built.', { retryable: false });
   return { output: toJson(built.value), usage };
 }
 
 // --- workbook ---
 
-const DEFAULT_TIER_TITLES: [string, string, string] = ["Let's Start Together", 'Now You Try', 'Stretch Yourself'];
+const DEFAULT_TIER_TITLES: [string, string, string] = [
+  "Let's Start Together",
+  'Now You Try',
+  'Stretch Yourself',
+];
 const VARIANT_IDS = ['variant_a', 'variant_b', 'variant_c'];
 
 function buildWorkbookPart(value: WorkbookOutput): { part: WorkbookPart | null; issues: string[] } {
   const issues: string[] = [];
   const drill = mapSectionQuestions('drill', value.drill);
   issues.push(...drill.issues.map((issue) => `drill: ${issue}`));
-  if (value.drill.length < 3 || value.drill.length > 8) issues.push('drill: write 4 to 6 quick-answer questions');
+  if (value.drill.length < 3 || value.drill.length > 8)
+    issues.push('drill: write 4 to 6 quick-answer questions');
   for (const q of drill.questions) {
     if (!['mcq', 'fill_blank', 'circle', 'match', 'sort'].includes(q.kind)) {
       issues.push(`drill: ${q.id} is ${q.kind}; the drill must be auto-gradable`);
@@ -309,7 +334,8 @@ function buildWorkbookPart(value: WorkbookOutput): { part: WorkbookPart | null; 
     const id = VARIANT_IDS[index]!;
     const mapped = mapSectionQuestions(id, variant.questions);
     issues.push(...mapped.issues.map((issue) => `variants[${index}]: ${issue}`));
-    if (mapped.questions.length < 2) issues.push(`variants[${index}]: a pool needs at least 2 questions`);
+    if (mapped.questions.length < 2)
+      issues.push(`variants[${index}]: a pool needs at least 2 questions`);
     variants.push({ id, questions: mapped.questions });
   });
   const takeItHome = clean(value.take_it_home);
@@ -318,8 +344,13 @@ function buildWorkbookPart(value: WorkbookOutput): { part: WorkbookPart | null; 
   if (notYet === '') issues.push('not_yet is empty');
   if (issues.length > 0 || !application.value) return { part: null, issues };
 
-  const titles = [value.tier1_title, value.tier2_title, value.tier3_title].map((title, i) => clean(title) || DEFAULT_TIER_TITLES[i]!);
-  const seconds = Number.isFinite(value.drill_seconds) && value.drill_seconds >= 10 && value.drill_seconds <= 600 ? Math.round(value.drill_seconds) : 60;
+  const titles = [value.tier1_title, value.tier2_title, value.tier3_title].map(
+    (title, i) => clean(title) || DEFAULT_TIER_TITLES[i]!,
+  );
+  const seconds =
+    Number.isFinite(value.drill_seconds) && value.drill_seconds >= 10 && value.drill_seconds <= 600
+      ? Math.round(value.drill_seconds)
+      : 60;
   return {
     part: {
       tier_titles: titles as [string, string, string],
@@ -334,12 +365,19 @@ function buildWorkbookPart(value: WorkbookOutput): { part: WorkbookPart | null; 
   };
 }
 
-async function runWorkbook(input: UnitGenerateInput, state: JobState, deps: StepDeps): Promise<StepOutcome<'unit_generate'>> {
+async function runWorkbook(
+  input: UnitGenerateInput,
+  state: JobState,
+  deps: StepDeps,
+): Promise<StepOutcome<'unit_generate'>> {
   const outline = readOutline(state);
-  if (!outline) throw new StepError('workbook', 'internal', 'The outline is missing.', { retryable: false });
+  if (!outline)
+    throw new StepError('workbook', 'internal', 'The outline is missing.', { retryable: false });
   const ordered = orderedParts(outline, state);
   if (!ordered.some((part) => part.section.type === 'practice')) {
-    throw new StepError('workbook', 'internal', 'The practice section has not been written yet.', { retryable: false });
+    throw new StepError('workbook', 'internal', 'The practice section has not been written yet.', {
+      retryable: false,
+    });
   }
   const built = slot<WorkbookPart>();
   const { usage } = await callModel(deps, {
@@ -356,7 +394,10 @@ async function runWorkbook(input: UnitGenerateInput, state: JobState, deps: Step
       return result.issues;
     },
   });
-  if (!built.value) throw new StepError('workbook', 'internal', 'The workbook could not be built.', { retryable: false });
+  if (!built.value)
+    throw new StepError('workbook', 'internal', 'The workbook could not be built.', {
+      retryable: false,
+    });
   return { output: toJson(built.value), usage };
 }
 
@@ -379,12 +420,21 @@ function buildManualPart(
   for (const entry of value.script) {
     const sectionId = clean(entry.section_id);
     if (!known.has(sectionId) || script.has(sectionId)) continue;
-    const row = { section_id: sectionId, say: clean(entry.say), ask: clean(entry.ask), watch_for: clean(entry.watch_for) };
-    if (row.say === '' || row.ask === '' || row.watch_for === '') issues.push(`script entry for ${sectionId} needs say, ask and watch_for`);
+    const row = {
+      section_id: sectionId,
+      say: clean(entry.say),
+      ask: clean(entry.ask),
+      watch_for: clean(entry.watch_for),
+    };
+    if (row.say === '' || row.ask === '' || row.watch_for === '')
+      issues.push(`script entry for ${sectionId} needs say, ask and watch_for`);
     script.set(sectionId, row);
   }
   const missing = ids.filter((id) => !script.has(id));
-  if (missing.length > 0) issues.push(`script has no entry for: ${missing.join(', ')} (use exactly the section ids given)`);
+  if (missing.length > 0)
+    issues.push(
+      `script has no entry for: ${missing.join(', ')} (use exactly the section ids given)`,
+    );
 
   const helper = new Map<string, ManualPart['helper_script'][number]>();
   for (const entry of value.helper_script) {
@@ -393,10 +443,15 @@ function buildManualPart(
     if (!known.has(sectionId) || helper.has(sectionId) || steps.length === 0) continue;
     helper.set(sectionId, { section_id: sectionId, steps });
   }
-  if (helper.size === 0) issues.push('helper_script needs entries for the sections a pre-reader cannot do alone');
+  if (helper.size === 0)
+    issues.push('helper_script needs entries for the sections a pre-reader cannot do alone');
 
   const lenses = value.theme_lenses
-    .map((lens) => ({ subject: clean(lens.subject), lens: clean(lens.lens), what_child_does: clean(lens.what_child_does) }))
+    .map((lens) => ({
+      subject: clean(lens.subject),
+      lens: clean(lens.lens),
+      what_child_does: clean(lens.what_child_does),
+    }))
     .filter((lens) => lens.subject !== '' && lens.lens !== '' && lens.what_child_does !== '');
   const connection = clean(value.connection_moment);
   if (hasTheme && (lenses.length < 2 || connection === '')) {
@@ -424,9 +479,14 @@ function buildManualPart(
   };
 }
 
-async function runManual(input: UnitGenerateInput, state: JobState, deps: StepDeps): Promise<StepOutcome<'unit_generate'>> {
+async function runManual(
+  input: UnitGenerateInput,
+  state: JobState,
+  deps: StepDeps,
+): Promise<StepOutcome<'unit_generate'>> {
   const outline = readOutline(state);
-  if (!outline) throw new StepError('manual', 'internal', 'The outline is missing.', { retryable: false });
+  if (!outline)
+    throw new StepError('manual', 'internal', 'The outline is missing.', { retryable: false });
   const built = slot<ManualPart>();
   const { usage } = await callModel(deps, {
     step: 'manual',
@@ -442,13 +502,19 @@ async function runManual(input: UnitGenerateInput, state: JobState, deps: StepDe
       return result.issues;
     },
   });
-  if (!built.value) throw new StepError('manual', 'internal', 'The manual could not be built.', { retryable: false });
+  if (!built.value)
+    throw new StepError('manual', 'internal', 'The manual could not be built.', {
+      retryable: false,
+    });
   return { output: toJson(built.value), usage };
 }
 
 // --- non-lesson drafts ---
 
-function buildProjectPart(value: ProjectDraftOutput): { part: ProjectPart | null; issues: string[] } {
+function buildProjectPart(value: ProjectDraftOutput): {
+  part: ProjectPart | null;
+  issues: string[];
+} {
   const issues: string[] = [];
   const brief = clean(value.brief);
   const steps = cleanAll(value.steps);
@@ -462,7 +528,10 @@ function buildProjectPart(value: ProjectDraftOutput): { part: ProjectPart | null
     const levels = cleanAll(row.levels).slice(0, 4);
     if (clean(row.criterion) === '') issues.push(`rubric[${index}].criterion is empty`);
     if (levels.length < 2) issues.push(`rubric[${index}] needs 2 to 4 level descriptors`);
-    return { criterion: clean(row.criterion), levels: levels.map((descriptor, i) => ({ level: i + 1, descriptor })) };
+    return {
+      criterion: clean(row.criterion),
+      levels: levels.map((descriptor, i) => ({ level: i + 1, descriptor })),
+    };
   });
   if (rubric.length === 0) issues.push('rubric is empty');
   const evidence = unique(value.evidence_options);
@@ -503,13 +572,22 @@ function buildTestSections(
     if (built.part) sections.push(built.part);
   });
   if (value.parts.length === 0) issues.push('parts is empty');
-  if (sections.reduce((n, part) => n + part.questions.length, 0) < 3) issues.push('write at least 3 questions in all');
+  if (sections.reduce((n, part) => n + part.questions.length, 0) < 3)
+    issues.push('write at least 3 questions in all');
   return issues.length > 0 ? { sections: null, issues } : { sections, issues: [] };
 }
 
-async function runDraft(input: UnitGenerateInput, deps: StepDeps): Promise<StepOutcome<'unit_generate'>> {
+async function runDraft(
+  input: UnitGenerateInput,
+  deps: StepDeps,
+): Promise<StepOutcome<'unit_generate'>> {
   const kind = input.unit.kind;
-  const base = { step: 'draft', family: 'unit_generate:draft', label: 'unit_generate:draft', system: buildSystem('unit', input.cast) };
+  const base = {
+    step: 'draft',
+    family: 'unit_generate:draft',
+    label: 'unit_generate:draft',
+    system: buildSystem('unit', input.cast),
+  };
   if (kind === 'mini_project' || kind === 'term_project') {
     const built = slot<ProjectPart>();
     const { usage } = await callModel(deps, {
@@ -523,7 +601,10 @@ async function runDraft(input: UnitGenerateInput, deps: StepDeps): Promise<StepO
         return result.issues;
       },
     });
-    if (!built.value) throw new StepError('draft', 'internal', 'The project could not be built.', { retryable: false });
+    if (!built.value)
+      throw new StepError('draft', 'internal', 'The project could not be built.', {
+        retryable: false,
+      });
     return { output: toJson(built.value), usage };
   }
   if (kind === 'revision' || kind === 'assessment') {
@@ -540,7 +621,10 @@ async function runDraft(input: UnitGenerateInput, deps: StepDeps): Promise<StepO
         return result.issues;
       },
     });
-    if (!built.value) throw new StepError('draft', 'internal', 'The unit could not be built.', { retryable: false });
+    if (!built.value)
+      throw new StepError('draft', 'internal', 'The unit could not be built.', {
+        retryable: false,
+      });
     return { output: toJson({ sections: built.value }), usage };
   }
   throw new StepError('draft', 'internal', 'A lesson has no draft step.', { retryable: false });
@@ -555,17 +639,31 @@ function runAssemble(input: UnitGenerateInput, state: JobState): StepOutcome<'un
     const workbook = state.outputs['workbook'] as unknown as WorkbookPart | undefined;
     const manual = state.outputs['manual'] as unknown as ManualPart | undefined;
     if (!outline || !workbook || !manual) {
-      throw new StepError('assemble', 'internal', 'A lesson cannot be assembled before its outline, workbook and manual exist.', { retryable: false });
+      throw new StepError(
+        'assemble',
+        'internal',
+        'A lesson cannot be assembled before its outline, workbook and manual exist.',
+        { retryable: false },
+      );
     }
-    const parts: LessonParts = { outline, sections: lessonSections(state, outline, 1), workbook, manual };
+    const parts: LessonParts = {
+      outline,
+      sections: lessonSections(state, outline, 1),
+      workbook,
+      manual,
+    };
     return { output: storedAssembly(assembleLesson(input, parts)), usage: [] };
   }
   if (kind === 'mini_project' || kind === 'term_project') {
     const project = state.outputs['draft'] as unknown as ProjectPart | undefined;
-    if (!project) throw new StepError('assemble', 'internal', 'The draft is missing.', { retryable: false });
+    if (!project)
+      throw new StepError('assemble', 'internal', 'The draft is missing.', { retryable: false });
     return { output: storedAssembly(assembleProject(input, project)), usage: [] };
   }
-  return { output: storedAssembly(assembleTest(input, { sections: testSections(state, 1) })), usage: [] };
+  return {
+    output: storedAssembly(assembleTest(input, { sections: testSections(state, 1) })),
+    usage: [],
+  };
 }
 
 // --- repair ---
@@ -575,13 +673,17 @@ const SECTION_PATH = /^sections\[(\d+)\]/;
 
 /** The section ids the lint errors point at (directly, or through a question the section owns). */
 export function affectedSectionIds(content: Json, errors: readonly Flag[]): string[] {
-  const sections = isRecord(content) && Array.isArray(content['sections']) ? (content['sections'] as Json[]) : [];
-  const ids = sections.map((section) => (isRecord(section) && typeof section['id'] === 'string' ? section['id'] : ''));
+  const sections =
+    isRecord(content) && Array.isArray(content['sections']) ? (content['sections'] as Json[]) : [];
+  const ids = sections.map((section) =>
+    isRecord(section) && typeof section['id'] === 'string' ? section['id'] : '',
+  );
   const ownerOfQuestion = (questionId: string): string | null => {
     for (const section of sections) {
       if (!isRecord(section) || !Array.isArray(section['blocks'])) continue;
       const placed = (section['blocks'] as Json[]).some(
-        (block) => isRecord(block) && block['type'] === 'question' && block['question_id'] === questionId,
+        (block) =>
+          isRecord(block) && block['type'] === 'question' && block['question_id'] === questionId,
       );
       if (placed && typeof section['id'] === 'string') return section['id'];
     }
@@ -589,6 +691,15 @@ export function affectedSectionIds(content: Json, errors: readonly Flag[]): stri
   };
   const found: string[] = [];
   for (const error of errors) {
+    if (error.code === 'mastery_no_gradable') {
+      // reported without a path: it is always about the mastery check
+      found.push(
+        ...sections.flatMap((s, i) =>
+          isRecord(s) && s['type'] === 'mastery_check' ? [ids[i]!] : [],
+        ),
+      );
+      continue;
+    }
     const path = error.path ?? '';
     const bySection = SECTION_PATH.exec(path);
     if (bySection) {
@@ -612,9 +723,11 @@ async function runRepair(
   deps: StepDeps,
 ): Promise<StepOutcome<'unit_generate'>> {
   const n = Number(step.slice('repair:'.length));
-  if (!Number.isInteger(n) || n < 1 || n > MAX_REPAIRS) throw new StepError(step, 'internal', `Unknown step "${step}".`, { retryable: false });
+  if (!Number.isInteger(n) || n < 1 || n > MAX_REPAIRS)
+    throw new StepError(step, 'internal', `Unknown step "${step}".`, { retryable: false });
   const current = latestAssembly(state, n);
-  if (!current) throw new StepError(step, 'internal', 'There is nothing to repair yet.', { retryable: false });
+  if (!current)
+    throw new StepError(step, 'internal', 'There is nothing to repair yet.', { retryable: false });
 
   const affected = affectedSectionIds(current.content, current.lint.errors);
   const skip = (): StepOutcome<'unit_generate'> => ({
@@ -627,8 +740,11 @@ async function runRepair(
   const outline = isLesson ? readOutline(state) : null;
   const lessonParts = isLesson && outline ? lessonSections(state, outline, n) : {};
   const testParts = isLesson ? [] : testSections(state, n);
-  const partOf = (id: string): SectionPart | undefined => (isLesson ? lessonParts[id] : testParts.find((p) => p.section.id === id));
-  const targets = affected.map((id) => partOf(id)).filter((part): part is SectionPart => part !== undefined);
+  const partOf = (id: string): SectionPart | undefined =>
+    isLesson ? lessonParts[id] : testParts.find((p) => p.section.id === id);
+  const targets = affected
+    .map((id) => partOf(id))
+    .filter((part): part is SectionPart => part !== undefined);
   if (targets.length === 0) return skip();
 
   const view = targets.map((part) => ({
@@ -656,7 +772,11 @@ async function runRepair(
     system: buildSystem('unit', input.cast),
     messages: repairMessages(
       input,
-      current.lint.errors.map((error) => ({ code: error.code, message: error.message, path: error.path })),
+      current.lint.errors.map((error) => ({
+        code: error.code,
+        message: error.message,
+        path: error.path,
+      })),
       view,
     ),
     check: (reply) => {
@@ -669,7 +789,12 @@ async function runRepair(
           issues.push(`the reply is missing section ${id}`);
           continue;
         }
-        const result = buildSectionPart({ id, type: old.section.type, heading: old.section.heading, body });
+        const result = buildSectionPart({
+          id,
+          type: old.section.type,
+          heading: old.section.heading,
+          body,
+        });
         issues.push(...result.issues.map((issue) => `${id}: ${issue}`));
         if (result.part) next[id] = result.part;
       }
@@ -683,7 +808,12 @@ async function runRepair(
   if (isLesson && outline) {
     const workbook = state.outputs['workbook'] as unknown as WorkbookPart;
     const manual = state.outputs['manual'] as unknown as ManualPart;
-    assembled = assembleLesson(input, { outline, sections: { ...lessonParts, ...rebuilt }, workbook, manual });
+    assembled = assembleLesson(input, {
+      outline,
+      sections: { ...lessonParts, ...rebuilt },
+      workbook,
+      manual,
+    });
   } else {
     assembled = assembleTest(input, {
       sections: testSections(state, n).map((part) => rebuilt[part.section.id] ?? part),
@@ -694,7 +824,12 @@ async function runRepair(
 
 // --- review ---
 
-function summaryOf(unit: UnitContent, lint: StoredLint, review: readonly Flag[], outline: StoredOutline | null): string {
+function summaryOf(
+  unit: UnitContent,
+  lint: StoredLint,
+  review: readonly Flag[],
+  outline: StoredOutline | null,
+): string {
   const concerns = review.filter((flag) => flag.severity === 'concern').length;
   const notes = review.length - concerns;
   const sections = 'sections' in unit && unit.sections ? unit.sections.length : 0;
@@ -706,11 +841,22 @@ function summaryOf(unit: UnitContent, lint: StoredLint, review: readonly Flag[],
   return `Drafted "${unit.header.title}" (${unit.kind}): ${shape}. Lint: ${lint.errors.length} error(s), ${lint.warnings.length} warning(s). Review: ${concerns} concern(s), ${notes} note(s). A human must read and approve it before it is published.`;
 }
 
-async function runReview(input: UnitGenerateInput, state: JobState, deps: StepDeps): Promise<StepOutcome<'unit_generate'>> {
+async function runReview(
+  input: UnitGenerateInput,
+  state: JobState,
+  deps: StepDeps,
+): Promise<StepOutcome<'unit_generate'>> {
   const assembly = latestAssembly(state);
-  if (!assembly) throw new StepError('review', 'internal', 'There is no assembled draft to review.', { retryable: false });
+  if (!assembly)
+    throw new StepError('review', 'internal', 'There is no assembled draft to review.', {
+      retryable: false,
+    });
   const outline = readOutline(state);
-  const outlineNotes: Flag[] = (outline?.notes ?? []).map((message) => ({ code: 'other', severity: 'note', message: `Outline: ${message}` }));
+  const outlineNotes: Flag[] = (outline?.notes ?? []).map((message) => ({
+    code: 'other',
+    severity: 'note',
+    message: `Outline: ${message}`,
+  }));
 
   let unit: UnitContent | null = null;
   try {
@@ -720,10 +866,20 @@ async function runReview(input: UnitGenerateInput, state: JobState, deps: StepDe
   }
   if (!unit) {
     const review = sortFlags([
-      { code: 'other', severity: 'concern', message: 'The draft does not pass the schema, so it was not reviewed. Fix the lint errors first.' },
+      {
+        code: 'other',
+        severity: 'concern',
+        message:
+          'The draft does not pass the schema, so it was not reviewed. Fix the lint errors first.',
+      },
       ...outlineNotes,
     ]);
-    const result: UnitDraftOutput = { content: assembly.content, lint: assembly.lint, review, summary: 'The draft does not pass the schema; see the lint errors.' };
+    const result: UnitDraftOutput = {
+      content: assembly.content,
+      lint: assembly.lint,
+      review,
+      summary: 'The draft does not pass the schema; see the lint errors.',
+    };
     return { output: toJson({ flags: review.length }), usage: [], result };
   }
 
@@ -770,6 +926,7 @@ export async function runUnitGenerateStep(
   if (step === 'assemble') return runAssemble(input, state);
   if (step.startsWith('repair:')) return runRepair(input, state, step, deps);
   if (step === 'review') return runReview(input, state, deps);
-  throw new StepError(step, 'internal', `Unknown step "${step}" for a ${input.unit.kind} unit.`, { retryable: false });
+  throw new StepError(step, 'internal', `Unknown step "${step}" for a ${input.unit.kind} unit.`, {
+    retryable: false,
+  });
 }
-

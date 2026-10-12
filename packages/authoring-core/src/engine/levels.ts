@@ -64,10 +64,18 @@ export function normaliseStage(
     note = `stage "${stage}" is not used at ${level}; set to "${rule.stage}"`;
   }
   let nextTo: Stage | undefined = stageTo === 'none' ? undefined : stageTo;
-  if (nextTo !== undefined && (!rule.allowed.includes(nextTo) || stageIndex(nextTo) <= stageIndex(nextStage))) {
+  if (
+    nextTo !== undefined &&
+    (!rule.allowed.includes(nextTo) || stageIndex(nextTo) <= stageIndex(nextStage))
+  ) {
     nextTo = undefined;
   }
-  if (stageTo === 'none' && note !== undefined && rule.stage_to !== undefined && stageIndex(rule.stage_to) > stageIndex(nextStage)) {
+  if (
+    stageTo === 'none' &&
+    note !== undefined &&
+    rule.stage_to !== undefined &&
+    stageIndex(rule.stage_to) > stageIndex(nextStage)
+  ) {
     nextTo = rule.stage_to;
   }
   return { stage: nextStage, ...(nextTo ? { stage_to: nextTo } : {}), ...(note ? { note } : {}) };

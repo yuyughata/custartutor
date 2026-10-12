@@ -89,7 +89,10 @@ export function lintToFlags(report: Pick<LintReport, 'errors' | 'warnings'>): {
   errors: Flag[];
   warnings: Flag[];
 } {
-  const flag = (issue: { code: string; message: string; path?: string | undefined }, severity: 'note' | 'concern'): Flag => ({
+  const flag = (
+    issue: { code: string; message: string; path?: string | undefined },
+    severity: 'note' | 'concern',
+  ): Flag => ({
     code: issue.code,
     severity,
     message: issue.message,
@@ -111,13 +114,19 @@ const SEGMENT_LABEL: Record<string, string> = {
 
 /** The manual's timing text, built from the session plan so it can never disagree with it. */
 export function timingTextFrom(
-  periods: readonly { period: number; sections: readonly string[]; minutes: readonly { segment: string; minutes: number }[] }[],
+  periods: readonly {
+    period: number;
+    sections: readonly string[];
+    minutes: readonly { segment: string; minutes: number }[];
+  }[],
   headings: ReadonlyMap<string, string>,
 ): string {
   const count = periods.length;
   const lines = periods.map((period) => {
     const total = period.minutes.reduce((sum, entry) => sum + entry.minutes, 0);
-    const shape = period.minutes.map((entry) => `${SEGMENT_LABEL[entry.segment] ?? entry.segment} ${entry.minutes}`).join(', ');
+    const shape = period.minutes
+      .map((entry) => `${SEGMENT_LABEL[entry.segment] ?? entry.segment} ${entry.minutes}`)
+      .join(', ');
     const names = period.sections.map((id) => headings.get(id) ?? id).join('; ');
     return `Period ${period.period} (${total} minutes): ${shape}. Sections: ${names}.`;
   });
@@ -125,7 +134,10 @@ export function timingTextFrom(
 }
 
 export function timingText(outline: StoredOutline): string {
-  return timingTextFrom(outline.periods, new Map(outline.sections.map((section) => [section.id, section.heading])));
+  return timingTextFrom(
+    outline.periods,
+    new Map(outline.sections.map((section) => [section.id, section.heading])),
+  );
 }
 
 /** One line that tells a child (or a busy adult) the right answer, for the workbook's answers note. */
@@ -145,11 +157,16 @@ export function answerSummary(question: Question): string {
         .join('; ');
     case 'free_text':
     case 'spoken':
-      return question.rubric.exemplar ? `any correct answer, for example "${question.rubric.exemplar}"` : 'any correct answer';
+      return question.rubric.exemplar
+        ? `any correct answer, for example "${question.rubric.exemplar}"`
+        : 'any correct answer';
     case 'draw':
       return 'self-check';
     case 'tap_image':
-      return question.answer.hotspots.filter((h) => h.correct).map((h) => h.label).join(', ');
+      return question.answer.hotspots
+        .filter((h) => h.correct)
+        .map((h) => h.label)
+        .join(', ');
     case 'speak':
       return question.answer.expected.join(' / ');
   }
@@ -158,7 +175,11 @@ export function answerSummary(question: Question): string {
 export const WORKBOOK_INTRO =
   'Exercises move from supported (Tier 1) to independent (Tier 3). Answers are at the back for self-checking.';
 
-export function answersNote(tiers: { question_ids: readonly string[] }[], drill: readonly string[], questions: Readonly<Record<string, Question>>): string {
+export function answersNote(
+  tiers: { question_ids: readonly string[] }[],
+  drill: readonly string[],
+  questions: Readonly<Record<string, Question>>,
+): string {
   const ordered = tiers.flatMap((tier) => tier.question_ids);
   const parts = ordered.map((id, index) => {
     const question = questions[id];
@@ -189,7 +210,13 @@ function parseOrIssues(raw: Json): { unit: UnitContent | null; errors: Flag[] } 
     }
     return {
       unit: null,
-      errors: [{ code: 'schema_invalid', severity: 'concern', message: error instanceof Error ? error.message : String(error) }],
+      errors: [
+        {
+          code: 'schema_invalid',
+          severity: 'concern',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      ],
     };
   }
 }
@@ -213,8 +240,9 @@ function lintParsed(
   };
 }
 
-function headerOf(input: UnitGenerateInput): Record<string, unknown> {
+function headerOf(input: UnitGenerateInput, weekFallback = false): Record<string, unknown> {
   const { unit } = input;
+  const week = unit.week_no ?? (weekFallback ? Math.min(unit.unit_no, 15) : null);
   return {
     subject_slug: input.subject.slug,
     level_code: input.level_code,
@@ -226,7 +254,7 @@ function headerOf(input: UnitGenerateInput): Record<string, unknown> {
     ...(input.theme ? { theme: input.theme } : {}),
     chapter: { number: input.chapter.number, title: input.chapter.title },
     unit_no: unit.unit_no,
-    ...(unit.week_no !== null ? { week_no: unit.week_no } : {}),
+    ...(week !== null ? { week_no: week } : {}),
   };
 }
 
@@ -237,6 +265,11 @@ function headerOf(input: UnitGenerateInput): Record<string, unknown> {
 export function assembleLesson(input: UnitGenerateInput, parts: LessonParts): AssembledUnit {
   const notes: string[] = [];
   const { outline, workbook, manual } = parts;
+  if (input.unit.week_no === null) {
+    notes.push(
+      `The unit has no scheme week, so the header's week number was set to ${Math.min(input.unit.unit_no, 15)} (the unit number); set the real week by hand.`,
+    );
+  }
 
   const sections = [];
   const questions: Record<string, Question> = {};
@@ -266,18 +299,27 @@ export function assembleLesson(input: UnitGenerateInput, parts: LessonParts): As
   const drillIds = workbook.drill.map((q) => q.id);
 
   const sectionIds = new Set(sections.map((s) => s.id));
-  const scriptById = new Map(manual.script.filter((e) => sectionIds.has(e.section_id)).map((e) => [e.section_id, e]));
-  const helperById = new Map(manual.helper_script.filter((e) => sectionIds.has(e.section_id)).map((e) => [e.section_id, e]));
-  const script = sections.flatMap((section) => (scriptById.has(section.id) ? [scriptById.get(section.id)!] : []));
+  const scriptById = new Map(
+    manual.script.filter((e) => sectionIds.has(e.section_id)).map((e) => [e.section_id, e]),
+  );
+  const helperById = new Map(
+    manual.helper_script.filter((e) => sectionIds.has(e.section_id)).map((e) => [e.section_id, e]),
+  );
+  const script = sections.flatMap((section) =>
+    scriptById.has(section.id) ? [scriptById.get(section.id)!] : [],
+  );
   for (const section of sections) {
-    if (!scriptById.has(section.id)) notes.push(`The teacher's manual has no script entry for ${section.id}.`);
+    if (!scriptById.has(section.id))
+      notes.push(`The teacher's manual has no script entry for ${section.id}.`);
   }
-  const helper_script = sections.flatMap((section) => (helperById.has(section.id) ? [helperById.get(section.id)!] : []));
+  const helper_script = sections.flatMap((section) =>
+    helperById.has(section.id) ? [helperById.get(section.id)!] : [],
+  );
 
   const raw = toJson({
     schema_version: CURRENT_SCHEMA_VERSION,
     kind: 'lesson',
-    header: headerOf(input),
+    header: headerOf(input, true),
     sections,
     questions,
     session_plan: outline.periods.map((period) => ({
@@ -288,7 +330,10 @@ export function assembleLesson(input: UnitGenerateInput, parts: LessonParts): As
     workbook: {
       intro: WORKBOOK_INTRO,
       tiers,
-      quick_answer_drill: { seconds: Math.max(10, Math.min(600, Math.round(workbook.drill_seconds))), question_ids: drillIds },
+      quick_answer_drill: {
+        seconds: Math.max(10, Math.min(600, Math.round(workbook.drill_seconds))),
+        question_ids: drillIds,
+      },
       take_it_home: workbook.take_it_home,
       application_task_id: workbook.application.id,
       answers_note: answersNote(tiers, drillIds, questions),
@@ -301,7 +346,9 @@ export function assembleLesson(input: UnitGenerateInput, parts: LessonParts): As
     teacher_manual: {
       script,
       ...(manual.theme_lenses.length > 0 && manual.connection_moment.trim() !== ''
-        ? { theme_map: { lenses: manual.theme_lenses, connection_moment: manual.connection_moment } }
+        ? {
+            theme_map: { lenses: manual.theme_lenses, connection_moment: manual.connection_moment },
+          }
         : {}),
       timing: timingText(outline),
       materials: manual.materials,
@@ -358,4 +405,3 @@ export function assembleUnit(input: UnitGenerateInput, parts: UnitParts): Assemb
       return assembleTest(input, parts.test);
   }
 }
-

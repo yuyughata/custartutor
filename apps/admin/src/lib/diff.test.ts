@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { diffUnits as coreDiffUnits } from '@custar/authoring-core';
 import { goldenUnit2 } from '@custar/content-schema/fixtures';
 import { diffFields, diffUnits, humanPath, summarize, wordDiff } from './diff';
 
@@ -130,5 +131,31 @@ describe('helpers', () => {
     ]);
     expect(wordDiff('same', 'same')).toEqual([{ text: 'same', kind: 'same' }]);
     expect(wordDiff('', 'new')).toEqual([{ text: 'new', kind: 'added' }]);
+  });
+});
+
+// The engine package has its own, coarser diff (which ids changed). The admin diff must agree with it about
+// WHICH sections and questions changed; it adds the before/after text on top.
+describe('agreement with the engine package diff', () => {
+  it('reports the same changed, added and removed ids', () => {
+    const next = clone(goldenUnit2) as unknown as {
+      sections: { id: string; blocks: { type: string; text?: string }[] }[];
+      questions: Record<string, { prompt: string }>;
+    };
+    const paragraph = next.sections[0]!.blocks.findIndex((b) => b.type === 'paragraph');
+    next.sections[0]!.blocks[paragraph]!.text += ' Extra.';
+    const removed = next.sections.splice(2, 1)[0]!;
+    const firstQuestion = Object.keys(next.questions)[0]!;
+    next.questions[firstQuestion]!.prompt = 'Changed?';
+
+    const core = coreDiffUnits(goldenUnit2, next as never);
+    const mine = diffUnits(goldenUnit2, next);
+    const ids = (area: string, change: string) =>
+      mine.items.filter((i) => i.area === area && i.change === change).map((i) => i.id).sort();
+
+    expect([...ids('section', 'changed'), ...ids('section', 'added')].sort()).toEqual([...core.section_ids].sort());
+    expect(ids('section', 'removed')).toEqual(core.removed_section_ids);
+    expect(core.removed_section_ids).toEqual([removed.id]);
+    expect([...ids('question', 'changed'), ...ids('question', 'added')].sort()).toEqual([...core.question_ids].sort());
   });
 });

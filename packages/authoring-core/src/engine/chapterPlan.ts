@@ -31,7 +31,11 @@ export const PLAN_STEPS = ['group', 'title'] as const;
 export function runGroup(input: ChapterPlanInput): StepOutcome<'chapter_plan'> {
   const grouping = groupIntoChapters(input.scheme, { min: 3, max: 5 });
   if (grouping.chapters.length === 0) {
-    throw new StepError('group', 'invalid_input', 'The scheme has no teaching weeks, so there is nothing to plan.');
+    throw new StepError(
+      'group',
+      'invalid_input',
+      'The scheme has no teaching weeks, so there is nothing to plan.',
+    );
   }
   return { output: toJson(grouping), usage: [] };
 }
@@ -52,17 +56,23 @@ export function validateTitles(grouping: ChapterGrouping, titles: Titles): strin
     const reply = titles.chapters[index];
     if (!reply) return;
     if (reply.chapter_no !== chapter.chapter_no) {
-      problems.push(`chapters[${index}].chapter_no must be ${chapter.chapter_no} (got ${reply.chapter_no})`);
+      problems.push(
+        `chapters[${index}].chapter_no must be ${chapter.chapter_no} (got ${reply.chapter_no})`,
+      );
     }
     const weeks = reply.units.map((unit) => unit.week_no);
-    if (weeks.length !== chapter.week_nos.length || weeks.some((week, i) => week !== chapter.week_nos[i])) {
+    if (
+      weeks.length !== chapter.week_nos.length ||
+      weeks.some((week, i) => week !== chapter.week_nos[i])
+    ) {
       problems.push(
         `chapter ${chapter.chapter_no} must hold exactly weeks [${chapter.week_nos.join(', ')}] in that order (got [${weeks.join(', ')}]); never move, add, drop or reorder a week`,
       );
     }
     if (clean(reply.title) === '') problems.push(`chapters[${index}].title is empty`);
     reply.units.forEach((unit, unitIndex) => {
-      if (clean(unit.title) === '') problems.push(`chapters[${index}].units[${unitIndex}].title is empty`);
+      if (clean(unit.title) === '')
+        problems.push(`chapters[${index}].units[${unitIndex}].title is empty`);
     });
   });
   return problems;
@@ -81,7 +91,10 @@ export async function runTitle(
   deps: StepDeps,
 ): Promise<StepOutcome<'chapter_plan'>> {
   const grouping = readGrouping(state);
-  if (!grouping) throw new StepError('title', 'internal', 'The group step has no output yet.', { retryable: false });
+  if (!grouping)
+    throw new StepError('title', 'internal', 'The group step has no output yet.', {
+      retryable: false,
+    });
 
   const { value, usage } = await callModel(deps, {
     step: 'title',
@@ -95,11 +108,19 @@ export async function runTitle(
   });
 
   const result = buildPlan(input, grouping, value);
-  return { output: toJson({ chapters: result.plan.chapters.length, flags: result.flags.length }), usage, result };
+  return {
+    output: toJson({ chapters: result.plan.chapters.length, flags: result.flags.length }),
+    usage,
+    result,
+  };
 }
 
 /** Builds the plan from the fixed structure and the model's words. Assumes `validateTitles` passed. */
-export function buildPlan(input: ChapterPlanInput, grouping: ChapterGrouping, titles: Titles): ChapterPlanResult {
+export function buildPlan(
+  input: ChapterPlanInput,
+  grouping: ChapterGrouping,
+  titles: Titles,
+): ChapterPlanResult {
   const flags: Flag[] = [];
   const level = input.scheme.level_code as LevelCode;
   const teaching = input.scheme.weeks
@@ -108,7 +129,8 @@ export function buildPlan(input: ChapterPlanInput, grouping: ChapterGrouping, ti
   const unitNoByWeek = new Map(teaching.map((week, index) => [week.week_no, index + 1]));
   const weekByNo = new Map(input.scheme.weeks.map((week) => [week.week_no, week]));
 
-  for (const warning of grouping.warnings) flags.push({ code: 'grouping', severity: 'concern', message: warning });
+  for (const warning of grouping.warnings)
+    flags.push({ code: 'grouping', severity: 'concern', message: warning });
 
   const chapters: PlannedChapter[] = grouping.chapters.map((chapter, index) => {
     const reply = titles.chapters[index]!;
@@ -127,7 +149,12 @@ export function buildPlan(input: ChapterPlanInput, grouping: ChapterGrouping, ti
       }
       const stage = normaliseStage(level, replyUnit.stage as Stage, replyUnit.stage_to);
       if (stage.note) {
-        flags.push({ code: 'stage', severity: 'note', message: `Week ${weekNo}: ${stage.note}.`, week_no: weekNo });
+        flags.push({
+          code: 'stage',
+          severity: 'note',
+          message: `Week ${weekNo}: ${stage.note}.`,
+          week_no: weekNo,
+        });
       }
       return {
         unit_no: unitNoByWeek.get(weekNo)!,
@@ -158,7 +185,10 @@ export function buildPlan(input: ChapterPlanInput, grouping: ChapterGrouping, ti
     const slug = toSlug(reply.theme_slug) || toSlug(reply.theme_title);
     const themeTitle = clean(reply.theme_title);
     const themeLens = clean(reply.theme_lens);
-    const theme = slug !== '' && themeTitle !== '' && themeLens !== '' ? { slug, title: themeTitle, lens: themeLens } : undefined;
+    const theme =
+      slug !== '' && themeTitle !== '' && themeLens !== ''
+        ? { slug, title: themeTitle, lens: themeLens }
+        : undefined;
     return {
       chapter_no: chapter.chapter_no,
       title: clean(reply.title) || `Chapter ${chapter.chapter_no}`,

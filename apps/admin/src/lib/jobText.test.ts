@@ -39,6 +39,18 @@ describe('step names', () => {
     expect(stepLabel('revise:practice')).toBe('Rewriting "Practice"');
   });
 
+  it('uses the engine step names exactly, per job kind', () => {
+    expect(stepLabel('extract', 'scheme_ingest')).toBe('Reading the document and listing the weeks');
+    expect(stepLabel('check', 'scheme_ingest')).toBe('Checking the weeks for gaps and odd entries');
+    expect(stepLabel('group', 'chapter_plan')).toBe('Grouping the teaching weeks into chapters');
+    expect(stepLabel('title', 'chapter_plan')).toBe('Naming the chapters and units, proposing themes');
+    expect(stepLabel('patch', 'unit_revise')).toBe('Working out the changes');
+    expect(stepLabel('review', 'unit_revise')).toBe('Advisory review of the change');
+    expect(stepLabel('review', 'unit_generate')).toBe('Advisory review');
+    expect(stepLabel('section:story_opener', 'unit_generate')).toBe('Writing "Story opener"');
+    expect(stepLabel('repair:2', 'unit_generate')).toBe('Fixing problems (round 2)');
+  });
+
   it('falls back to readable words', () => {
     expect(stepLabel('some_new_step')).toBe('Some new step');
     expect(humanizeId('s3_come_and_explore')).toBe('Come and explore');

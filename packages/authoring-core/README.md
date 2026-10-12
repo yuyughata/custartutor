@@ -202,3 +202,140 @@ and the opt-in evaluation script); what the service itself accepts, in particula
 and per-model support for adaptive thinking and `effort`, is unverified until the first live run.
 
 <!-- engine section: M2.1b -->
+
+## Engine and prompts (`src/engine`, `src/prompts`, `src/fakes/demoLlm.ts`)
+
+```ts
+import {
+  createJobEngine,
+  PROMPT_VERSION,
+  DEFAULT_CAST,
+  diffUnits,
+  applyUnitPatch,
+} from '@custar/authoring-core';
+
+const engine = createJobEngine();
+const input = engine.parseInput('unit_generate', rawInput); // StepError('input', 'invalid_input') when it does not fit
+const step = engine.nextStep('unit_generate', input, state); // dynamic: reads earlier outputs
+const outcome = await engine.runStep({ kind: 'unit_generate', input, state, step }, deps); // at most one model call
+```
+
+Also exported: `DEFAULT_CAST` (Zari and Zuri: the owner's facts plus guidance derived from age only, labelled as
+such), `diffUnits(a, b)` (which sections and questions are new or changed, which were removed, whether the workbook,
+manual, session plan or header changed), `applyUnitPatch(base, patch, { restrictTo })`, `restoreDroppedIds(base, next)`,
+`assembleUnit(input, parts)`, `normalizeCast`, `DEFAULT_EFFORT` and `MAX_OUTPUT_TOKENS` (the per-step defaults, shown in
+the admin Usage screen). The step names are the contract with the UI.
+
+### Steps per kind
+
+| Kind            | Steps                                                                                                                                                                                                                                                 | Model calls                                            |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `scheme_ingest` | `extract` (the PDF read natively via `deps.loadUpload`, or the text), `check` (no call: Zod `Scheme`, week numbers, kinds, duplicates, gaps, empty topics, teaching-week count, verbatim check against a text source)                                 | 1                                                      |
+| `chapter_plan`  | `group` (no call: `groupIntoChapters`), `title` (titles, drafted objectives, stage, optional theme; a reply that moves a week is rejected)                                                                                                            | 1                                                      |
+| `unit_generate` | lesson: `outline`, `section:<id>` per planned section, `workbook`, `manual`, `assemble` (no call), `repair:1`, `repair:2` (only when lint has errors), `review`. Other kinds: `draft`, `assemble`, (`repair:n` for revision and assessment), `review` | 4 + one per section (about 18 for a 14-section lesson) |
+| `unit_revise`   | `patch` (an ID-addressed patch), `apply` (no call: apply, parse, lint, `lintVersionIds`, `changed`), `review` (changed parts only; no call when nothing changed)                                                                                      | 1 or 2                                                 |
+
+`progress()` follows the dynamic plan: before `outline` a lesson job reports 5 steps; once the outline is stored the
+total includes one step per section, and a `repair:n` step appears only after an `assemble` with lint errors.
+Every step reads only strictly earlier steps' outputs, so running it again with the same `(input, state)` gives the
+same output. Outputs stored in `state.outputs` are final-shaped JSON (a built `Section` and its `Question`s, the
+`StoredOutline`, the assembled unit plus its lint), never raw model replies.
+
+### What the code decides, and what the model decides
+
+- **Ids are assigned by code**: `concept_1`.., the type name for every other section, `q_<section>_<n>` for questions,
+  `n_<k>` for tutor lines, `variant_a`.. for practice pools. The model links a question to the block or tutor line that
+  uses it with a `ref` of its own, resolved by position, so re-running gives the same ids.
+- **The outline is normalised, never trusted** (`engine/outline.ts`): 2 to 5 distinct enrichment types (the template's
+  five by default for Primary 1), rotation away from `previous_enrichment` (a window to the world is the preferred swap-in),
+  no Remember? when there is no earlier unit, at most 4 concepts, every scheme subtopic assigned to a concept, a session
+  plan of exactly `unit.periods` one-hour periods with the mastery check last. Each adjustment is kept as a note and
+  shown to the reviewer.
+- **Every section is validated before it is stored** with the real Zod schemas (`engine/mapping.ts`): answer specs, blank
+  counts, an auto-gradable mastery check, practice covering tiers 1 to 3, Think Deeper having prompts. A reply that fails
+  gets one repair retry inside the step (the problems are listed, with paths); a second failure is `StepError('schema')`.
+- **Deterministic text**: the manual's timing, the workbook's tiers, intro and answers note are built from the session
+  plan and the questions, so they cannot disagree with them. The NERDC objective in the header is the input's, verbatim.
+- **Advisory only**: Claude's review, a cast guard (a sentence that names a character next to a family or friendship word),
+  and a tutor-script guard produce `Flag`s. They never block, fix or approve.
+
+### Errors and usage
+
+`LlmError('refusal')` becomes `StepError('refusal')` (not retryable), `'truncated'` becomes `'truncated'`, `'aborted'` becomes
+`'aborted'`, `'transport'` becomes `'transport'` with `retryable` and `retryAfterMs` copied. A call the API answered and billed
+(a refusal, a truncation, a bad reply: `LlmCallError`) is added to `StepError.usage`, and on a successful retry both calls are
+in `StepOutcome.usage`, so budgets never undercount. Effort and `max_tokens` per step family are in `engine/settings.ts`;
+`settings.effort["unit_generate:section"]` (and the other family keys) override the effort.
+
+### Prompts (`src/prompts`)
+
+- **System prefix** (`prompts/system.ts`): a pure function of the job kind and the cast. For units it is the role, the data-not-instructions
+  rule, the non-negotiable rules of CLAUDE.md and the brief, stage and voice (with the lint's own limits), the one-hour shape, the
+  authoring format, the cast bible and the golden Unit 2 as the worked example (about 10k tokens). It is one system block marked
+  `cache: true` and is byte-identical across every call of every step of every unit with the same cast (a revision shares it too).
+  Everything about the unit being written comes after the breakpoint, in the user message.
+- **Uploaded text is data.** Anything that came from an upload (scheme text, topics, subtopics, the unit title and objective derived
+  from them, and earlier model output built on them) is fenced between `<<<DOCUMENT_DATA name="..">>>` and `DOCUMENT_DATA>>>`, with
+  `<`/`>` escaped so the fence cannot be closed from inside; trusted facts (stage, ids, counts, lint errors) go in `<context>` blocks.
+  An administrator's revise instruction and unit notes are instructions but are scrubbed of e-mail addresses and phone numbers first.
+- **Cast bible** (`prompts/cast.ts`): "Facts supplied by the owner" lists only owner-supplied facts; guidance derived from age sits under
+  its own heading, labelled as derived and adjustable; explicit rules forbid inventing traits, backstory or any relationship between
+  the characters (no sibling, cousin, friend, classmate, shared home or school) unless `relationship_note` says so.
+- **The worked example** (`prompts/exemplar.ts`) is the golden unit in the authoring format. A test checks that every sentence of it
+  occurs in `goldenUnit2`, and that every exemplar section passes the same validation the engine applies to a model reply.
+- `PROMPT_VERSION` ('m2-v1') must be bumped when a prompt, an authoring schema or the mapping changes in a way that could change output.
+
+### Authoring schemas (`prompts/schemas.ts`)
+
+Each step returns a compact, flat shape that code maps to the final `UnitContent`. Rules: every property required (empty `""`/`[]`
+when it does not apply), no unions (blocks and questions are one flat shape with a `type`/`kind` field), no records or tuples, no
+`.int()`/`.min()`/`.max()`/regex (counts and ranges are re-checked in code), root always an object. Each converts with the adapter's
+`toStructuredJsonSchema` (tested), and none uses `pattern`, `oneOf`, `minimum`/`maximum` or `minLength`/`maxLength`.
+
+| Schema (`schemaName`) | Step                            | Size as sent to the API |
+| --------------------- | ------------------------------- | ----------------------- |
+| `scheme_extract`      | `extract`                       | about 0.8 KB            |
+| `chapter_titles`      | `title`                         | about 0.8 KB            |
+| `unit_outline`        | `outline`                       | about 1.5 KB            |
+| `unit_section`        | `section:<id>`                  | about 2.4 KB            |
+| `unit_workbook`       | `workbook`                      | about 1.7 KB            |
+| `unit_manual`         | `manual`                        | about 1.1 KB            |
+| `unit_review`         | `review`                        | about 0.4 KB            |
+| `unit_repair`         | `repair:n`                      | about 2.5 KB            |
+| `unit_project`        | `draft` (mini and term project) | about 1.1 KB            |
+| `unit_test`           | `draft` (revision, assessment)  | about 2.1 KB            |
+| `unit_patch`          | `patch`                         | about 3.8 KB            |
+
+A sort question's mapping is written as `{left: item, right: category}` pairs, not a record. The authoring format cannot express
+`tap_image`, `speak` or `spoken` questions; a revision leaves those untouched and says so.
+
+### Revisions
+
+The model returns a patch keyed by existing ids: whole-section replacements (heading, blocks, tutor script), question replacements
+under their own ids or new questions with a new id and an owner section, new sections (a concept or an unused enrichment type, at
+most 5 in all), workbook text and manual entries. It cannot delete or rename anything (ids are permanent). `apply` keeps everything the patch does not
+mention byte for byte, keeps a picture and a language tag when a rewritten block says the same thing, detaches narration audio when the text changes,
+regenerates the answers note when a workbook question changed, and puts back any id a faulty application dropped (`restoreDroppedIds`).
+`changed` is `diffUnits(base, next)` restricted to section and question ids; workbook and manual changes are named in the summary.
+
+### The demo model (`@custar/authoring-core/fakes`)
+
+`createDemoLlm()` answers every engine step from fixtures (the P1 Basic Science scheme, the golden Unit 2 re-keyed to the requested section
+ids and types, the market-day maths unit's window to the world, the colour-chart project) so the real engine, the real lint and the real parse
+run end to end offline. It reports the model id `DEMO_MODEL_ID` (`demo-fixture-model`), its review says it is a demo, and a test checks
+that every authored string it emits is a fixture's.
+
+### Tests
+
+`src/engine/*.test.ts`, `src/prompts/*.test.ts` and `src/fakes/demoLlm.test.ts` run every kind through the real engine with the demo
+model or a scripted model (`test-support/testKit.ts`: sample inputs built from the fixtures, a job driver that serialises the state between
+steps, a scripted `LlmClient`). They cover happy paths, idempotence of every step, resumability, the schema repair retry, each model failure,
+the dynamic plan, outline repairs, revisions and ids, the injection fence, the cast rules, the cache-stable prefix and the absence of personal data.
+
+### Live evaluation (`scripts/eval-live.mjs`)
+
+`ANTHROPIC_API_KEY=... node packages/authoring-core/scripts/eval-live.mjs --out report.md` runs P1 Basic Science term 1 through
+`scheme_ingest` (the reference PDF, compared with the fixture: exact topic and subtopic match rate), `chapter_plan` and `unit_generate`
+for week 2 (lint, a checklist against the golden unit, reading level per section, usage totals), and writes the report and the unit JSON.
+Without a key it prints `ANTHROPIC_API_KEY not set: nothing to evaluate` and exits 0. `--demo` runs the same flow on the demo model with no
+network and labels the report DEMO. **It has never been run against the live API**, so every prompt decision above is untested against a real model.

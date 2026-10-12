@@ -25,7 +25,10 @@ function voiceLine(member: CastMember): string | null {
 }
 
 /** The cast section of the system prompt. Pure: the same cast always renders the same text. */
-export function renderCastBible(cast: readonly CastMember[]): string {
+export function renderCastBible(
+  cast: readonly CastMember[],
+  options: { withExemplar?: boolean } = {},
+): string {
   const lines: string[] = ['## THE CAST (recurring characters)', ''];
   if (cast.length === 0) {
     lines.push(
@@ -37,12 +40,16 @@ export function renderCastBible(cast: readonly CastMember[]): string {
   lines.push('### Facts supplied by the owner');
   lines.push('Only these are facts about the characters. Nothing else is known.');
   for (const member of cast) lines.push(factsLine(member));
-  const related = cast.filter((m) => m.traits.relationship_note && m.traits.relationship_note.trim() !== '');
+  const related = cast.filter(
+    (m) => m.traits.relationship_note && m.traits.relationship_note.trim() !== '',
+  );
   if (related.length === 0) {
     lines.push('- Relationships between the characters: none supplied.');
   } else {
     for (const member of related) {
-      lines.push(`- ${member.name}, relationship (owner's note): ${member.traits.relationship_note!.trim()}`);
+      lines.push(
+        `- ${member.name}, relationship (owner's note): ${member.traits.relationship_note!.trim()}`,
+      );
     }
   }
   const voices = cast.map(voiceLine).filter((line): line is string => line !== null);
@@ -51,7 +58,7 @@ export function renderCastBible(cast: readonly CastMember[]): string {
   lines.push('');
   lines.push('### Guidance derived from age only');
   lines.push(
-    'This guidance is derived from each character\'s age. It is NOT a fact supplied by the owner, it says nothing about the character\'s personality, and the owner may adjust it. Use it only to pitch how the character speaks and what the character can do in a scene.',
+    "This guidance is derived from each character's age. It is NOT a fact supplied by the owner, it says nothing about the character's personality, and the owner may adjust it. Use it only to pitch how the character speaks and what the character can do in a scene.",
   );
   for (const member of cast) {
     const guidance = member.traits.derived_guidance?.trim();
@@ -72,10 +79,12 @@ export function renderCastBible(cast: readonly CastMember[]): string {
     '3. Do not give a character a pet, a favourite food, a hobby, a fear, a family member or a personality. If a story needs another person, use an unnamed role (the teacher, a trader, a neighbour, a grown-up).',
   );
   lines.push(
-    '4. Pitch each character\'s lines to the age. Never let the younger character know or do what a child of that age could not.',
+    "4. Pitch each character's lines to the age. Never let the younger character know or do what a child of that age could not.",
   );
-  lines.push(
-    '5. The worked example at the end of this prompt comes from the template. Take its shape and voice only: its scene-setting about where the characters live or go to school is storytelling, not a fact you may repeat.',
-  );
+  if (options.withExemplar === true) {
+    lines.push(
+      '5. The worked example at the end of this prompt comes from the template. Take its shape and voice only: its scene-setting about where the characters live or go to school is storytelling, not a fact you may repeat.',
+    );
+  }
   return lines.join('\n');
 }

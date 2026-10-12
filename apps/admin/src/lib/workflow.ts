@@ -18,7 +18,7 @@ export interface StatusStyle {
 
 export const VERSION_STATUS_STYLE: Record<VersionStatus, StatusStyle> = {
   draft: { label: 'Draft', glyph: '✎', tone: 'neutral' },
-  in_review: { label: 'In review', glyph: '◔', tone: 'info' },
+  in_review: { label: 'In review', glyph: '⇄', tone: 'info' },
   approved: { label: 'Approved', glyph: '✓', tone: 'success' },
   published: { label: 'Published', glyph: '●', tone: 'success' },
   superseded: { label: 'Superseded', glyph: '↷', tone: 'neutral' },

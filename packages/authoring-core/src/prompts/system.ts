@@ -29,7 +29,14 @@ export function buildSystemPrefix(mode: PrefixMode, cast: readonly CastMember[])
     case 'ingest':
       return join([ROLE_INGEST, DATA_RULE, INGEST_RULES]);
     case 'plan':
-      return join([ROLE_PLAN, DATA_RULE, RULES_CORE, STAGE_AND_VOICE, PLAN_RULES, renderCastBible(cast)]);
+      return join([
+        ROLE_PLAN,
+        DATA_RULE,
+        RULES_CORE,
+        STAGE_AND_VOICE,
+        PLAN_RULES,
+        renderCastBible(cast),
+      ]);
     case 'unit':
       return join([
         ROLE_UNIT,
@@ -39,7 +46,7 @@ export function buildSystemPrefix(mode: PrefixMode, cast: readonly CastMember[])
         SESSION_SHAPE,
         UNIT_MODE_NOTE,
         SCHEMA_GUIDE,
-        renderCastBible(cast),
+        renderCastBible(cast, { withExemplar: true }),
         renderExemplar(),
       ]);
   }

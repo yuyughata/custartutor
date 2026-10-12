@@ -25,18 +25,28 @@ export function renderQuestion(question: Question): string {
       break;
     case 'fill_blank':
       question.answer.blanks.forEach((blank, index) => {
-        lines.push(`  blank ${index + 1} accepts: ${blank.accepted.join(' | ')}${blank.numeric ? ' (numeric)' : ''}`);
+        lines.push(
+          `  blank ${index + 1} accepts: ${blank.accepted.join(' | ')}${blank.numeric ? ' (numeric)' : ''}`,
+        );
       });
       break;
     case 'match':
-      lines.push(`  pairs: ${question.answer.pairs.map((p) => `${p.left} = ${p.right}`).join(' ; ')}`);
+      lines.push(
+        `  pairs: ${question.answer.pairs.map((p) => `${p.left} = ${p.right}`).join(' ; ')}`,
+      );
       break;
     case 'sort':
-      lines.push(`  sort: ${Object.entries(question.answer.mapping).map(([i, c]) => `${i} -> ${c}`).join(' ; ')}`);
+      lines.push(
+        `  sort: ${Object.entries(question.answer.mapping)
+          .map(([i, c]) => `${i} -> ${c}`)
+          .join(' ; ')}`,
+      );
       break;
     case 'free_text':
     case 'spoken':
-      lines.push(`  rubric: ${question.rubric.criteria.join(' ; ')}${question.rubric.exemplar ? ` (model answer: ${question.rubric.exemplar})` : ''}`);
+      lines.push(
+        `  rubric: ${question.rubric.criteria.join(' ; ')}${question.rubric.exemplar ? ` (model answer: ${question.rubric.exemplar})` : ''}`,
+      );
       break;
     case 'draw':
       lines.push(`  self-check: ${(question.self_check ?? []).join(' ; ')}`);
@@ -53,12 +63,17 @@ export function renderQuestion(question: Question): string {
   return lines.join('\n');
 }
 
-export function renderBlock(block: AnyBlock, questions: Readonly<Record<string, Question>>): string {
+export function renderBlock(
+  block: AnyBlock,
+  questions: Readonly<Record<string, Question>>,
+): string {
   switch (block.type) {
     case 'paragraph':
       return block.text;
     case 'bullets':
-      return block.items.map((item) => `- ${item.lead ? `${item.lead}: ` : ''}${item.text}`).join('\n');
+      return block.items
+        .map((item) => `- ${item.lead ? `${item.lead}: ` : ''}${item.text}`)
+        .join('\n');
     case 'definition':
       return `[definition] ${block.term}: ${block.meaning}`;
     case 'example':
@@ -70,7 +85,9 @@ export function renderBlock(block: AnyBlock, questions: Readonly<Record<string, 
     case 'callout':
       return `[callout: ${block.tone}] ${block.text}`;
     case 'activity_steps':
-      return block.steps.map((step, index) => `${index + 1}. ${step.label}: ${step.text}`).join('\n');
+      return block.steps
+        .map((step, index) => `${index + 1}. ${step.label}: ${step.text}`)
+        .join('\n');
     case 'table':
       return [block.headers.join(' | '), ...block.rows.map((row) => row.join(' | '))].join('\n');
     case 'question': {
@@ -111,7 +128,10 @@ export function renderSection(
   return parts.join('\n');
 }
 
-export function renderWorkbook(workbook: Workbook, questions: Readonly<Record<string, Question>>): string {
+export function renderWorkbook(
+  workbook: Workbook,
+  questions: Readonly<Record<string, Question>>,
+): string {
   const lines = ['### Workbook'];
   if (workbook.intro) lines.push(`intro: ${workbook.intro}`);
   for (const tier of workbook.tiers) {
@@ -140,7 +160,9 @@ export function renderWorkbook(workbook: Workbook, questions: Readonly<Record<st
 export function renderManual(manual: TeacherManual): string {
   const lines = ["### Teacher's manual"];
   for (const entry of manual.script) {
-    lines.push(`${entry.section_id}: say: ${entry.say} | ask: ${entry.ask} | watch for: ${entry.watch_for}`);
+    lines.push(
+      `${entry.section_id}: say: ${entry.say} | ask: ${entry.ask} | watch for: ${entry.watch_for}`,
+    );
   }
   if (manual.theme_map) {
     for (const lens of manual.theme_map.lenses) {
@@ -191,13 +213,16 @@ export function renderUnit(unit: UnitContent, options: RenderUnitOptions = {}): 
     }
   }
   if (unit.kind === 'lesson') {
-    if (options.includeWorkbook !== false && !only) parts.push(renderWorkbook(unit.workbook, questions));
+    if (options.includeWorkbook !== false && !only)
+      parts.push(renderWorkbook(unit.workbook, questions));
     if (options.includeManual !== false && !only) parts.push(renderManual(unit.teacher_manual));
   } else if (unit.kind === 'mini_project' || unit.kind === 'term_project') {
     parts.push(`Brief: ${unit.brief}`);
     parts.push(`Steps: ${unit.steps.map((s) => `${s.n}. ${s.text}`).join(' ')}`);
     parts.push(`Materials: ${unit.materials.join('; ')}`);
-    parts.push(`Rubric: ${unit.rubric.map((r) => `${r.criterion}: ${r.levels.map((l) => `${l.level}=${l.descriptor}`).join(' / ')}`).join(' ; ')}`);
+    parts.push(
+      `Rubric: ${unit.rubric.map((r) => `${r.criterion}: ${r.levels.map((l) => `${l.level}=${l.descriptor}`).join(' / ')}`).join(' ; ')}`,
+    );
     parts.push(`Reflection: ${unit.reflection_prompts.join(' ; ')}`);
   }
   return parts.join('\n\n');

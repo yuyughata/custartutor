@@ -15,7 +15,7 @@ import {
 } from '@custar/authoring-core';
 import { ChapterPlan } from '@custar/authoring-core';
 import { SchemeWeek } from '@custar/content-schema';
-import { AdminApiError } from '../api/errors';
+import { AdminApiError, toAdminError } from '../api/errors';
 import { validateJobParams } from '../api/jobParams';
 import type {
   AdminApi,
@@ -40,11 +40,14 @@ import type {
 import { can, type AdminRole, type Capability } from '../lib/roles';
 import { createDemoAuth } from './demoAuth';
 import { createDemoJobHooks, type DemoJobHooks } from './jobHooks';
-import { chapterOf, schemeOf, versionsOf } from './queries';
+import { chapterOf, latestVersionOf, schemeOf, versionsOf } from './queries';
 import { createDemoState, type DemoScheme, type DemoState } from './state';
 import { createDemoJobApi, type DemoJobApi } from './engine';
 
-export type DemoJobApiFactory = (hooks: DemoJobHooks) => DemoJobApi;
+export type DemoJobApiFactory = (
+  hooks: DemoJobHooks,
+  options: { stepDelayMs?: number },
+) => DemoJobApi;
 
 export interface DemoOptions {
   /** Builds the job API. The default wires the in-memory job API to the stand-in model (demo/engine.ts). */
@@ -53,16 +56,20 @@ export interface DemoOptions {
   newId?: () => string;
   state?: DemoState;
   initialRole?: AdminRole;
+  /** How long each step of a job waits, so progress is visible. Tests pass 0. */
+  stepDelayMs?: number;
 }
 
 export type DemoAdminApi = AdminApi & { readonly state: DemoState };
 
-const FORBIDDEN = new AdminApiError(
-  'forbidden',
-  'admin_role_required',
-  'Your role is not allowed to do this. Ask a super admin if you need access.',
-  403,
-);
+function forbidden(): AdminApiError {
+  return new AdminApiError(
+    'forbidden',
+    'admin_role_required',
+    'Your role is not allowed to do this. Ask a super admin if you need access.',
+    403,
+  );
+}
 
 function conflict(code: string, message: string): AdminApiError {
   return new AdminApiError('conflict', code, message, 409);
@@ -100,7 +107,9 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
       return { bytes, mime: 'application/pdf' };
     },
   });
-  const rawJobs = (options.jobApiFactory ?? createDemoJobApi)(hooks);
+  const rawJobs = (options.jobApiFactory ?? createDemoJobApi)(hooks, {
+    ...(options.stepDelayMs !== undefined ? { stepDelayMs: options.stepDelayMs } : {}),
+  });
   let usageSeen = 0;
 
   /** The in-memory job API does not time-stamp its usage log, so new calls are stamped when first seen. */
@@ -115,7 +124,7 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
   }
 
   function needs(capability: Capability): void {
-    if (!can(role(), capability)) throw FORBIDDEN;
+    if (!can(role(), capability)) throw forbidden();
   }
 
   // --- jobs ---------------------------------------------------------------------------------------
@@ -123,62 +132,94 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
   const created: string[] = [];
   const keys = new Map<string, string>();
 
+  /** Everything the job client throws becomes an AdminApiError, like the live adapter. */
+  async function typed<T>(work: () => Promise<T>): Promise<T> {
+    try {
+      return await work();
+    } catch (error) {
+      throw toAdminError(error);
+    }
+  }
+
+  /** Every job row, newest first, without the role check (the usage panel is for analysts too). */
+  async function allJobRows(): Promise<JobRow[]> {
+    const rows = await Promise.all(created.map((id) => rawJobs.get(id)));
+    return rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
+
   const jobs: AdminJobs = {
-    async create(kind: JobKind, params: Record<string, unknown>, idempotencyKey?: string): Promise<JobRow> {
-      needs('job.start');
-      const checked = validateJobParams(kind, params) as Record<string, unknown>;
-      if (idempotencyKey) {
-        const known = keys.get(idempotencyKey);
-        if (known) return rawJobs.get(known);
-      }
-      if (kind === 'chapter_plan') {
-        const schemeId = (checked as { scheme_id: string }).scheme_id;
-        const scheme = state.schemes.find((candidate) => candidate.id === schemeId);
-        if (!scheme) throw notFound('scheme_not_found', 'That scheme no longer exists.');
-        if (scheme.status !== 'approved') {
-          throw conflict('scheme_not_approved', 'The scheme must be approved before chapters can be planned.');
+    create(kind: JobKind, params: Record<string, unknown>, idempotencyKey?: string): Promise<JobRow> {
+      return typed(async () => {
+        needs('job.start');
+        const checked = validateJobParams(kind, params) as Record<string, unknown>;
+        if (idempotencyKey) {
+          const known = keys.get(idempotencyKey);
+          if (known) return rawJobs.get(known);
         }
-      }
-      if (kind === 'unit_generate') {
-        const unitId = (checked as { unit_id: string }).unit_id;
-        if (!state.units.some((candidate) => candidate.id === unitId)) {
-          throw notFound('not_found', 'That unit no longer exists.');
+        if (kind === 'chapter_plan') {
+          const schemeId = (checked as { scheme_id: string }).scheme_id;
+          const scheme = state.schemes.find((candidate) => candidate.id === schemeId);
+          if (!scheme) throw notFound('scheme_not_found', 'That scheme no longer exists.');
+          if (scheme.status !== 'approved') {
+            throw conflict('scheme_not_approved', 'The scheme must be approved before chapters can be planned.');
+          }
         }
-      }
-      const row = await rawJobs.create(kind, checked, idempotencyKey);
-      created.push(row.id);
-      if (idempotencyKey) keys.set(idempotencyKey, row.id);
-      return row;
+        if (kind === 'unit_generate') {
+          const unitId = (checked as { unit_id: string }).unit_id;
+          if (!state.units.some((candidate) => candidate.id === unitId)) {
+            throw notFound('not_found', 'That unit no longer exists.');
+          }
+        }
+        if (kind === 'unit_revise') {
+          const versionId = (checked as { unit_version_id: string }).unit_version_id;
+          const version = state.versions.find((candidate) => candidate.id === versionId);
+          if (!version) throw notFound('unit_version_not_found', 'That version no longer exists.');
+          if (latestVersionOf(state, version.unit_id)?.id !== version.id) {
+            throw conflict('stale_base', 'A newer version of this unit exists. Reload the page and try again.');
+          }
+        }
+        const row = await rawJobs.create(kind, checked, idempotencyKey);
+        created.push(row.id);
+        if (idempotencyKey) keys.set(idempotencyKey, row.id);
+        return row;
+      });
     },
-    async step(jobId: string): Promise<AiJobResponse> {
-      needs('job.start');
-      try {
-        return await rawJobs.step(jobId);
-      } finally {
+    step(jobId: string): Promise<AiJobResponse> {
+      return typed(async () => {
+        needs('job.start');
+        try {
+          return await rawJobs.step(jobId);
+        } finally {
+          syncUsage();
+        }
+      });
+    },
+    get(jobId: string): Promise<JobRow> {
+      return typed(async () => {
+        needs('content.view');
+        const row = await rawJobs.get(jobId);
         syncUsage();
-      }
+        return row;
+      });
     },
-    async get(jobId: string): Promise<JobRow> {
-      needs('content.view');
-      const row = await rawJobs.get(jobId);
-      syncUsage();
-      return row;
+    cancel(jobId: string): Promise<JobRow> {
+      return typed(async () => {
+        needs('job.start');
+        return rawJobs.cancel(jobId);
+      });
     },
-    async cancel(jobId: string): Promise<JobRow> {
-      needs('job.start');
-      return rawJobs.cancel(jobId);
-    },
-    async list(filter: JobListFilter = {}): Promise<JobSummary[]> {
-      needs('content.view');
-      const rows = await Promise.all(created.map((id) => rawJobs.get(id)));
-      return rows
-        .filter((row) => !filter.kind || row.kind === filter.kind)
-        .filter((row) => !filter.status || filter.status.includes(row.status))
-        .filter((row) => !filter.unitId || row.unit_id === filter.unitId)
-        .filter((row) => !filter.schemeId || row.scheme_id === filter.schemeId)
-        .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .slice(0, filter.limit ?? 50)
-        .map(({ result: _result, ...summary }) => summary);
+    list(filter: JobListFilter = {}): Promise<JobSummary[]> {
+      return typed(async () => {
+        needs('content.view');
+        const rows = await allJobRows();
+        return rows
+          .filter((row) => !filter.kind || row.kind === filter.kind)
+          .filter((row) => !filter.status || filter.status.includes(row.status))
+          .filter((row) => !filter.unitId || row.unit_id === filter.unitId)
+          .filter((row) => !filter.schemeId || row.scheme_id === filter.schemeId)
+          .slice(0, filter.limit ?? 50)
+          .map(({ result: _result, ...summary }) => summary);
+      });
     },
   };
 
@@ -686,7 +727,7 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
           addToBucket(bucketFor(byKind, entry.kind), one);
         }
         const jobsByStatus: Record<string, number> = {};
-        for (const job of await jobs.list({ limit: 200 })) {
+        for (const job of await allJobRows()) {
           jobsByStatus[job.status] = (jobsByStatus[job.status] ?? 0) + 1;
         }
         return {

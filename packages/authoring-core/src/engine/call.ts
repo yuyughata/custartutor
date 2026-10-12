@@ -11,6 +11,7 @@ import {
   type StepDeps,
   type UsageRecord,
 } from '../contract';
+import { usageOfError } from '../llm/errors';
 import type { AuthoringSchemaName } from '../prompts/schemas';
 import { effortFor, maxTokensFor } from './settings';
 import { isRecord, scrubSecrets, truncate } from './util';
@@ -49,12 +50,26 @@ function asLlmError(error: unknown): LlmError | null {
   return null;
 }
 
-export function mapModelError(step: string, error: unknown): StepError {
-  if (error instanceof StepError) return error;
+/**
+ * Maps a model-port failure to a StepError. `usage` is what the step already spent (successful calls, plus the
+ * failed call itself when the API answered and billed it): a refusal or a bad reply still costs tokens, and the
+ * budgets must count them.
+ */
+export function mapModelError(step: string, error: unknown, usage: UsageRecord[] = []): StepError {
+  if (error instanceof StepError) {
+    return usage.length === 0
+      ? error
+      : new StepError(error.step, error.code, error.message, {
+          retryable: error.retryable,
+          ...(error.retryAfterMs !== undefined ? { retryAfterMs: error.retryAfterMs } : {}),
+          usage: [...usage, ...error.usage],
+          cause: error,
+        });
+  }
   const llm = asLlmError(error);
   if (!llm) {
     const message = error instanceof Error ? error.message : String(error);
-    return new StepError(step, 'internal', message, { cause: error });
+    return new StepError(step, 'internal', message, { usage, cause: error });
   }
   const code = llm.code as LlmErrorCode;
   switch (code) {
@@ -62,16 +77,21 @@ export function mapModelError(step: string, error: unknown): StepError {
       return new StepError(step, 'transport', llm.message, {
         retryable: llm.retryable,
         ...(llm.retryAfterMs !== undefined ? { retryAfterMs: llm.retryAfterMs } : {}),
+        usage,
         cause: error,
       });
     case 'aborted':
-      return new StepError(step, 'aborted', llm.message, { cause: error });
+      return new StepError(step, 'aborted', llm.message, { usage, cause: error });
     case 'refusal':
-      return new StepError(step, 'refusal', llm.message, { retryable: false, cause: error });
+      return new StepError(step, 'refusal', llm.message, { retryable: false, usage, cause: error });
     case 'truncated':
-      return new StepError(step, 'truncated', llm.message, { retryable: false, cause: error });
+      return new StepError(step, 'truncated', llm.message, {
+        retryable: false,
+        usage,
+        cause: error,
+      });
     case 'schema':
-      return new StepError(step, 'schema', llm.message, { retryable: false, cause: error });
+      return new StepError(step, 'schema', llm.message, { retryable: false, usage, cause: error });
   }
 }
 
@@ -125,7 +145,9 @@ export async function callModel<T>(
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     if (deps.signal?.aborted) {
-      throw new StepError(spec.step, 'aborted', 'The step ran out of time before the model call.');
+      throw new StepError(spec.step, 'aborted', 'The step ran out of time before the model call.', {
+        usage,
+      });
     }
     const started = deps.now().getTime();
     let result: LlmResult<T>;
@@ -142,6 +164,22 @@ export async function callModel<T>(
         ...(deps.signal ? { signal: deps.signal } : {}),
       });
     } catch (error) {
+      const finished = deps.now().getTime();
+      // a call the API answered (refusal, truncation, a reply that failed the schema) was billed: count it
+      const spent = usageOfError(error);
+      if (spent) {
+        usage.push({
+          label: spec.label,
+          task: 'authoring',
+          model: spent.model,
+          input_tokens: spent.usage.input_tokens,
+          output_tokens: spent.usage.output_tokens,
+          cache_read_tokens: spent.usage.cache_read_tokens,
+          cache_creation_tokens: spent.usage.cache_creation_tokens,
+          stop_reason: spent.stopReason,
+          duration_ms: Math.max(0, Math.round(finished - started)),
+        });
+      }
       const llm = asLlmError(error);
       if (llm && llm.code === 'schema' && attempt === 1) {
         messages = repairMessages(
@@ -151,7 +189,7 @@ export async function callModel<T>(
         );
         continue;
       }
-      throw mapModelError(spec.step, error);
+      throw mapModelError(spec.step, error, usage);
     }
     const finished = deps.now().getTime();
     usage.push({
@@ -173,10 +211,10 @@ export async function callModel<T>(
         spec.step,
         'schema',
         `The model's reply is still invalid after one repair attempt: ${problems.slice(0, 8).join(' | ')}`,
-        { retryable: false },
+        { retryable: false, usage },
       );
     }
     messages = repairMessages(spec.messages, JSON.stringify(result.value), bulletList(problems));
   }
-  throw new StepError(spec.step, 'internal', 'unreachable');
+  throw new StepError(spec.step, 'internal', 'unreachable', { usage });
 }

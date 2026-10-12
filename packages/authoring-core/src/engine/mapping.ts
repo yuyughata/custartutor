@@ -99,13 +99,15 @@ export function mapQuestion(q: AuthorQuestion, id: string, where: string): Mappe
     case 'fill_blank': {
       const blanks = q.blanks.map(cleanAll);
       const found = countBlanks(prompt);
-      if (blanks.length === 0) bad('fill_blank needs `blanks`: the accepted answers for each blank');
+      if (blanks.length === 0)
+        bad('fill_blank needs `blanks`: the accepted answers for each blank');
       if (found !== blanks.length) {
         bad(
           `the prompt has ${found} blank(s) (a run of three underscores, ____) but \`blanks\` lists ${blanks.length}`,
         );
       }
-      if (blanks.some((accepted) => accepted.length === 0)) bad('every blank needs at least one accepted answer');
+      if (blanks.some((accepted) => accepted.length === 0))
+        bad('every blank needs at least one accepted answer');
       const units = cleanAll(q.units);
       built = {
         ...common,
@@ -125,8 +127,10 @@ export function mapQuestion(q: AuthorQuestion, id: string, where: string): Mappe
         .map((pair) => ({ left: clean(pair.left), right: clean(pair.right) }))
         .filter((pair) => pair.left !== '' || pair.right !== '');
       if (pairs.length < 2) bad('match needs at least 2 pairs');
-      if (pairs.some((pair) => pair.left === '' || pair.right === '')) bad('every pair needs a left and a right');
-      if (!distinct(pairs.map((pair) => pair.left))) bad('the left items of a match must be distinct');
+      if (pairs.some((pair) => pair.left === '' || pair.right === ''))
+        bad('every pair needs a left and a right');
+      if (!distinct(pairs.map((pair) => pair.left)))
+        bad('the left items of a match must be distinct');
       built = { ...common, kind: 'match', answer: { pairs } };
       break;
     }
@@ -137,8 +141,10 @@ export function mapQuestion(q: AuthorQuestion, id: string, where: string): Mappe
       const items = pairs.map((pair) => pair.left);
       const categories = unique(pairs.map((pair) => pair.right));
       if (items.length < 2) bad('sort needs at least 2 items');
-      if (categories.length < 2) bad('sort needs at least 2 categories (the `right` side of the pairs)');
-      if (pairs.some((pair) => pair.left === '' || pair.right === '')) bad('every sort pair needs an item and a category');
+      if (categories.length < 2)
+        bad('sort needs at least 2 categories (the `right` side of the pairs)');
+      if (pairs.some((pair) => pair.left === '' || pair.right === ''))
+        bad('every sort pair needs an item and a category');
       if (!distinct(items)) bad('sort items must be distinct');
       if (!distinct(categories)) bad('sort categories must be distinct (watch capital letters)');
       built = {
@@ -163,7 +169,11 @@ export function mapQuestion(q: AuthorQuestion, id: string, where: string): Mappe
     }
     case 'draw': {
       const selfCheck = cleanAll(q.checks);
-      built = { ...common, kind: 'draw', ...(selfCheck.length > 0 ? { self_check: selfCheck } : {}) };
+      built = {
+        ...common,
+        kind: 'draw',
+        ...(selfCheck.length > 0 ? { self_check: selfCheck } : {}),
+      };
       break;
     }
   }
@@ -198,7 +208,8 @@ export function mapSectionQuestions(
   authored.forEach((q, index) => {
     const id = questionId(sectionId, firstIndex + index);
     const ref = clean(q.ref) || `q${index + 1}`;
-    if (refs.has(ref)) issues.push(`questions[${index}]: ref "${ref}" is used twice; refs must be unique`);
+    if (refs.has(ref))
+      issues.push(`questions[${index}]: ref "${ref}" is used twice; refs must be unique`);
     refs.set(ref, id);
     const mapped = mapQuestion(q, id, `questions[${index}] (ref "${ref}")`);
     issues.push(...mapped.issues);
@@ -239,7 +250,9 @@ export function mapBlock(
       else
         block = {
           type: 'bullets',
-          items: items.map((item) => (item.head !== '' ? { lead: item.head, text: item.text } : { text: item.text })),
+          items: items.map((item) =>
+            item.head !== '' ? { lead: item.head, text: item.text } : { text: item.text },
+          ),
         };
       break;
     }
@@ -268,7 +281,10 @@ export function mapBlock(
     case 'illustration': {
       const brief = clean(b.brief);
       const alt = clean(b.alt);
-      if (brief === '' || alt === '') bad('needs `brief` (what to draw) and `alt` (what a child who cannot see it needs to know)');
+      if (brief === '' || alt === '')
+        bad(
+          'needs `brief` (what to draw) and `alt` (what a child who cannot see it needs to know)',
+        );
       else block = { type: 'illustration', brief, alt };
       break;
     }
@@ -301,7 +317,9 @@ export function mapBlock(
       const ref = clean(b.question_ref);
       const id = refs.get(ref);
       if (id === undefined) {
-        bad(`question_ref "${ref}" is not one of this section's questions (known refs: ${refList(refs)})`);
+        bad(
+          `question_ref "${ref}" is not one of this section's questions (known refs: ${refList(refs)})`,
+        );
       } else block = { type: 'question', question_id: id };
       break;
     }
@@ -330,7 +348,9 @@ export function mapBlocks(
 
 /** Appends a `question` block for every owned question the blocks do not place yet (before a closing not_yet callout). */
 export function placeUnplacedQuestions(blocks: Block[], questionIds: readonly string[]): Block[] {
-  const placed = new Set(blocks.flatMap((block) => (block.type === 'question' ? [block.question_id] : [])));
+  const placed = new Set(
+    blocks.flatMap((block) => (block.type === 'question' ? [block.question_id] : [])),
+  );
   const missing = questionIds.filter((id) => !placed.has(id));
   if (missing.length === 0) return blocks;
   const extra: Block[] = missing.map((id) => ({ type: 'question', question_id: id }));
@@ -367,7 +387,10 @@ export function mapTutorScript(
       bad('use either `accepted` or `question_ref`, not both');
     } else if (ref !== '') {
       const id = refs.get(ref);
-      if (id === undefined) bad(`question_ref "${ref}" is not one of this section's questions (known refs: ${refList(refs)})`);
+      if (id === undefined)
+        bad(
+          `question_ref "${ref}" is not one of this section's questions (known refs: ${refList(refs)})`,
+        );
       else node['expect'] = { question_id: id };
     } else if (accepted.length > 0) {
       node['expect'] = { accepted };
@@ -375,7 +398,9 @@ export function mapTutorScript(
     const onCorrect = cleanAll(line.on_correct);
     const onIncorrect = cleanAll(line.on_incorrect);
     if (node['expect'] !== undefined && (onCorrect.length === 0 || onIncorrect.length === 0)) {
-      bad('a line that asks something needs at least one `on_correct` and one `on_incorrect` reply');
+      bad(
+        'a line that asks something needs at least one `on_correct` and one `on_incorrect` reply',
+      );
     }
     node['on_correct'] = onCorrect;
     node['on_incorrect'] = onIncorrect;
@@ -387,7 +412,9 @@ export function mapTutorScript(
   if (!parsed.success) {
     return {
       value: null,
-      issues: formatZodIssues(parsed.error).map((issue) => `tutor_script.${issue.path}: ${issue.message}`),
+      issues: formatZodIssues(parsed.error).map(
+        (issue) => `tutor_script.${issue.path}: ${issue.message}`,
+      ),
     };
   }
   return { value: parsed.data, issues };
@@ -403,23 +430,14 @@ export interface SectionPart {
   questions: Question[];
 }
 
-/** Section types whose tutor script must not be empty (the tutor leads the child through them). */
-export const TUTOR_REQUIRED: ReadonlySet<SectionType> = new Set<SectionType>([
-  'story_opener',
-  'remember',
-  'concept',
-  'across_subjects',
-  'window_to_world',
-  'character_values',
-  'tell_it_back',
-]);
-
 function thinkDeeperPromptCount(blocks: readonly Block[]): number {
   let count = 0;
   for (const block of blocks) {
     if (block.type === 'bullets') count += block.items.length;
-    else if (block.type === 'paragraph') count += (stripInlineMarkup(block.text).match(/\?/g) ?? []).length;
-    else if (block.type === 'activity_steps') count += block.steps.filter((s) => s.text.includes('?')).length;
+    else if (block.type === 'paragraph')
+      count += (stripInlineMarkup(block.text).match(/\?/g) ?? []).length;
+    else if (block.type === 'activity_steps')
+      count += block.steps.filter((s) => s.text.includes('?')).length;
     else if (block.type === 'question') count += 1;
   }
   return count;
@@ -436,7 +454,10 @@ export interface BuildSectionArgs {
  * Turns a section step's reply into a section part, or into a list of problems. Applies the per-type rules
  * (practice covers all three tiers, the mastery check is auto-gradable, and so on).
  */
-export function buildSectionPart(args: BuildSectionArgs): { part: SectionPart | null; issues: string[] } {
+export function buildSectionPart(args: BuildSectionArgs): {
+  part: SectionPart | null;
+  issues: string[];
+} {
   const { id, type, heading, body } = args;
   const mappedQuestions = mapSectionQuestions(id, body.questions);
   const mappedBlocks = mapBlocks(body.blocks, mappedQuestions.refs);
@@ -444,36 +465,41 @@ export function buildSectionPart(args: BuildSectionArgs): { part: SectionPart | 
   const issues = [...mappedQuestions.issues, ...mappedBlocks.issues, ...tutor.issues];
 
   if (body.blocks.length === 0) issues.push('blocks: the section has no blocks');
-  if (TUTOR_REQUIRED.has(type) && body.tutor_script.length === 0) {
-    issues.push(`tutor_script: a ${type} section needs a tutor script (1 to 4 lines)`);
-  }
 
   const questions = mappedQuestions.questions;
   const byTier = (tier: number) => questions.filter((q) => q.tier === tier).length;
   switch (type) {
     case 'practice':
       for (const tier of [1, 2, 3]) {
-        if (byTier(tier) === 0) issues.push(`questions: practice needs at least one tier ${tier} question`);
+        if (byTier(tier) === 0)
+          issues.push(`questions: practice needs at least one tier ${tier} question`);
       }
-      if (questions.length < 5) issues.push('questions: practice needs 5 to 8 questions across the three tiers');
+      if (questions.length < 5)
+        issues.push('questions: practice needs 5 to 8 questions across the three tiers');
       break;
     case 'quick_fire':
       if (questions.length < 3) issues.push('questions: quick_fire needs about 5 short questions');
       if (questions.filter((q) => isDeterministic(q)).length < 3) {
-        issues.push('questions: quick_fire questions must be auto-gradable (mcq, fill_blank, circle, match, sort)');
+        issues.push(
+          'questions: quick_fire questions must be auto-gradable (mcq, fill_blank, circle, match, sort)',
+        );
       }
       break;
     case 'mastery_check':
       if (questions.length < 2) issues.push('questions: mastery_check needs 3 questions');
       for (const q of questions) {
         if (!isDeterministic(q)) {
-          issues.push(`questions: ${q.id} is ${q.kind}, which the app cannot grade; the mastery check may only use mcq, fill_blank, match, circle or sort`);
+          issues.push(
+            `questions: ${q.id} is ${q.kind}, which the app cannot grade; the mastery check may only use mcq, fill_blank, match, circle or sort`,
+          );
         }
       }
       break;
     case 'think_deeper':
       if (thinkDeeperPromptCount(mappedBlocks.blocks) < 2) {
-        issues.push('blocks: think_deeper needs at least 2 prompts (a bullets block with one prompt per item)');
+        issues.push(
+          'blocks: think_deeper needs at least 2 prompts (a bullets block with one prompt per item)',
+        );
       }
       break;
     default:
@@ -498,7 +524,9 @@ export function buildSectionPart(args: BuildSectionArgs): { part: SectionPart | 
   if (!parsed.success) {
     return {
       part: null,
-      issues: formatZodIssues(parsed.error).map((issue) => `section.${issue.path}: ${issue.message}`),
+      issues: formatZodIssues(parsed.error).map(
+        (issue) => `section.${issue.path}: ${issue.message}`,
+      ),
     };
   }
   return { part: { section: parsed.data, questions }, issues: [] };
@@ -527,21 +555,38 @@ export function blockToAuthor(block: AnyBlock): AuthorBlock {
     case 'paragraph':
       return { ...base, type: 'paragraph', text: block.text };
     case 'bullets':
-      return { ...base, type: 'bullets', items: block.items.map((item) => ({ head: item.lead ?? '', text: item.text })) };
+      return {
+        ...base,
+        type: 'bullets',
+        items: block.items.map((item) => ({ head: item.lead ?? '', text: item.text })),
+      };
     case 'definition':
       return { ...base, type: 'definition', label: block.term, text: block.meaning };
     case 'example':
       return { ...base, type: 'example', label: block.label, text: block.text };
     case 'dialogue':
-      return { ...base, type: 'dialogue', items: block.lines.map((line) => ({ head: line.character, text: line.text })) };
+      return {
+        ...base,
+        type: 'dialogue',
+        items: block.lines.map((line) => ({ head: line.character, text: line.text })),
+      };
     case 'illustration':
       return { ...base, type: 'illustration', brief: block.brief, alt: block.alt };
     case 'callout':
       return { ...base, type: 'callout', tone: block.tone, text: block.text };
     case 'activity_steps':
-      return { ...base, type: 'activity_steps', items: block.steps.map((s) => ({ head: s.label, text: s.text })) };
+      return {
+        ...base,
+        type: 'activity_steps',
+        items: block.steps.map((s) => ({ head: s.label, text: s.text })),
+      };
     case 'table':
-      return { ...base, type: 'table', headers: [...block.headers], rows: block.rows.map((row) => [...row]) };
+      return {
+        ...base,
+        type: 'table',
+        headers: [...block.headers],
+        rows: block.rows.map((row) => [...row]),
+      };
     case 'question':
       return { ...base, type: 'question', question_ref: block.question_id };
     case 'unknown':
@@ -569,7 +614,9 @@ const EMPTY_QUESTION: AuthorQuestion = {
 
 /** The kinds the authoring format can express. The others (tap_image, speak, spoken) stay as they are in a revision. */
 export function isAuthorable(question: Question): boolean {
-  return ['mcq', 'fill_blank', 'match', 'circle', 'sort', 'free_text', 'draw'].includes(question.kind);
+  return ['mcq', 'fill_blank', 'match', 'circle', 'sort', 'free_text', 'draw'].includes(
+    question.kind,
+  );
 }
 
 /** Authoring form of a question; `ref` is the question's real id. Null for kinds the format cannot express. */
@@ -592,7 +639,12 @@ export function questionToAuthor(question: Question): AuthorQuestion | null {
         answers: [question.options[question.answer.correct_index] ?? ''],
       };
     case 'circle':
-      return { ...base, kind: 'circle', options: [...question.options], answers: [...question.answer.correct] };
+      return {
+        ...base,
+        kind: 'circle',
+        options: [...question.options],
+        answers: [...question.answer.correct],
+      };
     case 'fill_blank': {
       const numeric = question.answer.blanks.some((blank) => blank.numeric === true);
       const units = unique(question.answer.blanks.flatMap((blank) => blank.units ?? []));
@@ -605,15 +657,27 @@ export function questionToAuthor(question: Question): AuthorQuestion | null {
       };
     }
     case 'match':
-      return { ...base, kind: 'match', pairs: question.answer.pairs.map((p) => ({ left: p.left, right: p.right })) };
+      return {
+        ...base,
+        kind: 'match',
+        pairs: question.answer.pairs.map((p) => ({ left: p.left, right: p.right })),
+      };
     case 'sort':
       return {
         ...base,
         kind: 'sort',
-        pairs: question.items.map((item) => ({ left: item, right: question.answer.mapping[item] ?? '' })),
+        pairs: question.items.map((item) => ({
+          left: item,
+          right: question.answer.mapping[item] ?? '',
+        })),
       };
     case 'free_text':
-      return { ...base, kind: 'free_text', checks: [...question.rubric.criteria], exemplar: question.rubric.exemplar ?? '' };
+      return {
+        ...base,
+        kind: 'free_text',
+        checks: [...question.rubric.criteria],
+        exemplar: question.rubric.exemplar ?? '',
+      };
     case 'draw':
       return { ...base, kind: 'draw', checks: [...(question.self_check ?? [])] };
     default:
@@ -644,7 +708,11 @@ export function ownerOfQuestion(
   questionIdValue: string,
 ): string | null {
   for (const section of sections) {
-    if (section.blocks.some((block) => block.type === 'question' && block.question_id === questionIdValue)) {
+    if (
+      section.blocks.some(
+        (block) => block.type === 'question' && block.question_id === questionIdValue,
+      )
+    ) {
       return section.id;
     }
   }

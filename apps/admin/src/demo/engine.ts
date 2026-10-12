@@ -15,7 +15,10 @@ export type DemoJobApi = JobApi & { usage?(): UsageRecord[] };
 /** Each step waits this long, so the progress list is visible in the browser. */
 export const DEMO_STEP_DELAY_MS = 120;
 
-export function createDemoJobApi(hooks: DemoJobHooks): DemoJobApi {
+export function createDemoJobApi(
+  hooks: DemoJobHooks,
+  options: { stepDelayMs?: number } = {},
+): DemoJobApi {
   return createInMemoryJobApi({
     engine: createJobEngine(),
     llm: createDemoLlm(),
@@ -24,6 +27,6 @@ export function createDemoJobApi(hooks: DemoJobHooks): DemoJobApi {
     loadUpload: hooks.loadUpload,
     onSucceeded: hooks.onSucceeded,
     now: hooks.now,
-    stepDelayMs: DEMO_STEP_DELAY_MS,
+    stepDelayMs: options.stepDelayMs ?? DEMO_STEP_DELAY_MS,
   });
 }

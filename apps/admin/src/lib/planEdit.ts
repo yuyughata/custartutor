@@ -56,9 +56,9 @@ export function updateUnit(
   }));
 }
 
-/** A unit that ends at the stage it starts at has no `stage_to`. */
+/** A unit that ends at the stage it starts at (or has no end stage chosen) carries no `stage_to`. */
 function withStageRange(unit: PlannedUnit): PlannedUnit {
-  if (unit.stage_to !== undefined && unit.stage_to === unit.stage) {
+  if ('stage_to' in unit && (unit.stage_to === undefined || unit.stage_to === unit.stage)) {
     const { stage_to: _unused, ...rest } = unit;
     return rest;
   }

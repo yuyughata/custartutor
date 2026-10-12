@@ -77,7 +77,9 @@ export function chooseEnrichment(
   }
   if (chosen.length > ENRICHMENT_MAX_COUNT) {
     chosen = [...chosen].sort((a, b) => rank(a) - rank(b)).slice(0, ENRICHMENT_MAX_COUNT);
-    notes.push(`More than ${ENRICHMENT_MAX_COUNT} enrichment sections were proposed; kept the ${ENRICHMENT_MAX_COUNT} the template values most.`);
+    notes.push(
+      `More than ${ENRICHMENT_MAX_COUNT} enrichment sections were proposed; kept the ${ENRICHMENT_MAX_COUNT} the template values most.`,
+    );
   }
   if (chosen.length < ENRICHMENT_MIN_COUNT) {
     const before = chosen.length;
@@ -85,7 +87,9 @@ export function chooseEnrichment(
       if (chosen.length >= ENRICHMENT_MIN_COUNT) break;
       if (!chosen.includes(type) && allowed(type)) chosen.push(type);
     }
-    notes.push(`Only ${before} enrichment section(s) were proposed; added ${chosen.slice(before).join(', ')} to reach ${ENRICHMENT_MIN_COUNT}.`);
+    notes.push(
+      `Only ${before} enrichment section(s) were proposed; added ${chosen.slice(before).join(', ')} to reach ${ENRICHMENT_MIN_COUNT}.`,
+    );
   }
 
   const previousSet = unique(previous).filter((type): type is EnrichmentType =>
@@ -96,20 +100,30 @@ export function chooseEnrichment(
     const leastValued = [...chosen].sort((a, b) => rank(b) - rank(a))[0];
     if (candidate && leastValued) {
       chosen = chosen.map((type) => (type === leastValued ? candidate : type));
-      notes.push(`The enrichment set matched the previous unit, so ${leastValued} was swapped for ${candidate} to vary the rotation.`);
+      notes.push(
+        `The enrichment set matched the previous unit, so ${leastValued} was swapped for ${candidate} to vary the rotation.`,
+      );
     } else if (chosen.length > ENRICHMENT_MIN_COUNT && leastValued) {
       chosen = chosen.filter((type) => type !== leastValued);
-      notes.push(`The enrichment set matched the previous unit, so ${leastValued} was dropped to vary the rotation.`);
+      notes.push(
+        `The enrichment set matched the previous unit, so ${leastValued} was dropped to vary the rotation.`,
+      );
     }
   }
   return chosen;
 }
 
 function sanitiseCovers(covers: readonly number[], max: number): number[] {
-  return unique(covers.map((n) => Math.round(n)).filter((n) => n >= 1 && n <= max)).sort((a, b) => a - b);
+  return unique(covers.map((n) => Math.round(n)).filter((n) => n >= 1 && n <= max)).sort(
+    (a, b) => a - b,
+  );
 }
 
-function weightedSplit(ids: readonly string[], periods: number, weightOf: (id: string) => number): string[][] {
+function weightedSplit(
+  ids: readonly string[],
+  periods: number,
+  weightOf: (id: string) => number,
+): string[][] {
   const weights = ids.map(weightOf);
   const total = weights.reduce((sum, w) => sum + w, 0);
   const groups: string[][] = [];
@@ -135,11 +149,16 @@ function weightedSplit(ids: readonly string[], periods: number, weightOf: (id: s
 }
 
 function validMinutes(raw: OutlineOutput['periods'][number]): OutlinePeriod['minutes'] | null {
-  const values = [raw.start, raw.teach, raw.move_and_do, raw.practice, raw.close].map((n) => Math.round(n));
+  const values = [raw.start, raw.teach, raw.move_and_do, raw.practice, raw.close].map((n) =>
+    Math.round(n),
+  );
   if (values.some((n) => !Number.isFinite(n) || n < 1 || n > 60)) return null;
   const total = values.reduce((sum, n) => sum + n, 0);
   if (total < 50 || total > 70) return null;
-  return DEFAULT_MINUTES.map((entry, index) => ({ segment: entry.segment, minutes: values[index]! }));
+  return DEFAULT_MINUTES.map((entry, index) => ({
+    segment: entry.segment,
+    minutes: values[index]!,
+  }));
 }
 
 /** Normalises the model's outline. Never throws: every problem has a deterministic repair, noted for the reviewer. */
@@ -179,15 +198,21 @@ export function normalizeOutline(raw: OutlineOutput, input: UnitGenerateInput): 
         covers: unique(tail.flatMap((c) => c.covers)).sort((a, b) => a - b),
       },
     ];
-    notes.push(`More than ${MAX_CONCEPTS} concept sections were proposed; the extra ones were merged into the last.`);
+    notes.push(
+      `More than ${MAX_CONCEPTS} concept sections were proposed; the extra ones were merged into the last.`,
+    );
   }
   if (subtopicCount > 0) {
     const covered = new Set(concepts.flatMap((c) => c.covers));
-    const missing = Array.from({ length: subtopicCount }, (_, i) => i + 1).filter((n) => !covered.has(n));
+    const missing = Array.from({ length: subtopicCount }, (_, i) => i + 1).filter(
+      (n) => !covered.has(n),
+    );
     if (missing.length > 0) {
       const last = concepts[concepts.length - 1]!;
       last.covers = [...last.covers, ...missing].sort((a, b) => a - b);
-      notes.push(`Scheme subtopic(s) ${missing.join(', ')} were not assigned to a concept; added to "${last.heading || 'the last concept'}".`);
+      notes.push(
+        `Scheme subtopic(s) ${missing.join(', ')} were not assigned to a concept; added to "${last.heading || 'the last concept'}".`,
+      );
     }
   }
 
@@ -206,7 +231,9 @@ export function normalizeOutline(raw: OutlineOutput, input: UnitGenerateInput): 
         sections.push({
           id: conceptId(index + 1),
           type: 'concept',
-          heading: concept.heading || `${DEFAULT_HEADINGS['concept']}${concepts.length > 1 ? ` (${index + 1})` : ''}`,
+          heading:
+            concept.heading ||
+            `${DEFAULT_HEADINGS['concept']}${concepts.length > 1 ? ` (${index + 1})` : ''}`,
           plan: concept.plan,
           covers: concept.covers,
         });
@@ -222,7 +249,9 @@ export function normalizeOutline(raw: OutlineOutput, input: UnitGenerateInput): 
     } else if (type === 'mastery_check') {
       sections.push(plan(type, raw.mastery_check));
     } else if (enrichment.includes(type as EnrichmentType)) {
-      sections.push(plan(type, enrichmentPlan.get(type as EnrichmentType) ?? { heading: '', plan: '' }));
+      sections.push(
+        plan(type, enrichmentPlan.get(type as EnrichmentType) ?? { heading: '', plan: '' }),
+      );
     }
   }
 
@@ -246,16 +275,23 @@ export function normalizeOutline(raw: OutlineOutput, input: UnitGenerateInput): 
     for (const id of ids) {
       if (grouped.some((group) => group.includes(id))) continue;
       // a section the model forgot goes where the section before it in unit order went
-      const before = ids.slice(0, indexOf(id)).reverse().find((other) => grouped.some((g) => g.includes(other)));
+      const before = ids
+        .slice(0, indexOf(id))
+        .reverse()
+        .find((other) => grouped.some((g) => g.includes(other)));
       const target = before ? grouped.find((g) => g.includes(before)) : grouped[0];
       (target ?? grouped[0]!).push(id);
-      notes.push(`The session plan left out ${id}; it was added to the period of the section before it.`);
+      notes.push(
+        `The session plan left out ${id}; it was added to the period of the section before it.`,
+      );
     }
     groups = grouped;
   }
   if (!groups) {
     groups = weightedSplit(ids, wanted, (id) => WEIGHT[sections[indexOf(id)]!.type] ?? 5);
-    notes.push(`The session plan did not match the ${wanted} planned period(s); the sections were split across periods by size.`);
+    notes.push(
+      `The session plan did not match the ${wanted} planned period(s); the sections were split across periods by size.`,
+    );
   }
   // the mastery check closes the unit
   const mastery = 'mastery_check';
@@ -272,7 +308,9 @@ export function normalizeOutline(raw: OutlineOutput, input: UnitGenerateInput): 
   const periods: OutlinePeriod[] = groups.map((group, index) => ({
     period: index + 1,
     sections: [...group].sort((a, b) => indexOf(a) - indexOf(b)),
-    minutes: (modelPeriods[index]?.minutes ?? DEFAULT_MINUTES.map((entry) => ({ ...entry }))).map((m) => ({ ...m })),
+    minutes: (modelPeriods[index]?.minutes ?? DEFAULT_MINUTES.map((entry) => ({ ...entry }))).map(
+      (m) => ({ ...m }),
+    ),
   }));
 
   return {
@@ -289,7 +327,14 @@ export function normalizeOutline(raw: OutlineOutput, input: UnitGenerateInput): 
 export function validateOutline(outline: StoredOutline): string[] {
   const problems: string[] = [];
   const types = outline.sections.map((s) => s.type);
-  for (const required of ['concept', 'worked_examples', 'practice', 'think_deeper', 'quick_fire', 'mastery_check'] as const) {
+  for (const required of [
+    'concept',
+    'worked_examples',
+    'practice',
+    'think_deeper',
+    'quick_fire',
+    'mastery_check',
+  ] as const) {
     if (!types.includes(required)) problems.push(`missing ${required} section`);
   }
   const enrichment = outline.enrichment;

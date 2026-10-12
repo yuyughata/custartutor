@@ -81,7 +81,19 @@ function clip(text: string): string {
   return text.length > SUMMARY_MAX ? `${text.slice(0, SUMMARY_MAX - 1)}…` : text;
 }
 
-const TEXT_KEYS = ['text', 'prompt', 'heading', 'title', 'say', 'term', 'label', 'lead'] as const;
+const TEXT_KEYS = [
+  'text',
+  'prompt',
+  'heading',
+  'title',
+  'say',
+  'term',
+  'label',
+  'lead',
+  'brief',
+  'caption',
+  'question_id',
+] as const;
 
 /** A short human-readable rendering of any JSON value, for the before/after columns. */
 export function summarize(value: unknown): string {

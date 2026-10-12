@@ -46,6 +46,31 @@ export function humanizeId(id: string): string {
   return spaced === '' ? id : spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
+/** The engine's step names, by job kind (`nextStep` in packages/authoring-core). */
+const KIND_STEPS: Record<JobKind, Record<string, string>> = {
+  scheme_ingest: {
+    extract: 'Reading the document and listing the weeks',
+    check: 'Checking the weeks for gaps and odd entries',
+  },
+  chapter_plan: {
+    group: 'Grouping the teaching weeks into chapters',
+    title: 'Naming the chapters and units, proposing themes',
+  },
+  unit_generate: {
+    outline: 'Planning the outline',
+    workbook: 'Writing the workbook',
+    manual: "Writing the teacher's manual",
+    draft: 'Drafting the unit',
+    assemble: 'Putting the unit together and checking it',
+    review: 'Advisory review',
+  },
+  unit_revise: {
+    patch: 'Working out the changes',
+    apply: 'Applying the changes to a copy of the unit',
+    review: 'Advisory review of the change',
+  },
+};
+
 const SIMPLE_STEPS: Record<string, string> = {
   outline: 'Planning the outline',
   plan: 'Planning the outline',
@@ -59,20 +84,31 @@ const SIMPLE_STEPS: Record<string, string> = {
   extract: 'Reading the document',
   ingest: 'Reading the document',
   validate: 'Checking the weeks',
+  check: 'Checking the result',
   classify: 'Sorting the weeks',
   group: 'Grouping weeks into chapters',
   grouping: 'Grouping weeks into chapters',
   titles: 'Naming chapters and units',
+  title: 'Naming chapters and units',
   names: 'Naming chapters and units',
   themes: 'Proposing themes',
   objectives: 'Drafting objectives',
   revise: 'Rewriting',
+  patch: 'Working out the changes',
+  apply: 'Applying the changes',
+  draft: 'Drafting the unit',
   finish: 'Finishing',
   save: 'Saving',
 };
 
-/** A readable name for one step of a job, for example `section:come_and_explore` -> `Writing "Come and explore"`. */
-export function stepLabel(step: string): string {
+/**
+ * A readable name for one step of a job, for example `section:come_and_explore` -> `Writing "Come and explore"`.
+ * With the job kind, the engine's own step names get their exact wording; otherwise a general table and a
+ * readable fallback are used.
+ */
+export function stepLabel(step: string, kind?: JobKind): string {
+  const exact = kind ? KIND_STEPS[kind]?.[step] : undefined;
+  if (exact) return exact;
   const lower = step.toLowerCase();
   const direct = SIMPLE_STEPS[lower];
   if (direct) return direct;
@@ -105,7 +141,7 @@ export interface ProgressSummary {
   currentLabel: string | null;
 }
 
-export function summarizeProgress(job: Pick<JobRow, 'progress' | 'status'>): ProgressSummary {
+export function summarizeProgress(job: Pick<JobRow, 'progress' | 'status'> & { kind?: JobKind }): ProgressSummary {
   const done = job.progress.done.length;
   const total = Math.max(job.progress.total, done);
   const finished = job.status === 'succeeded';
@@ -114,7 +150,7 @@ export function summarizeProgress(job: Pick<JobRow, 'progress' | 'status'>): Pro
     total,
     fraction: finished ? 1 : total > 0 ? Math.min(1, done / total) : 0,
     next: job.progress.next,
-    currentLabel: job.progress.next ? stepLabel(job.progress.next) : null,
+    currentLabel: job.progress.next ? stepLabel(job.progress.next, job.kind) : null,
   };
 }
 

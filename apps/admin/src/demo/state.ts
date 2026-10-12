@@ -25,7 +25,7 @@ import type {
   UnitVersionFull,
 } from '../api/types';
 
-export const DEMO_MODEL_ID = 'demo-fixture-model';
+export { DEMO_MODEL_ID } from './modelName';
 
 export interface DemoScheme {
   id: string;

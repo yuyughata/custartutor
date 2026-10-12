@@ -23,20 +23,20 @@ export const DEFAULT_EFFORT: Record<string, Effort> = {
 
 /**
  * Output budget per step family. Thinking tokens count against `max_tokens`, so these leave room for the
- * model to think. All are at or below the non-streaming limit the adapter uses.
+ * model to think. All stay below the adapter's non-streaming limit (21,333), so no step streams.
  */
 export const MAX_OUTPUT_TOKENS: Record<string, number> = {
   'scheme_ingest:extract': 16000,
-  'chapter_plan:title': 10000,
-  'unit_generate:outline': 8000,
-  'unit_generate:section': 16000,
-  'unit_generate:workbook': 14000,
-  'unit_generate:manual': 14000,
-  'unit_generate:review': 8000,
-  'unit_generate:repair': 16000,
-  'unit_generate:draft': 16000,
-  'unit_revise:patch': 16000,
-  'unit_revise:review': 8000,
+  'chapter_plan:title': 12000,
+  'unit_generate:outline': 10000,
+  'unit_generate:section': 20000,
+  'unit_generate:workbook': 16000,
+  'unit_generate:manual': 16000,
+  'unit_generate:review': 10000,
+  'unit_generate:repair': 20000,
+  'unit_generate:draft': 20000,
+  'unit_revise:patch': 20000,
+  'unit_revise:review': 10000,
 };
 
 export function effortFor(settings: AiSettings, family: string): Effort {

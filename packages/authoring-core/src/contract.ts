@@ -16,6 +16,7 @@ import {
   Text,
   Theme,
   UnitKind,
+  WeekKind,
 } from '@custar/content-schema';
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
@@ -334,9 +335,29 @@ export const SchemeIngestInput = z.object({
 });
 export type SchemeIngestInput = z.infer<typeof SchemeIngestInput>;
 
+/**
+ * A scheme as extracted: deliberately looser than `Scheme`. A document can contain a duplicated week number or a
+ * blank topic, and the check step reports those as flags for the human to fix instead of dropping rows. Only a
+ * clean draft converts to `Scheme`; `save_scheme_draft` validates strictly.
+ */
+export const SchemeDraft = z.object({
+  subject_slug: Slug,
+  level_code: LevelCode,
+  term: Term,
+  weeks: z.array(
+    z.object({
+      week_no: z.number().int().min(1).max(20),
+      kind: WeekKind,
+      topic: z.string(),
+      subtopics: z.array(z.string()),
+    }),
+  ),
+});
+export type SchemeDraft = z.infer<typeof SchemeDraft>;
+
 /** An editable draft: nothing is saved until the admin applies it with `save_scheme_draft`. */
 export const SchemeIngestResult = z.object({
-  scheme: Scheme,
+  scheme: SchemeDraft,
   flags: z.array(Flag),
   source_note: z.string(),
 });

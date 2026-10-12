@@ -48,7 +48,7 @@ export function sameJson(a: unknown, b: unknown): boolean {
 export function toSnake(value: string): string {
   return value
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
@@ -67,7 +67,19 @@ export function toSkillTag(value: string): string | undefined {
 
 /** Whole-word, English ordinal for small counts, used in generated text ("Two 60-minute periods"). */
 export function wordForCount(n: number): string {
-  const words = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+  const words = [
+    'Zero',
+    'One',
+    'Two',
+    'Three',
+    'Four',
+    'Five',
+    'Six',
+    'Seven',
+    'Eight',
+    'Nine',
+    'Ten',
+  ];
   return words[n] ?? String(n);
 }
 

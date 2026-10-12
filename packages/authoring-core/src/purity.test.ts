@@ -73,11 +73,12 @@ describe('platform neutrality', () => {
     const bare = /from\s+'([^./][^']*)'/g;
     for (const file of shipped) {
       const text = strip(readFileSync(file, 'utf8'));
+      // the fixtures (golden unit, scheme) feed the demo model only; the main entry point never loads them
+      const allowed = file.includes('/fakes/')
+        ? ['zod', '@custar/content-schema', '@custar/content-schema/fixtures']
+        : ['zod', '@custar/content-schema'];
       for (const match of text.matchAll(bare)) {
-        expect(
-          ['zod', '@custar/content-schema'],
-          `${relative(SRC, file)} imports ${match[1]}`,
-        ).toContain(match[1]);
+        expect(allowed, `${relative(SRC, file)} imports ${match[1]}`).toContain(match[1]);
       }
     }
   });

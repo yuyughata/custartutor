@@ -7,13 +7,16 @@ export function Card({
   children,
   style,
   tone = 'plain',
+  testID,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   tone?: 'plain' | 'muted' | 'core';
+  testID?: string;
 }): ReactNode {
   return (
     <View
+      {...(testID ? { testID } : {})}
       style={[
         {
           backgroundColor: tone === 'muted' ? colors.page : tone === 'core' ? colors.primaryTint : colors.surface,
@@ -46,9 +49,8 @@ export function Section({
   testID?: string;
 }): ReactNode {
   return (
-    <Card {...(tone ? { tone } : {})}>
+    <Card {...(tone ? { tone } : {})} {...(testID ? { testID } : {})}>
       <View
-        {...(testID ? { testID } : {})}
         style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], flexWrap: 'wrap' }}
       >
         <H2>{title}</H2>

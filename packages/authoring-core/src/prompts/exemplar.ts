@@ -16,7 +16,10 @@ import type {
 } from './schemas';
 
 function block(partial: Partial<AuthorBlock> & Pick<AuthorBlock, 'type'>): AuthorBlock {
+  // keys in schema order (type first), so the rendered example matches the format the model must write
+  const { type, ...rest } = partial;
   return {
+    type,
     text: '',
     label: '',
     brief: '',
@@ -26,7 +29,7 @@ function block(partial: Partial<AuthorBlock> & Pick<AuthorBlock, 'type'>): Autho
     headers: [],
     rows: [],
     question_ref: '',
-    ...partial,
+    ...rest,
   };
 }
 
@@ -35,14 +38,21 @@ const bullets = (...texts: string[]) =>
   block({ type: 'bullets', items: texts.map((text) => ({ head: '', text })) });
 const example = (label: string, text: string) => block({ type: 'example', label, text });
 const illustration = (brief: string, alt: string) => block({ type: 'illustration', brief, alt });
-const callout = (tone: 'info' | 'tip' | 'not_yet', text: string) => block({ type: 'callout', tone, text });
+const callout = (tone: 'info' | 'tip' | 'not_yet', text: string) =>
+  block({ type: 'callout', tone, text });
 const steps = (...items: [string, string][]) =>
   block({ type: 'activity_steps', items: items.map(([head, text]) => ({ head, text })) });
 const ask = (question_ref: string) => block({ type: 'question', question_ref });
 
-function question(partial: Partial<AuthorQuestion> & Pick<AuthorQuestion, 'ref' | 'kind' | 'prompt'>): AuthorQuestion {
+function question(
+  partial: Partial<AuthorQuestion> & Pick<AuthorQuestion, 'ref' | 'kind' | 'prompt'>,
+): AuthorQuestion {
+  const { ref, kind, prompt, ...rest } = partial;
   return {
+    ref,
+    kind,
     tier: 1,
+    prompt,
     hint: '',
     explanation: '',
     skill_tag: '',
@@ -54,12 +64,21 @@ function question(partial: Partial<AuthorQuestion> & Pick<AuthorQuestion, 'ref' 
     pairs: [],
     checks: [],
     exemplar: '',
-    ...partial,
+    ...rest,
   };
 }
 
 function line(partial: Partial<AuthorTutorLine> & Pick<AuthorTutorLine, 'say'>): AuthorTutorLine {
-  return { accepted: [], question_ref: '', on_correct: [], on_incorrect: [], hint: [], ...partial };
+  const { say, ...rest } = partial;
+  return {
+    say,
+    accepted: [],
+    question_ref: '',
+    on_correct: [],
+    on_incorrect: [],
+    hint: [],
+    ...rest,
+  };
 }
 
 export interface ExemplarSection {
@@ -116,9 +135,22 @@ export const EXEMPLAR_SECTIONS: readonly ExemplarSection[] = [
       tutor_script: [
         line({
           say: 'Last week we used our five senses. Can you tell me one of them?',
-          accepted: ['see', 'hear', 'smell', 'touch', 'taste', 'seeing', 'hearing', 'smelling', 'touching', 'tasting'],
+          accepted: [
+            'see',
+            'hear',
+            'smell',
+            'touch',
+            'taste',
+            'seeing',
+            'hearing',
+            'smelling',
+            'touching',
+            'tasting',
+          ],
           on_correct: ['Yes, that is one of our five senses!'],
-          on_incorrect: ['Our five senses are see, hear, smell, touch and taste. Can you say one of them?'],
+          on_incorrect: [
+            'Our five senses are see, hear, smell, touch and taste. Can you say one of them?',
+          ],
           hint: ['We see with our eyes. What do we do with our ears?'],
         }),
       ],
@@ -156,7 +188,8 @@ export const EXEMPLAR_SECTIONS: readonly ExemplarSection[] = [
     },
   },
   {
-    caption: 'concept — "Staying Safe in Our Environment" (a concept section that owns one question and lets the tutor grade it)',
+    caption:
+      'concept — "Staying Safe in Our Environment" (a concept section that owns one question and lets the tutor grade it)',
     body: {
       blocks: [
         para('We must always stay safe:'),
@@ -273,7 +306,8 @@ export const EXEMPLAR_SECTIONS: readonly ExemplarSection[] = [
     },
   },
   {
-    caption: 'practice — "Practice Time (Workbook Tiers 1 to 3)": tiers 1, 2 and 3 are all present, every question is placed with a question block',
+    caption:
+      'practice — "Practice Time (Workbook Tiers 1 to 3)": tiers 1, 2 and 3 are all present, every question is placed with a question block',
     body: {
       blocks: [
         callout(
@@ -302,7 +336,8 @@ export const EXEMPLAR_SECTIONS: readonly ExemplarSection[] = [
             { left: 'Classroom', right: 'Learn' },
             { left: 'Bathroom', right: 'Bath' },
           ],
-          explanation: 'Kitchen-Cook, Bedroom-Sleep, Playground-Play, Classroom-Learn, Bathroom-Bath.',
+          explanation:
+            'Kitchen-Cook, Bedroom-Sleep, Playground-Play, Classroom-Learn, Bathroom-Bath.',
         }),
         question({
           ref: 'circle_people',
@@ -312,7 +347,8 @@ export const EXEMPLAR_SECTIONS: readonly ExemplarSection[] = [
           skill_tag: 'people_in_environment',
           options: ['teacher', 'friend', 'classmate', 'astronaut'],
           answers: ['teacher', 'friend', 'classmate'],
-          explanation: 'A teacher, a friend and a classmate. An astronaut is not someone we meet at school.',
+          explanation:
+            'A teacher, a friend and a classmate. An astronaut is not someone we meet at school.',
         }),
         question({
           ref: 'fill_cook',
@@ -338,7 +374,10 @@ export const EXEMPLAR_SECTIONS: readonly ExemplarSection[] = [
           tier: 3,
           prompt: 'Name two places in your school and say what we do in each one.',
           skill_tag: 'places_and_uses',
-          checks: ['Names two different places in the school.', 'Says what we do in each place, correctly.'],
+          checks: [
+            'Names two different places in the school.',
+            'Says what we do in each place, correctly.',
+          ],
           exemplar: 'Classroom: we learn. Playground: we play.',
         }),
         question({
@@ -355,7 +394,8 @@ export const EXEMPLAR_SECTIONS: readonly ExemplarSection[] = [
     },
   },
   {
-    caption: 'think_deeper — "Think Deeper" (this unit moves from absorb to connect, so the prompts sit on the connect rung)',
+    caption:
+      'think_deeper — "Think Deeper" (this unit moves from absorb to connect, so the prompts sit on the connect rung)',
     body: {
       blocks: [
         bullets(
@@ -370,7 +410,8 @@ export const EXEMPLAR_SECTIONS: readonly ExemplarSection[] = [
     },
   },
   {
-    caption: 'quick_fire — "Quick-Fire! (Answer Fast)": short tier 1 questions, one or two words each',
+    caption:
+      'quick_fire — "Quick-Fire! (Answer Fast)": short tier 1 questions, one or two words each',
     body: {
       blocks: [ask('learn'), ask('cook'), ask('gutter')],
       questions: [
@@ -405,7 +446,8 @@ export const EXEMPLAR_SECTIONS: readonly ExemplarSection[] = [
     },
   },
   {
-    caption: 'mastery_check — "Have I Got It? (Mastery Check)": "I can ..." items that the app can grade by itself, then a not_yet callout',
+    caption:
+      'mastery_check — "Have I Got It? (Mastery Check)": "I can ..." items that the app can grade by itself, then a not_yet callout',
     body: {
       blocks: [
         para('You have mastered this unit when you can:'),
@@ -438,7 +480,8 @@ export const EXEMPLAR_SECTIONS: readonly ExemplarSection[] = [
           ref: 'people',
           kind: 'match',
           tier: 2,
-          prompt: 'I can name the people in my environment. Match where we are to the people we meet.',
+          prompt:
+            'I can name the people in my environment. Match where we are to the people we meet.',
           skill_tag: 'people_in_environment',
           hint: 'Who do you see at home? At school? Near your home?',
           pairs: [
@@ -595,7 +638,9 @@ export const EXEMPLAR_MANUAL: ManualOutput = {
 };
 
 function compactList(items: readonly unknown[]): string {
-  return items.length === 0 ? '[]' : `[\n  ${items.map((item) => JSON.stringify(item)).join(',\n  ')}\n]`;
+  return items.length === 0
+    ? '[]'
+    : `[\n  ${items.map((item) => JSON.stringify(item)).join(',\n  ')}\n]`;
 }
 
 export function renderSectionBody(body: AuthorSectionBody): string {
@@ -610,8 +655,8 @@ export function renderExemplar(): string {
     'Below is a real unit from the owner\'s template: Primary 1 Basic Science, Term 1, Unit 2, "Exploring Our Environment (Part 2)", stage absorb to connect, scheme topic "Exploring Our Environment (Part 2)". It is shown in the authoring format. Study its shape, its rhythm, its voice and how much each section holds. Do not copy its content into another unit.',
     '',
     'Notes on reading it:',
-    '- The template\'s five enrichment sections are story_opener, remember, do_and_discover, character_values and tell_it_back; a unit may use 2 to 5 enrichment sections (the owner\'s decision), and later units rotate the set.',
-    '- The ids you see in the teacher\'s-manual example below (come_and_explore, places_in_school) belong to the template. In your task you are given the ids to use.',
+    "- The template's five enrichment sections are story_opener, remember, do_and_discover, character_values and tell_it_back; a unit may use 2 to 5 enrichment sections (the owner's decision), and later units rotate the set.",
+    "- The ids you see in the teacher's-manual example below (come_and_explore, places_in_school) belong to the template. In your task you are given the ids to use.",
     '- Its story puts two characters in one scene. That is storytelling, not a fact you may reuse about the cast (see the cast rules).',
     '',
   ];
