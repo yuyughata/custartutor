@@ -1,4 +1,5 @@
 import * as Application from 'expo-application';
+import { fetch as expoFetch } from 'expo/fetch';
 import {
   DownloadManager,
   PinGate,
@@ -26,6 +27,8 @@ import { expoSecureKv } from '../platform/expoSecureKv';
 import { createSupabaseHouseholdApi, type HouseholdApi } from '../platform/householdApi';
 import { createSupabase, readSupabaseConfig, type SupabaseConfig } from '../platform/supabase';
 import { createSupabaseSyncApi } from '../platform/supabaseSyncApi';
+import { createSupabaseTutorApi } from '../platform/supabaseTutorApi';
+import { createDemoTutor } from '../tutor/demoTutor';
 import type { AuthPort, Runtime } from './types';
 
 const APP_VERSION = Application.nativeApplicationVersion ?? '1.0.0';
@@ -39,7 +42,9 @@ function assemble(parts: {
   households: HouseholdApi;
   auth: AuthPort;
   network: Runtime['network'];
+  tutor: Runtime['tutor'];
   demoHint?: Runtime['demoHint'];
+  demoControls?: Runtime['demoControls'];
 }): Runtime {
   const ports: Ports = { ...parts.ports, clock: parts.trusted };
   return {
@@ -50,6 +55,7 @@ function assemble(parts: {
     households: parts.households,
     auth: parts.auth,
     network: parts.network,
+    tutor: parts.tutor,
     appVersion: APP_VERSION,
     sync: new SyncEngine({ ports, api: parts.api, trustedClock: parts.trusted }),
     downloads: new DownloadManager({
@@ -67,6 +73,7 @@ function assemble(parts: {
       deviceId: () => getOrCreateDeviceId(ports.db, ports.random),
     }),
     ...(parts.demoHint ? { demoHint: parts.demoHint } : {}),
+    ...(parts.demoControls ? { demoControls: parts.demoControls } : {}),
   };
 }
 
@@ -105,6 +112,16 @@ async function createLiveRuntime(config: SupabaseConfig): Promise<Runtime> {
     households: createSupabaseHouseholdApi(supabase),
     auth,
     network: expoNetwork,
+    // Streams through expo/fetch on native and the browser's fetch on the web. Unverified against a real server.
+    tutor: createSupabaseTutorApi({
+      supabase: {
+        auth: supabase.auth,
+        rpc: (name, args) => supabase.rpc(name, args),
+      },
+      url: config.url,
+      publishableKey: config.publishableKey,
+      fetch: expoFetch,
+    }),
   });
 }
 
@@ -159,6 +176,16 @@ async function createDemoRuntime(): Promise<Runtime> {
     listeners: new Set<(email: string | null) => void>(),
   };
   const trusted = await TrustedClock.create(db, { now: () => Date.now() });
+  const network = new FakeNetwork();
+
+  // The demo tutor stands in for the server's elevation check: remember when the last PIN elevation ends.
+  let elevatedUntilMs = 0;
+  const elevate = demo.api.elevateGrownup.bind(demo.api);
+  demo.api.elevateGrownup = async (deviceId, pin) => {
+    const elevation = await elevate(deviceId, pin);
+    elevatedUntilMs = Date.parse(elevation.expires_at);
+    return elevation;
+  };
 
   return assemble({
     mode: 'demo',
@@ -180,8 +207,15 @@ async function createDemoRuntime(): Promise<Runtime> {
         return () => state.listeners.delete(listener);
       },
     },
-    network: new FakeNetwork(),
+    network,
+    tutor: createDemoTutor({ isElevated: () => Date.now() < elevatedUntilMs }),
     demoHint: { code: DEMO_CODE, pin: DEMO_PIN },
+    demoControls: {
+      isOnline: () => network.online,
+      setOnline: (online) => {
+        network.online = online;
+      },
+    },
   });
 }
 

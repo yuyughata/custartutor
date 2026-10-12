@@ -12,6 +12,7 @@ import { UnitView } from '@custar/lesson-renderer';
 import { palette, space } from '@custar/design-tokens';
 import { assetUri } from '../../../../platform/assetUri';
 import { useRuntime } from '../../../../runtime/RuntimeProvider';
+import { TutorLauncher } from '../../../../tutor/TutorLauncher';
 import { Body, Button, Card, ErrorText, Screen, Title, TopBar } from '../../../../ui';
 
 /**
@@ -28,6 +29,8 @@ export default function Player() {
   const [ready, setReady] = useState(false);
   const [result, setResult] = useState<MasterySubmission | null>(null);
   const [round, setRound] = useState(0);
+  // The last question the child answered: tells the tutor where in the lesson the child is.
+  const [lastQuestionId, setLastQuestionId] = useState<string | null>(null);
   const session = useRef<LessonSession | null>(null);
 
   useEffect(() => {
@@ -134,6 +137,7 @@ export default function Player() {
           return path && runtime.mode === 'live' ? assetUri(path) : undefined;
         }}
         onQuestionResult={(_result, response, question) => {
+          setLastQuestionId(question.id);
           void session.current
             ?.answer(question.id, response)
             .then(() => setReady(session.current?.masteryCheckReady() ?? false))
@@ -152,6 +156,13 @@ export default function Player() {
         {!ready ? (
           <Body muted>Answer every question in "Have I Got It?" and press Check on each.</Body>
         ) : null}
+        <TutorLauncher
+          childId={childId}
+          unitId={unitId}
+          versionNo={lesson.versionNo}
+          unit={lesson.unit}
+          lastQuestionId={lastQuestionId}
+        />
         <Button label="I'm finished: check my progress" onPress={finish} disabled={!ready} />
       </View>
     </View>

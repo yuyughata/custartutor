@@ -7,6 +7,7 @@ import type {
   SyncEngine,
   TrustedClock,
 } from '@custar/learner-core';
+import type { TutorApi } from '@custar/tutor-core/client';
 import type { HouseholdApi } from '../platform/householdApi';
 
 /** Who is signed in. The real implementation wraps Supabase auth; demo mode keeps it in memory. */
@@ -28,7 +29,11 @@ export interface Runtime {
   downloads: DownloadManager;
   pin: PinGate;
   network: Network;
+  /** The AI tutor: consent, transcripts and chat turns. Live: the `tutor-chat` edge function. Demo: a labelled stand-in. */
+  tutor: TutorApi;
   appVersion: string;
   /** Shown on the sign-in and PIN screens in demo mode so a tester can get in. */
   demoHint?: { code: string; pin: string };
+  /** Demo mode only: lets a tester switch the pretend internet connection (to try the offline tutor). */
+  demoControls?: { isOnline(): boolean; setOnline(online: boolean): void };
 }

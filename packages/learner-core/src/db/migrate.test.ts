@@ -38,6 +38,7 @@ describe('migrate', () => {
         'pack_file',
         'published',
         'subject',
+        'tutor_lite_state',
         'unit',
         'unit_progress',
       ].sort(),
@@ -66,6 +67,7 @@ describe('migrate', () => {
 
     expect(await migrate(db)).toBe(LATEST_SCHEMA_VERSION);
     expect(await tables(db)).toContain('outbox');
+    expect(await tables(db)).toContain('tutor_lite_state');
     expect(await db.get('SELECT name FROM household WHERE id = ?', ['h1'])).toEqual({
       name: 'Okafor family',
     });

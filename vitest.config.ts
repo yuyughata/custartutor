@@ -7,6 +7,8 @@ export default defineConfig({
       'packages/**/src/**/*.test.tsx',
       'apps/admin/src/**/*.test.ts',
       'apps/admin/src/**/*.test.tsx',
+      'apps/learner/src/**/*.test.ts',
+      'apps/learner/src/**/*.test.tsx',
       'scripts/**/*.test.mjs',
       'supabase/functions/_shared/**/*.test.ts',
     ],

@@ -160,7 +160,26 @@ CREATE INDEX local_event_child_unit_idx ON local_event (child_id, unit_id);
 `,
 };
 
-export const MIGRATIONS: readonly Migration[] = [referenceData, packs, events];
+const tutorLite: Migration = {
+  version: 4,
+  name: 'tutor lite state',
+  sql: `
+-- Where a child is in the offline Tutor Lite script of one section, so a restart resumes. state_json is the
+-- engine's own state (node id, counters, cursors, finished): it never holds anything the child typed.
+-- updated_at is local epoch milliseconds.
+CREATE TABLE tutor_lite_state (
+  child_id TEXT NOT NULL,
+  unit_id TEXT NOT NULL,
+  section_id TEXT NOT NULL,
+  state_json TEXT NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (child_id, unit_id, section_id)
+) WITHOUT ROWID;
+CREATE INDEX tutor_lite_state_child_idx ON tutor_lite_state (child_id);
+`,
+};
+
+export const MIGRATIONS: readonly Migration[] = [referenceData, packs, events, tutorLite];
 
 /** The schema version this build of the app expects. */
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0;

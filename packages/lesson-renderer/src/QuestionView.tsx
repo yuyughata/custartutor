@@ -28,43 +28,79 @@ export interface QuestionViewProps {
   onResult?: (result: GradeResult, response: QuestionResponse, question: Question) => void;
   /** Grown-ups and admins can reveal the answer without answering. */
   canRevealAnswer?: boolean;
+  /**
+   * Big tap targets with a shape on each choice, for a child who cannot read yet and taps (or has a helper
+   * tap) the picture-style buttons. Default false: nothing changes for readers.
+   */
+  largeTargets?: boolean;
+  /** Extra content shown under the prompt, for example a read-aloud button. */
+  extras?: ReactNode;
 }
 
 const teal = layerColors.CORE;
+
+/** Shapes that tell the choices apart without reading ("tap the star"). Alternating teal and amber. */
+const MARKERS = ['●', '■', '▲', '★', '◆', '♥'] as const;
+
+function markerFor(index: number): string {
+  return MARKERS[index % MARKERS.length] ?? '●';
+}
 
 function Choice({
   label,
   selected,
   onPress,
   disabled,
+  large = false,
+  marker,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
   disabled?: boolean;
+  large?: boolean;
+  /** A shape shown before the label (large targets only). */
+  marker?: string;
 }): ReactNode {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ selected, disabled: disabled ?? false }}
       disabled={disabled}
       onPress={onPress}
       style={{
-        minHeight: minTouchTarget,
-        paddingHorizontal: space[4],
+        minHeight: large ? 76 : minTouchTarget,
+        paddingHorizontal: large ? space[5] : space[4],
         paddingVertical: space[2],
-        borderRadius: radii.lg,
-        borderWidth: 2,
+        borderRadius: large ? radii.xl : radii.lg,
+        borderWidth: large ? 3 : 2,
         borderColor: selected ? teal.bar : palette.placeholderBorder,
         backgroundColor: selected ? teal.tint : palette.white,
         justifyContent: 'center',
         maxWidth: '100%',
+        ...(large ? { flexDirection: 'row' as const, alignItems: 'center' as const } : {}),
       }}
     >
+      {large && marker ? (
+        <Text
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+          style={{
+            fontSize: 30,
+            lineHeight: 36,
+            marginRight: space[3],
+            color: marker === '★' || marker === '◆' ? layerColors.ENRICH.bar : teal.bar,
+          }}
+        >
+          {marker}
+        </Text>
+      ) : null}
       <Text
         style={{
-          fontSize: 18,
-          lineHeight: 26,
+          flexShrink: 1,
+          fontSize: large ? 24 : 18,
+          lineHeight: large ? 32 : 26,
           color: textColors.body,
           fontWeight: selected ? '700' : '400',
         }}
@@ -148,6 +184,8 @@ export function QuestionView({
   resolveAsset,
   onResult,
   canRevealAnswer = false,
+  largeTargets = false,
+  extras,
 }: QuestionViewProps): ReactNode {
   const [response, setResponse] = useState<QuestionResponse>(() => initialResponse(question));
   const [result, setResult] = useState<GradeResult | null>(null);
@@ -175,6 +213,8 @@ export function QuestionView({
               <Choice
                 key={index}
                 label={option}
+                large={largeTargets}
+                marker={markerFor(index)}
                 selected={current === index}
                 onPress={() => update({ kind: 'mcq', selected_index: index })}
               />
@@ -215,13 +255,13 @@ export function QuestionView({
                       autoCapitalize="none"
                       autoCorrect={false}
                       style={{
-                        width: 150,
-                        minHeight: minTouchTarget,
+                        width: largeTargets ? 220 : 150,
+                        minHeight: largeTargets ? 68 : minTouchTarget,
                         borderBottomWidth: 3,
                         borderBottomColor: teal.bar,
                         backgroundColor: palette.placeholderBg,
                         paddingHorizontal: space[3],
-                        fontSize: 20,
+                        fontSize: largeTargets ? 26 : 20,
                         color: textColors.body,
                       }}
                     />
@@ -252,6 +292,7 @@ export function QuestionView({
                   <Choice
                     key={pair.left}
                     label={rightOf(pair.left) ? `${pair.left} → ${rightOf(pair.left)}` : pair.left}
+                    large={largeTargets}
                     selected={selectedLeft === pair.left || rightOf(pair.left) !== undefined}
                     onPress={() => setSelectedLeft(pair.left)}
                   />
@@ -262,6 +303,7 @@ export function QuestionView({
                   <Choice
                     key={right}
                     label={right}
+                    large={largeTargets}
                     selected={pairs.some((pair) => pair.right === right)}
                     onPress={() => {
                       if (selectedLeft === null) return;
@@ -284,10 +326,12 @@ export function QuestionView({
         const selected = response.kind === 'circle' ? response.selected : [];
         return (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
-            {question.options.map((option) => (
+            {question.options.map((option, index) => (
               <Choice
                 key={option}
                 label={option}
+                large={largeTargets}
+                marker={markerFor(index)}
                 selected={selected.includes(option)}
                 onPress={() =>
                   update({
@@ -311,10 +355,12 @@ export function QuestionView({
               <View key={item} style={{ gap: space[2] }}>
                 <RichText style={{ fontWeight: '700' }}>{item}</RichText>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
-                  {question.categories.map((category) => (
+                  {question.categories.map((category, index) => (
                     <Choice
                       key={category}
                       label={category}
+                      large={largeTargets}
+                      marker={markerFor(index)}
                       selected={placements[item] === category}
                       onPress={() =>
                         update({ kind: 'sort', placements: { ...placements, [item]: category } })
@@ -339,10 +385,12 @@ export function QuestionView({
               {...(uri ? { uri } : {})}
             />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
-              {question.answer.hotspots.map((hotspot) => (
+              {question.answer.hotspots.map((hotspot, index) => (
                 <Choice
                   key={hotspot.id}
                   label={hotspot.label}
+                  large={largeTargets}
+                  marker={markerFor(index)}
                   selected={chosen.includes(hotspot.id)}
                   onPress={() =>
                     update({
@@ -420,20 +468,21 @@ export function QuestionView({
       ) : number !== undefined ? (
         <Text style={{ fontSize: 18, fontWeight: '700', color: teal.bar }}>{number}.</Text>
       ) : null}
+      {extras ?? null}
       {body}
       <View style={{ flexDirection: 'row', gap: space[2], alignItems: 'center', flexWrap: 'wrap' }}>
         <Pressable
           accessibilityRole="button"
           onPress={check}
           style={{
-            minHeight: minTouchTarget,
-            paddingHorizontal: space[6],
+            minHeight: largeTargets ? 64 : minTouchTarget,
+            paddingHorizontal: largeTargets ? space[8] : space[6],
             borderRadius: radii.pill,
             backgroundColor: teal.bar,
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: palette.white, fontSize: 18, fontWeight: '700' }}>
+          <Text style={{ color: palette.white, fontSize: largeTargets ? 22 : 18, fontWeight: '700' }}>
             {question.kind === 'draw' || question.kind === 'free_text' || question.kind === 'spoken'
               ? 'Save'
               : 'Check'}

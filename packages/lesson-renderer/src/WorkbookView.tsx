@@ -12,6 +12,10 @@ export interface WorkbookViewProps {
   mode: ViewMode;
   resolveAsset?: (assetId: string) => string | undefined;
   onQuestionResult?: (result: GradeResult, response: QuestionResponse, question: Question) => void;
+  /** Big picture-style tap targets for a child who cannot read yet. Default false. */
+  largeTargets?: boolean;
+  /** Shown under each question's prompt, for example a read-aloud button. Default: nothing. */
+  renderQuestionExtras?: (question: Question) => ReactNode;
 }
 
 const teal = layerColors.CORE;
@@ -33,6 +37,8 @@ export function WorkbookView({
   mode,
   resolveAsset,
   onQuestionResult,
+  largeTargets = false,
+  renderQuestionExtras,
 }: WorkbookViewProps): ReactNode {
   const { workbook, questions } = unit;
   const [showAnswers, setShowAnswers] = useState(isGrownUpMode(mode));
@@ -41,8 +47,11 @@ export function WorkbookView({
       const question = questions[id];
       return question ? [question] : [];
     });
+  const extrasFor = (question: Question): { extras?: ReactNode } =>
+    renderQuestionExtras ? { extras: renderQuestionExtras(question) } : {};
   const shared = {
     canRevealAnswer: isGrownUpMode(mode),
+    largeTargets,
     ...(resolveAsset ? { resolveAsset } : {}),
     ...(onQuestionResult ? { onResult: onQuestionResult } : {}),
   };
@@ -63,7 +72,13 @@ export function WorkbookView({
             counter += 1;
             allIds.push(question.id);
             return (
-              <QuestionView key={question.id} question={question} number={counter} {...shared} />
+              <QuestionView
+                key={question.id}
+                question={question}
+                number={counter}
+                {...extrasFor(question)}
+                {...shared}
+              />
             );
           })}
         </View>
@@ -77,7 +92,13 @@ export function WorkbookView({
         {answerable(workbook.quick_answer_drill.question_ids).map((question, index) => {
           allIds.push(question.id);
           return (
-            <QuestionView key={question.id} question={question} number={index + 1} {...shared} />
+            <QuestionView
+              key={question.id}
+              question={question}
+              number={index + 1}
+              {...extrasFor(question)}
+              {...shared}
+            />
           );
         })}
       </View>
@@ -98,6 +119,7 @@ export function WorkbookView({
         {questions[workbook.application_task_id] ? (
           <QuestionView
             question={questions[workbook.application_task_id] as Question}
+            {...extrasFor(questions[workbook.application_task_id] as Question)}
             {...shared}
           />
         ) : null}

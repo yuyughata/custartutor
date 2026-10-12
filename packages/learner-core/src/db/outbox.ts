@@ -1,5 +1,6 @@
 import type { SqlDriver, SqlValue } from '../ports';
 import { WireEvent } from '../wire';
+import { purgeTutorLiteStateOfUnknownChildren } from './tutor-lite';
 
 /**
  * The outbox: events waiting to be pushed, oldest `device_seq` first. A row is deleted when the server
@@ -150,11 +151,12 @@ export async function listPendingEvents(
 }
 
 /**
- * After a full resync: drops local events and unsent rows of children this account can no longer see
- * (their access was revoked), so revoked data is purged from the device.
+ * After a full resync: drops local events, unsent rows and Tutor Lite places of children this account can no
+ * longer see (their access was revoked), so revoked data is purged from the device.
  */
 export async function purgeUnknownChildren(tx: SqlDriver): Promise<void> {
   const known = 'SELECT id FROM child';
   await tx.run(`DELETE FROM outbox WHERE child_id NOT IN (${known})`);
   await tx.run(`DELETE FROM local_event WHERE child_id NOT IN (${known})`);
+  await purgeTutorLiteStateOfUnknownChildren(tx);
 }

@@ -6,6 +6,7 @@ import {
   type GradeResult,
   type Question,
   type QuestionResponse,
+  type Section,
   type UnitContent,
 } from '@custar/content-schema';
 import { layerColors, minTouchTarget, palette, space, textColors } from '@custar/design-tokens';
@@ -26,6 +27,12 @@ export interface UnitViewProps {
   initialTab?: UnitTab;
   /** Lay the page out at most this wide (centred on tablets and web). */
   maxWidth?: number;
+  /** Shown right under each section bar, for example a read-aloud button. Default: nothing. */
+  renderSectionExtras?: (section: Section) => ReactNode;
+  /** Shown under each question's prompt, for example a read-aloud button. Default: nothing. */
+  renderQuestionExtras?: (question: Question) => ReactNode;
+  /** Big picture-style tap targets for a child who cannot read yet. Default false. */
+  largeTargets?: boolean;
 }
 
 export type UnitTab = 'textbook' | 'workbook' | 'manual';
@@ -101,6 +108,9 @@ export function UnitView({
   onQuestionResult,
   initialTab = 'textbook',
   maxWidth = 760,
+  renderSectionExtras,
+  renderQuestionExtras,
+  largeTargets = false,
 }: UnitViewProps): ReactNode {
   const [tab, setTab] = useState<UnitTab>(initialTab);
   const { header } = unit;
@@ -128,6 +138,9 @@ export function UnitView({
     mode,
     ...(resolveAsset ? { resolveAsset } : {}),
     ...(onQuestionResult ? { onQuestionResult } : {}),
+    ...(renderSectionExtras ? { renderSectionExtras } : {}),
+    ...(renderQuestionExtras ? { renderQuestionExtras } : {}),
+    largeTargets,
   };
 
   const content = ((): ReactNode => {
@@ -140,6 +153,8 @@ export function UnitView({
           <WorkbookView
             unit={unit}
             mode={mode}
+            largeTargets={largeTargets}
+            {...(renderQuestionExtras ? { renderQuestionExtras } : {})}
             {...(resolveAsset ? { resolveAsset } : {})}
             {...(onQuestionResult ? { onQuestionResult } : {})}
           />

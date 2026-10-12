@@ -1,4 +1,5 @@
 import type { SqlDriver } from '../ports';
+import { deleteAllTutorLiteState, deleteTutorLiteStateForChild } from './tutor-lite';
 import type { ChildRow, HouseholdRow, PublishedRow, SubjectRow, UnitRow } from '../wire';
 
 /**
@@ -79,6 +80,7 @@ export async function deleteChildCascade(tx: SqlDriver, childId: string): Promis
   await tx.run('DELETE FROM unit_progress WHERE child_id = ?', [childId]);
   await tx.run('DELETE FROM local_event WHERE child_id = ?', [childId]);
   await tx.run('DELETE FROM outbox WHERE child_id = ?', [childId]);
+  await deleteTutorLiteStateForChild(tx, childId);
   await tx.run('DELETE FROM child WHERE id = ?', [childId]);
 }
 
@@ -287,7 +289,7 @@ export async function wipeServerData(tx: SqlDriver): Promise<void> {
 
 /**
  * Sign-out / account switch: removes every trace of the account's data from the device, including unsent
- * events, the local event log, progress, the sync cursor and the epoch. Keeps the device id and sequence
+ * events, the local event log, progress, Tutor Lite places, the sync cursor and the epoch. Keeps the device id and sequence
  * (they identify the installation), the clock state and downloaded packs (public curriculum content).
  */
 export async function purgeAccountData(db: SqlDriver): Promise<void> {
@@ -295,6 +297,7 @@ export async function purgeAccountData(db: SqlDriver): Promise<void> {
     await wipeServerData(tx);
     await tx.run('DELETE FROM outbox');
     await tx.run('DELETE FROM local_event');
+    await deleteAllTutorLiteState(tx);
     await tx.run(
       "DELETE FROM meta WHERE key IN ('last_sync_seq', 'membership_epoch', 'last_verified_at', 'server_offset_ms')",
     );

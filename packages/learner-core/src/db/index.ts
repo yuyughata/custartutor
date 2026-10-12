@@ -6,3 +6,4 @@ export * from './progress';
 export * from './outbox';
 export * from './events';
 export * from './packs';
+export * from './tutor-lite';
