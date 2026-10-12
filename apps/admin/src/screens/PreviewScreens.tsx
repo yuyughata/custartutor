@@ -37,6 +37,12 @@ export function PreviewIndexScreen(): ReactNode {
           title="Fixture preview"
           subtitle="Units from the content fixtures, rendered with the same renderer the learner app uses. For developers."
         />
+        <Card>
+          <AppLink href="/preview/states">
+            UI states: job progress, retries and error panels
+          </AppLink>
+          <Small>Drawn from fixed data, for checking how the app looks when things go wrong.</Small>
+        </Card>
         {FIXTURES.map((fixture) => (
           <Card key={fixture.slug}>
             <AppLink
@@ -93,7 +99,12 @@ export function PreviewUnitScreen(): ReactNode {
               backgroundColor: colors.white,
             }}
           >
-            <UnitView key={`${fixture.slug}-${mode}-${tab}`} unit={fixture.unit} mode={mode} initialTab={tab} />
+            <UnitView
+              key={`${fixture.slug}-${mode}-${tab}`}
+              unit={fixture.unit}
+              mode={mode}
+              initialTab={tab}
+            />
           </View>
         </Stack>
       )}

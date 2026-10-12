@@ -34,12 +34,22 @@ function ModelCell({ version }: { version: UnitVersionSummary }): ReactNode {
       <Text selectable style={{ fontSize: 13, fontFamily: 'monospace' }}>
         {version.model ?? 'unknown'}
       </Text>
-      {version.model === DEMO_MODEL_ID ? <Badge label="stand-in, not Claude" tone="warning" glyph="⚑" /> : null}
+      {version.model === DEMO_MODEL_ID ? (
+        <Badge label="stand-in, not Claude" tone="warning" glyph="⚑" />
+      ) : null}
     </View>
   );
 }
 
-function VersionDiff({ fromId, toId, labels }: { fromId: string; toId: string; labels: { from: string; to: string } }): ReactNode {
+function VersionDiff({
+  fromId,
+  toId,
+  labels,
+}: {
+  fromId: string;
+  toId: string;
+  labels: { from: string; to: string };
+}): ReactNode {
   const api = useApi();
   const from = useLoad(() => api.units.version(fromId), [api, fromId]);
   const to = useLoad(() => api.units.version(toId), [api, toId]);
@@ -72,7 +82,8 @@ export function VersionHistory({
   onSelect: (id: string) => void;
 }): ReactNode {
   const selected = versions.find((version) => version.id === selectedId) ?? versions[0];
-  const defaultFrom = versions.find((version) => selected && version.version === selected.version - 1)?.id ?? '';
+  const defaultFrom =
+    versions.find((version) => selected && version.version === selected.version - 1)?.id ?? '';
   const [fromId, setFromId] = useState<string | null>(null);
   const [toId, setToId] = useState<string | null>(null);
   const from = fromId ?? defaultFrom;
@@ -84,32 +95,47 @@ export function VersionHistory({
     {
       key: 'version',
       header: 'Version',
-      width: 140,
+      width: 130,
       render: (version) => (
         <Text style={{ fontWeight: version.id === selected?.id ? '800' : '600', fontSize: 15 }}>
           {`v${version.version}${version.id === selected?.id ? ' (viewing)' : ''}`}
         </Text>
       ),
     },
-    { key: 'status', header: 'Status', width: 130, render: (version) => <VersionStatusBadge status={version.status} /> },
+    {
+      key: 'status',
+      header: 'Status',
+      width: 120,
+      render: (version) => <VersionStatusBadge status={version.status} />,
+    },
     {
       key: 'by',
       header: 'Made by',
-      width: 100,
+      width: 90,
       render: (version) => <P>{version.generated_by === 'ai' ? 'AI draft' : 'Human'}</P>,
     },
-    { key: 'model', header: 'Model', flex: 1.4, render: (version) => <ModelCell version={version} /> },
+    {
+      key: 'model',
+      header: 'Model',
+      flex: 1.4,
+      render: (version) => <ModelCell version={version} />,
+    },
     {
       key: 'prompt',
-      header: 'Prompt version',
-      width: 130,
+      header: 'Prompt',
+      width: 90,
       render: (version) => <Small>{version.prompt_version ?? '–'}</Small>,
     },
-    { key: 'time', header: 'Created', width: 150, render: (version) => <Small>{formatDateTime(version.created_at)}</Small> },
+    {
+      key: 'time',
+      header: 'Created',
+      width: 140,
+      render: (version) => <Small>{formatDateTime(version.created_at)}</Small>,
+    },
     {
       key: 'lint',
       header: 'Lint',
-      width: 110,
+      width: 100,
       render: (version) => {
         const counts = lintCounts(version.lint_report);
         return counts ? (
@@ -124,7 +150,7 @@ export function VersionHistory({
     {
       key: 'view',
       header: '',
-      width: 90,
+      width: 80,
       render: (version) => (
         <Button
           label="View"
@@ -138,21 +164,49 @@ export function VersionHistory({
     },
   ];
 
-  const options = versions.map((version) => ({ value: version.id, label: `Version ${version.version} (${version.status.replace('_', ' ')})` }));
+  const options = versions.map((version) => ({
+    value: version.id,
+    label: `Version ${version.version} (${version.status.replace('_', ' ')})`,
+  }));
 
   return (
     <Section title="Version history" testID="version-history">
-      <DataTable label="Versions" columns={columns} rows={versions} rowKey={(version) => version.id} minWidth={900} />
+      <DataTable
+        label="Versions"
+        columns={columns}
+        rows={versions}
+        rowKey={(version) => version.id}
+        minWidth={820}
+      />
       {versions.length < 2 ? (
         <Small>Only one version so far. Once there are two, you can compare them here.</Small>
       ) : (
         <View style={{ gap: space[3] }}>
-          <View style={{ flexDirection: 'row', gap: space[4], flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: space[4],
+              flexWrap: 'wrap',
+              alignItems: 'flex-end',
+            }}
+          >
             <View style={{ minWidth: 240 }}>
-              <Select label="Compare" value={from} options={options} placeholder="Choose a version" onChange={setFromId} />
+              <Select
+                label="Compare"
+                value={from}
+                options={options}
+                placeholder="Choose a version"
+                onChange={setFromId}
+              />
             </View>
             <View style={{ minWidth: 240 }}>
-              <Select label="with" value={to} options={options} placeholder="Choose a version" onChange={setToId} />
+              <Select
+                label="with"
+                value={to}
+                options={options}
+                placeholder="Choose a version"
+                onChange={setToId}
+              />
             </View>
           </View>
           {fromVersion && toVersion && fromVersion.id !== toVersion.id ? (
@@ -160,7 +214,10 @@ export function VersionHistory({
               key={`${fromVersion.id}-${toVersion.id}`}
               fromId={fromVersion.id}
               toId={toVersion.id}
-              labels={{ from: `Version ${fromVersion.version}`, to: `Version ${toVersion.version}` }}
+              labels={{
+                from: `Version ${fromVersion.version}`,
+                to: `Version ${toVersion.version}`,
+              }}
             />
           ) : (
             <Small>Choose two different versions to see what changed, section by section.</Small>

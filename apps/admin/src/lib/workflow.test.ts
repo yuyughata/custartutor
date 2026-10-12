@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { versionStatusStyle, workflowActions, type WorkflowInput } from './workflow';
 
-const base: WorkflowInput = { status: 'draft', role: 'super_admin', lintBlocking: false, isLatest: true };
+const base: WorkflowInput = {
+  status: 'draft',
+  role: 'super_admin',
+  lintBlocking: false,
+  isLatest: true,
+};
 const actions = (patch: Partial<WorkflowInput>) => workflowActions({ ...base, ...patch });
 const byId = (patch: Partial<WorkflowInput>) =>
   Object.fromEntries(actions(patch).map((action) => [action.id, action]));
@@ -55,7 +60,13 @@ describe('workflowActions', () => {
 
   it('has no publish shortcut: a draft can never be published directly', () => {
     for (const status of ['draft', 'in_review', 'approved', 'published', 'superseded'] as const) {
-      for (const role of ['super_admin', 'content_editor', 'reviewer', 'support', 'analyst'] as const) {
+      for (const role of [
+        'super_admin',
+        'content_editor',
+        'reviewer',
+        'support',
+        'analyst',
+      ] as const) {
         const ids = workflowActions({ ...base, status, role }).map((a) => a.id);
         if (ids.includes('publish')) expect(status).toBe('approved');
       }

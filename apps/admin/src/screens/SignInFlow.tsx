@@ -1,7 +1,7 @@
 // Sign-in: email code -> authenticator code (or first-time authenticator setup) -> admin check.
 // Rendered by the auth gate in place of the app until the session is `ready`, so a deep link survives sign-in.
 import { useEffect, useState, type ReactNode } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { AuthState, TotpEnrolment } from '../api/types';
 import { useAction } from '../hooks/useAction';
 import { useRuntime } from '../runtime/RuntimeProvider';
@@ -9,6 +9,7 @@ import { Banner } from '../ui/Banner';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { TextField } from '../ui/Fields';
+import { QrImage } from '../ui/QrImage';
 import { Loading } from '../ui/States';
 import { H1, H2, P, Small } from '../ui/Text';
 import { colors, space } from '../ui/theme';
@@ -98,14 +99,28 @@ function EmailStep(): ReactNode {
         error={verify.error?.message}
       />
       <View style={{ flexDirection: 'row', gap: space[3], flexWrap: 'wrap' }}>
-        <Button label="Check code" onPress={() => void verify.run()} busy={verify.busy} disabled={code.length !== 6} />
-        <Button label="Use a different email" variant="secondary" onPress={() => setSentTo(null)} disabled={verify.busy} />
+        <Button
+          label="Check code"
+          onPress={() => void verify.run()}
+          busy={verify.busy}
+          disabled={code.length !== 6}
+        />
+        <Button
+          label="Use a different email"
+          variant="secondary"
+          onPress={() => setSentTo(null)}
+          disabled={verify.busy}
+        />
       </View>
     </Card>
   );
 }
 
-function ChallengeStep({ state }: { state: Extract<AuthState, { step: 'mfa_challenge' }> }): ReactNode {
+function ChallengeStep({
+  state,
+}: {
+  state: Extract<AuthState, { step: 'mfa_challenge' }>;
+}): ReactNode {
   const { runtime, signOut } = useRuntime();
   const [code, setCode] = useState('');
   const verify = useAction(async () => {
@@ -115,8 +130,8 @@ function ChallengeStep({ state }: { state: Extract<AuthState, { step: 'mfa_chall
     <Card>
       <H2>Authenticator code required</H2>
       <P>
-        Every admin action needs your authenticator app as well as your email. Open the app and type the
-        current 6-digit code for CUSTAR.
+        Every admin action needs your authenticator app as well as your email. Open the app and type
+        the current 6-digit code for CUSTAR.
       </P>
       <CodeField
         label="Authenticator code"
@@ -127,8 +142,18 @@ function ChallengeStep({ state }: { state: Extract<AuthState, { step: 'mfa_chall
         error={verify.error?.message}
       />
       <View style={{ flexDirection: 'row', gap: space[3], flexWrap: 'wrap' }}>
-        <Button label="Verify" onPress={() => void verify.run()} busy={verify.busy} disabled={code.length !== 6} />
-        <Button label="Sign out" variant="secondary" onPress={() => void signOut()} disabled={verify.busy} />
+        <Button
+          label="Verify"
+          onPress={() => void verify.run()}
+          busy={verify.busy}
+          disabled={code.length !== 6}
+        />
+        <Button
+          label="Sign out"
+          variant="secondary"
+          onPress={() => void signOut()}
+          disabled={verify.busy}
+        />
       </View>
     </Card>
   );
@@ -154,7 +179,8 @@ function EnrolStep({ state }: { state: Extract<AuthState, { step: 'mfa_enrol' }>
       <H2>Set up your authenticator app</H2>
       <P>
         Admin accounts must use a second step. Scan the QR code with an authenticator app (Google
-        Authenticator, Microsoft Authenticator, 1Password, Authy), then type the 6-digit code it shows.
+        Authenticator, Microsoft Authenticator, 1Password, Authy), then type the 6-digit code it
+        shows.
       </P>
       {start.error ? (
         <Banner tone="danger" title="Could not start setup">
@@ -165,15 +191,16 @@ function EnrolStep({ state }: { state: Extract<AuthState, { step: 'mfa_enrol' }>
         <Loading label="Preparing your authenticator…" />
       ) : (
         <View style={{ gap: space[3] }}>
-          <View style={{ flexDirection: 'row', gap: space[4], flexWrap: 'wrap', alignItems: 'center' }}>
-            <Image
-              accessibilityLabel="QR code for your authenticator app"
-              source={{ uri: enrolment.qrCode }}
-              style={{ width: 160, height: 160, backgroundColor: colors.white }}
-            />
+          <View
+            style={{ flexDirection: 'row', gap: space[4], flexWrap: 'wrap', alignItems: 'center' }}
+          >
+            <QrImage uri={enrolment.qrCode} label="QR code for your authenticator app" />
             <View style={{ gap: space[1], flexShrink: 1 }}>
               <Small>Cannot scan? Type this secret into the app instead:</Small>
-              <Text selectable style={{ fontFamily: 'monospace', fontSize: 15, color: colors.text }}>
+              <Text
+                selectable
+                style={{ fontFamily: 'monospace', fontSize: 15, color: colors.text }}
+              >
                 {enrolment.secret}
               </Text>
             </View>
@@ -195,7 +222,12 @@ function EnrolStep({ state }: { state: Extract<AuthState, { step: 'mfa_enrol' }>
           busy={verify.busy}
           disabled={enrolment === null || code.length !== 6}
         />
-        <Button label="Sign out" variant="secondary" onPress={() => void signOut()} disabled={verify.busy} />
+        <Button
+          label="Sign out"
+          variant="secondary"
+          onPress={() => void signOut()}
+          disabled={verify.busy}
+        />
       </View>
     </Card>
   );
@@ -207,8 +239,8 @@ function NotAdminStep({ email }: { email: string }): ReactNode {
     <Card>
       <Banner tone="danger" title="This account is not an admin account" testID="not-admin">
         <P>
-          {email} signed in correctly, but it has not been given a staff role. Ask a super admin to add it, then
-          sign in again.
+          {email} signed in correctly, but it has not been given a staff role. Ask a super admin to
+          add it, then sign in again.
         </P>
       </Banner>
       <Button label="Sign out" variant="secondary" onPress={() => void signOut()} />
@@ -223,7 +255,9 @@ export function SignInFlow({ state }: { state: AuthState | undefined }): ReactNo
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[4] }}>
       <View style={{ width: '100%', maxWidth: 460, gap: space[4] }}>
         <View style={{ gap: space[1] }}>
-          <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '800', letterSpacing: 1 }}>
+          <Text
+            style={{ color: colors.primary, fontSize: 13, fontWeight: '800', letterSpacing: 1 }}
+          >
             CUSTAR TUTOR · ADMIN
           </Text>
           <H1>Content engine</H1>
@@ -242,9 +276,11 @@ export function SignInFlow({ state }: { state: AuthState | undefined }): ReactNo
         {runtime.demoHint ? (
           <Card tone="muted">
             <Small>
-              Demo mode: use any email address. The email code is {runtime.demoHint.emailCode}; the authenticator
-              code is {runtime.demoHint.totpCode}. An email containing &quot;new&quot; shows authenticator setup;
-              one containing &quot;visitor&quot; shows the not-an-admin screen.
+              Demo mode: use any email address. The email code is {runtime.demoHint.emailCode}; the
+              authenticator code is {runtime.demoHint.totpCode}. An email containing &quot;new&quot;
+              shows authenticator setup; one containing &quot;visitor&quot; shows the not-an-admin
+              screen. Add ?demoRole=reviewer (or content_editor, support, analyst) to the address to
+              sign in as another role.
             </Small>
           </Card>
         ) : null}

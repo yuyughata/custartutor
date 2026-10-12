@@ -85,7 +85,9 @@ describe('RPCs: exact names and arguments', () => {
     const { supabase, api } = setup();
     supabase.onRpc('approve_scheme', { data: null });
     await api.schemes.approve(SCHEME_ID);
-    expect(supabase.rpcCalls).toEqual([{ name: 'approve_scheme', args: { p_scheme_id: SCHEME_ID } }]);
+    expect(supabase.rpcCalls).toEqual([
+      { name: 'approve_scheme', args: { p_scheme_id: SCHEME_ID } },
+    ]);
   });
 
   it('apply_chapter_plan, with the counts validated', async () => {
@@ -105,7 +107,10 @@ describe('RPCs: exact names and arguments', () => {
     supabase.onRpc('set_unit_version_status', { data: null });
     await api.units.setVersionStatus(VERSION_ID, 'in_review');
     expect(supabase.rpcCalls).toEqual([
-      { name: 'set_unit_version_status', args: { p_unit_version_id: VERSION_ID, p_status: 'in_review' } },
+      {
+        name: 'set_unit_version_status',
+        args: { p_unit_version_id: VERSION_ID, p_status: 'in_review' },
+      },
     ]);
   });
 
@@ -123,7 +128,11 @@ describe('RPCs: exact names and arguments', () => {
     const { supabase, api } = setup();
     supabase.onRpc('get_ai_settings', {
       data: {
-        models: { authoring: 'claude-opus-5-5', tutor: 'claude-sonnet-5-5', moderation: 'claude-haiku-5-5' },
+        models: {
+          authoring: 'claude-opus-5-5',
+          tutor: 'claude-sonnet-5-5',
+          moderation: 'claude-haiku-5-5',
+        },
         kill_switch: false,
         budget: { max_usd_per_job: null, daily_usd_cap: 5 },
         prices: {},
@@ -134,7 +143,13 @@ describe('RPCs: exact names and arguments', () => {
     supabase.onRpc('set_app_setting', { data: null });
     supabase.onRpc('get_ai_usage_summary', {
       data: {
-        totals: { calls: 3, input_tokens: '1200', output_tokens: 800, est_cost_usd: null, jobs: { succeeded: 2 } },
+        totals: {
+          calls: 3,
+          input_tokens: '1200',
+          output_tokens: 800,
+          est_cost_usd: null,
+          jobs: { succeeded: 2 },
+        },
         by_day: [{ day: '2026-10-12', calls: 3, est_cost_usd: 0.5, unpriced_calls: 1 }],
         by_model: [{ model: 'claude-opus-5-5', calls: 3 }],
         by_kind: [{ kind: 'unit_generate', calls: 3 }],
@@ -144,18 +159,32 @@ describe('RPCs: exact names and arguments', () => {
     const settings = await api.settings.get();
     expect(settings.budget.daily_usd_cap).toBe(5);
     await api.settings.set('ai.kill_switch', true);
-    const usage = await api.usage.summary({ from: '2026-10-01T00:00:00Z', to: '2026-11-01T00:00:00Z' });
+    const usage = await api.usage.summary({
+      from: '2026-10-01T00:00:00Z',
+      to: '2026-11-01T00:00:00Z',
+    });
 
-    expect(supabase.rpcCalls.map((c) => c.name)).toEqual(['get_ai_settings', 'set_app_setting', 'get_ai_usage_summary']);
+    expect(supabase.rpcCalls.map((c) => c.name)).toEqual([
+      'get_ai_settings',
+      'set_app_setting',
+      'get_ai_usage_summary',
+    ]);
     expect(supabase.rpcCalls[1]?.args).toEqual({ p_key: 'ai.kill_switch', p_value: true });
-    expect(supabase.rpcCalls[2]?.args).toEqual({ p_from: '2026-10-01T00:00:00Z', p_to: '2026-11-01T00:00:00Z' });
+    expect(supabase.rpcCalls[2]?.args).toEqual({
+      p_from: '2026-10-01T00:00:00Z',
+      p_to: '2026-11-01T00:00:00Z',
+    });
     expect(usage.totals).toMatchObject({
       calls: 3,
       input_tokens: 1200,
       est_cost_usd: null,
       jobs_by_status: { succeeded: 2 },
     });
-    expect(usage.by_day[0]).toMatchObject({ day: '2026-10-12', est_cost_usd: 0.5, unpriced_calls: 1 });
+    expect(usage.by_day[0]).toMatchObject({
+      day: '2026-10-12',
+      est_cost_usd: 0.5,
+      unpriced_calls: 1,
+    });
     expect(usage.by_model[0]?.est_cost_usd).toBeNull();
   });
 });
@@ -165,7 +194,13 @@ describe('error mapping', () => {
     const { supabase, api } = setup();
     supabase.onRpc('save_scheme_draft', { error: { message: 'scheme_not_draft', code: '22023' } });
     const error = await caught(
-      api.schemes.saveDraft({ subjectId: SUBJECT_ID, levelCode: 'P1', term: 1, weeks: [], sourceNote: '' }),
+      api.schemes.saveDraft({
+        subjectId: SUBJECT_ID,
+        levelCode: 'P1',
+        term: 1,
+        weeks: [],
+        sourceNote: '',
+      }),
     );
     expect(error).toMatchObject({ kind: 'conflict', code: 'scheme_not_draft' });
     expect(error.message).toMatch(/already approved/);
@@ -181,7 +216,9 @@ describe('error mapping', () => {
 
   it('maps a bare row-level-security refusal to a hint about the authenticator code', async () => {
     const { supabase, api } = setup();
-    supabase.onTable('characters', { error: { message: 'new row violates row-level security policy', code: '42501' } });
+    supabase.onTable('characters', {
+      error: { message: 'new row violates row-level security policy', code: '42501' },
+    });
     const error = await caught(
       api.characters.save({
         id: 'c1',
@@ -242,7 +279,12 @@ describe('reads', () => {
       ],
     });
     const [scheme] = await api.schemes.list();
-    expect(scheme).toMatchObject({ id: SCHEME_ID, week_count: 3, teaching_week_count: 2, status: 'approved' });
+    expect(scheme).toMatchObject({
+      id: SCHEME_ID,
+      week_count: 3,
+      teaching_week_count: 2,
+      status: 'approved',
+    });
     expect(supabase.queries[0]?.select).toContain('scheme_weeks(week_no,kind)');
   });
 
@@ -312,16 +354,33 @@ describe('reads', () => {
             unit('u3', 3, [], '2026-10-01T00:00:00Z'),
           ],
         },
-        { id: 'c2', scheme_id: SCHEME_ID, number: 2, title: 'Gone', status: 'draft', deleted_at: '2026-10-01T00:00:00Z', units: [] },
+        {
+          id: 'c2',
+          scheme_id: SCHEME_ID,
+          number: 2,
+          title: 'Gone',
+          status: 'draft',
+          deleted_at: '2026-10-01T00:00:00Z',
+          units: [],
+        },
       ],
     });
     const chapters = await api.chapters.list(SCHEME_ID);
     expect(chapters).toHaveLength(1);
-    expect(chapters[0]?.units.map((u) => [u.unit_no, u.version_count, u.latest_version, u.latest_version_status])).toEqual([
+    expect(
+      chapters[0]?.units.map((u) => [
+        u.unit_no,
+        u.version_count,
+        u.latest_version,
+        u.latest_version_status,
+      ]),
+    ).toEqual([
       [1, 0, null, null],
       [2, 2, 2, 'in_review'],
     ]);
-    expect(supabase.queries[0]?.filters).toEqual([{ op: 'eq', column: 'scheme_id', value: SCHEME_ID }]);
+    expect(supabase.queries[0]?.filters).toEqual([
+      { op: 'eq', column: 'scheme_id', value: SCHEME_ID },
+    ]);
     expect(supabase.queries[0]?.select).not.toContain('content');
   });
 
@@ -407,7 +466,11 @@ describe('reads', () => {
     expect(saved.slug).toBe('zuri');
     const write = supabase.queries[1]!;
     expect(write.table).toBe('characters');
-    expect(write.update).toMatchObject({ name: 'Zuri', active: true, voice: { notes: 'Speaks softly' } });
+    expect(write.update).toMatchObject({
+      name: 'Zuri',
+      active: true,
+      voice: { notes: 'Speaks softly' },
+    });
     expect(write.filters).toEqual([{ op: 'eq', column: 'id', value: 'c1' }]);
     expect(write.mode).toBe('single');
   });
@@ -416,7 +479,14 @@ describe('reads', () => {
     const { supabase, api } = setup();
     supabase.onTable('characters', { data: [] });
     const error = await caught(
-      api.characters.save({ id: 'c1', slug: 'zari', name: 'Zari', traits: { personality: [] }, voice: {}, active: true }),
+      api.characters.save({
+        id: 'c1',
+        slug: 'zari',
+        name: 'Zari',
+        traits: { personality: [] },
+        voice: {},
+        active: true,
+      }),
     );
     expect(error.kind).toBe('not_found');
   });
@@ -437,7 +507,9 @@ describe('reads', () => {
     });
     const info = await api.units.publication(VERSION_ID);
     expect(info?.content_hash).toBe('a'.repeat(64));
-    expect(supabase.queries[0]?.filters).toEqual([{ op: 'eq', column: 'unit_version_id', value: VERSION_ID }]);
+    expect(supabase.queries[0]?.filters).toEqual([
+      { op: 'eq', column: 'unit_version_id', value: VERSION_ID },
+    ]);
     supabase.onTable('published_units', { data: null });
     expect(await api.units.publication(VERSION_ID)).toBeNull();
   });
@@ -446,18 +518,42 @@ describe('reads', () => {
     const { supabase, api } = setup();
     supabase.onTable('schemes', {
       data: [
-        { id: SCHEME_ID, subject_id: SUBJECT_ID, level_code: 'P1', term: 2, status: 'draft', source_note: null, created_at: '2026-10-12T10:00:00Z', scheme_weeks: [] },
+        {
+          id: SCHEME_ID,
+          subject_id: SUBJECT_ID,
+          level_code: 'P1',
+          term: 2,
+          status: 'draft',
+          source_note: null,
+          created_at: '2026-10-12T10:00:00Z',
+          scheme_weeks: [],
+        },
       ],
     });
     supabase.onTable('unit_versions', (spec) => ({
       data: spec.filters.some((f) => f.value === 'in_review')
-        ? [{ id: VERSION_ID, version: 1, status: 'in_review', created_at: '2026-10-12T10:00:00Z', units: { id: UNIT_ID, unit_no: 2, title: 'Exploring' } }]
+        ? [
+            {
+              id: VERSION_ID,
+              version: 1,
+              status: 'in_review',
+              created_at: '2026-10-12T10:00:00Z',
+              units: { id: UNIT_ID, unit_no: 2, title: 'Exploring' },
+            },
+          ]
         : [],
     }));
     supabase.onTable('ai_jobs', {
       data: [
         { ...jobRow({ status: 'running' }), result: undefined },
-        { ...jobRow({ id: '77777777-7777-4777-8777-777777777777', status: 'failed', error: { code: 'refusal', message: 'no' } }), result: undefined },
+        {
+          ...jobRow({
+            id: '77777777-7777-4777-8777-777777777777',
+            status: 'failed',
+            error: { code: 'refusal', message: 'no' },
+          }),
+          result: undefined,
+        },
       ],
     });
     supabase.onTable('units', { data: null, count: 8 });
@@ -479,7 +575,12 @@ describe('uploads', () => {
   it('uploads a PDF to scheme-uploads under <user id>/<uuid>-<file name>', async () => {
     const { supabase, api } = setup();
     const data = new ArrayBuffer(8);
-    const out = await api.schemes.uploadPdf({ name: 'Basic Science P1 (scheme).pdf', mimeType: 'application/pdf', size: 8, data });
+    const out = await api.schemes.uploadPdf({
+      name: 'Basic Science P1 (scheme).pdf',
+      mimeType: 'application/pdf',
+      size: 8,
+      data,
+    });
     expect(out.path).toBe('user-1/fixed-uuid-Basic_Science_P1_scheme_.pdf');
     expect(supabase.uploads).toEqual([
       {
@@ -495,7 +596,10 @@ describe('uploads', () => {
     const { supabase, api } = setup();
     const file = { name: 'x.pdf', mimeType: 'application/pdf', size: 1, data: new ArrayBuffer(1) };
     supabase.uploadError = { message: 'The object exceeded the maximum allowed size' };
-    expect(await caught(api.schemes.uploadPdf(file))).toMatchObject({ kind: 'invalid', code: 'file_too_large' });
+    expect(await caught(api.schemes.uploadPdf(file))).toMatchObject({
+      kind: 'invalid',
+      code: 'file_too_large',
+    });
     supabase.uploadError = { message: 'new row violates row-level security policy' };
     expect((await caught(api.schemes.uploadPdf(file))).kind).toBe('forbidden');
   });
@@ -504,7 +608,12 @@ describe('uploads', () => {
     const { supabase, api } = setup();
     supabase.authState.session = null;
     const error = await caught(
-      api.schemes.uploadPdf({ name: 'x.pdf', mimeType: 'application/pdf', size: 1, data: new ArrayBuffer(1) }),
+      api.schemes.uploadPdf({
+        name: 'x.pdf',
+        mimeType: 'application/pdf',
+        size: 1,
+        data: new ArrayBuffer(1),
+      }),
     );
     expect(error.kind).toBe('unauthenticated');
   });
@@ -533,7 +642,12 @@ describe('jobs through the ai-job edge function', () => {
           apikey: 'sb_publishable_test',
           'Content-Type': 'application/json',
         },
-        body: { action: 'create', kind: 'unit_generate', params: unitParams, idempotency_key: 'idem-key-12345' },
+        body: {
+          action: 'create',
+          kind: 'unit_generate',
+          params: unitParams,
+          idempotency_key: 'idem-key-12345',
+        },
       },
     ]);
   });
@@ -547,7 +661,9 @@ describe('jobs through the ai-job edge function', () => {
 
   it('steps a job and passes the busy flag through', async () => {
     const { http, api } = setup();
-    http.reply(202, { job: jobRow({ status: 'running' }) }).reply(200, { job: jobRow({ status: 'running' }), busy: true });
+    http
+      .reply(202, { job: jobRow({ status: 'running' }) })
+      .reply(200, { job: jobRow({ status: 'running' }), busy: true });
     expect((await api.jobs.step(JOB_ID)).busy).toBeUndefined();
     expect((await api.jobs.step(JOB_ID)).busy).toBe(true);
     expect(http.requests[0]?.body).toEqual({ action: 'step', job_id: JOB_ID });
@@ -631,7 +747,12 @@ describe('jobs through the ai-job edge function', () => {
   it('lists jobs, newest first, with filters and without result', async () => {
     const { supabase, api } = setup();
     supabase.onTable('ai_jobs', { data: [{ ...jobRow(), result: undefined }] });
-    const jobs = await api.jobs.list({ kind: 'unit_generate', status: ['running', 'failed'], unitId: UNIT_ID, limit: 10 });
+    const jobs = await api.jobs.list({
+      kind: 'unit_generate',
+      status: ['running', 'failed'],
+      unitId: UNIT_ID,
+      limit: 10,
+    });
     expect(jobs).toHaveLength(1);
     expect(jobs[0]).not.toHaveProperty('result');
     const query = supabase.queries[0]!;
@@ -683,7 +804,10 @@ describe('publishing: publish_unit_version then publish-pack', () => {
       content_hash: 'c'.repeat(64),
       already_built: true,
     });
-    expect(await api.units.buildPack(PUBLISHED_ID)).toMatchObject({ already_built: true, files: null });
+    expect(await api.units.buildPack(PUBLISHED_ID)).toMatchObject({
+      already_built: true,
+      files: null,
+    });
   });
 
   it.each([
@@ -702,7 +826,9 @@ describe('publishing: publish_unit_version then publish-pack', () => {
 describe('reference data', () => {
   it('lists active subjects and levels in order', async () => {
     const { supabase, api } = setup();
-    supabase.onTable('subjects', { data: [{ id: SUBJECT_ID, slug: 'basic-science', name: 'Basic Science', sort: 30 }] });
+    supabase.onTable('subjects', {
+      data: [{ id: SUBJECT_ID, slug: 'basic-science', name: 'Basic Science', sort: 30 }],
+    });
     supabase.onTable('levels', { data: [{ code: 'P1', name: 'Primary 1', sort: 1 }] });
     expect((await api.catalog.subjects())[0]?.slug).toBe('basic-science');
     expect((await api.catalog.levels())[0]?.code).toBe('P1');

@@ -23,7 +23,13 @@ export class AdminApiError extends Error {
   readonly code: string;
   readonly status: number | undefined;
 
-  constructor(kind: AdminErrorKind, code: string, message: string, status?: number, cause?: unknown) {
+  constructor(
+    kind: AdminErrorKind,
+    code: string,
+    message: string,
+    status?: number,
+    cause?: unknown,
+  ) {
     super(message, cause === undefined ? undefined : { cause });
     this.name = 'AdminApiError';
     this.kind = kind;
@@ -43,8 +49,14 @@ export function isAdminApiError(error: unknown): error is AdminApiError {
 
 /** Plain words for the stable messages the RPCs, triggers and edge functions raise. */
 const KNOWN: Record<string, { kind: AdminErrorKind; message: string }> = {
-  not_authenticated: { kind: 'unauthenticated', message: 'Your session has ended. Please sign in again.' },
-  invalid_jwt: { kind: 'session_expired', message: 'Your session has expired. Please sign in again.' },
+  not_authenticated: {
+    kind: 'unauthenticated',
+    message: 'Your session has ended. Please sign in again.',
+  },
+  invalid_jwt: {
+    kind: 'session_expired',
+    message: 'Your session has expired. Please sign in again.',
+  },
   admin_role_required: {
     kind: 'forbidden',
     message: 'Your role is not allowed to do this. Ask a super admin if you need access.',
@@ -70,9 +82,15 @@ const KNOWN: Record<string, { kind: AdminErrorKind; message: string }> = {
     kind: 'invalid',
     message: 'A scheme needs at least one teaching week before it can be approved.',
   },
-  invalid_weeks: { kind: 'invalid', message: 'The server rejected the weeks table. Check each row.' },
+  invalid_weeks: {
+    kind: 'invalid',
+    message: 'The server rejected the weeks table. Check each row.',
+  },
   invalid_scheme: { kind: 'invalid', message: 'The server rejected the scheme. Check each row.' },
-  invalid_plan: { kind: 'invalid', message: 'The server rejected the chapter plan. Check each chapter.' },
+  invalid_plan: {
+    kind: 'invalid',
+    message: 'The server rejected the chapter plan. Check each chapter.',
+  },
   unit_has_versions: {
     kind: 'conflict',
     message:
@@ -99,25 +117,35 @@ const KNOWN: Record<string, { kind: AdminErrorKind; message: string }> = {
     kind: 'conflict',
     message: 'Only an approved version can be published.',
   },
-  unit_version_superseded: { kind: 'conflict', message: 'That version has been replaced by a newer one.' },
+  unit_version_superseded: {
+    kind: 'conflict',
+    message: 'That version has been replaced by a newer one.',
+  },
   unit_version_older_than_current: {
     kind: 'conflict',
     message: 'A newer version of this unit is already published.',
   },
   unit_version_content_empty: { kind: 'invalid', message: 'This version has no content.' },
   unit_not_publishable: { kind: 'conflict', message: 'This unit cannot be published yet.' },
-  approved_version_is_frozen: { kind: 'conflict', message: 'An approved version cannot be changed.' },
+  approved_version_is_frozen: {
+    kind: 'conflict',
+    message: 'An approved version cannot be changed.',
+  },
   published_unit_not_found: { kind: 'not_found', message: 'That published unit no longer exists.' },
   not_current: {
     kind: 'conflict',
-    message: 'That published snapshot has been replaced by a newer one, so no pack is built for it.',
+    message:
+      'That published snapshot has been replaced by a newer one, so no pack is built for it.',
   },
   content_not_packable: {
     kind: 'invalid',
     message: 'The unit content could not be turned into a lesson pack. See the lint panel.',
   },
   upload_failed: { kind: 'server', message: 'The pack files could not be stored. Try again.' },
-  pack_info_already_set: { kind: 'conflict', message: 'A different pack is already recorded for this snapshot.' },
+  pack_info_already_set: {
+    kind: 'conflict',
+    message: 'A different pack is already recorded for this snapshot.',
+  },
   kill_switch: {
     kind: 'kill_switch',
     message: 'AI drafting is switched off. A super admin can switch it on under Usage & settings.',
@@ -126,12 +154,24 @@ const KNOWN: Record<string, { kind: AdminErrorKind; message: string }> = {
     kind: 'budget_exceeded',
     message: 'A spending cap was reached. A super admin can raise it under Usage & settings.',
   },
-  unauthenticated: { kind: 'unauthenticated', message: 'Your session has ended. Please sign in again.' },
+  unauthenticated: {
+    kind: 'unauthenticated',
+    message: 'Your session has ended. Please sign in again.',
+  },
   invalid_request: { kind: 'invalid', message: 'The server could not accept that request.' },
   not_found: { kind: 'not_found', message: 'That item no longer exists.' },
-  conflict: { kind: 'conflict', message: 'That conflicts with a newer change. Reload and try again.' },
-  internal: { kind: 'server', message: 'Something went wrong on the server. Try again in a moment.' },
-  internal_error: { kind: 'server', message: 'Something went wrong on the server. Try again in a moment.' },
+  conflict: {
+    kind: 'conflict',
+    message: 'That conflicts with a newer change. Reload and try again.',
+  },
+  internal: {
+    kind: 'server',
+    message: 'Something went wrong on the server. Try again in a moment.',
+  },
+  internal_error: {
+    kind: 'server',
+    message: 'Something went wrong on the server. Try again in a moment.',
+  },
 };
 
 const STABLE_CODE = /^[a-z][a-z0-9_]{1,63}$/;
@@ -145,11 +185,15 @@ export interface PostgrestLike {
 }
 
 /** Maps an error from a PostgREST query, an RPC or Storage into an AdminApiError. */
-export function fromPostgrest(error: PostgrestLike, fallbackMessage = 'The request failed.'): AdminApiError {
+export function fromPostgrest(
+  error: PostgrestLike,
+  fallbackMessage = 'The request failed.',
+): AdminApiError {
   const message = error.message ?? '';
   const stable = STABLE_CODE.test(message) ? message : undefined;
   const known = stable ? KNOWN[stable] : undefined;
-  if (known) return new AdminApiError(known.kind, stable as string, known.message, error.status, error);
+  if (known)
+    return new AdminApiError(known.kind, stable as string, known.message, error.status, error);
 
   switch (error.code) {
     case 'PGRST301':
@@ -171,7 +215,13 @@ export function fromPostgrest(error: PostgrestLike, fallbackMessage = 'The reque
       );
     case 'P0002':
     case 'PGRST116':
-      return new AdminApiError('not_found', stable ?? 'not_found', 'That item no longer exists.', 404, error);
+      return new AdminApiError(
+        'not_found',
+        stable ?? 'not_found',
+        'That item no longer exists.',
+        404,
+        error,
+      );
     case '23505':
     case '23503':
     case '23P01':
@@ -189,7 +239,9 @@ export function fromPostgrest(error: PostgrestLike, fallbackMessage = 'The reque
       return new AdminApiError(
         'invalid',
         stable ?? 'invalid_request',
-        stable ? `The server rejected that (${stable.replace(/_/g, ' ')}).` : 'The server rejected that input.',
+        stable
+          ? `The server rejected that (${stable.replace(/_/g, ' ')}).`
+          : 'The server rejected that input.',
         400,
         error,
       );

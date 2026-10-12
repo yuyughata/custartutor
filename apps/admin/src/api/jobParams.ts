@@ -8,7 +8,7 @@ import {
   type JobKind,
   type JobParams,
 } from '@custar/authoring-core';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { AdminApiError } from './errors';
 
 const SCHEMAS: { [K in JobKind]: z.ZodType<JobParams[K]> } = {

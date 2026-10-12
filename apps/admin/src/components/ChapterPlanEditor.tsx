@@ -35,7 +35,10 @@ import { H3, P, Small } from '../ui/Text';
 import { colors, radii, space } from '../ui/theme';
 import { FlagList } from './FlagList';
 
-const STAGE_OPTIONS = STAGE_ORDER.map((stage) => ({ value: stage, label: stageLabels[stage].label }));
+const STAGE_OPTIONS = STAGE_ORDER.map((stage) => ({
+  value: stage,
+  label: stageLabels[stage].label,
+}));
 const END_STAGE_OPTIONS = [{ value: '', label: 'Same stage' }, ...STAGE_OPTIONS];
 
 function asStage(value: string): Stage | undefined {
@@ -96,10 +99,14 @@ function UnitEditor({
         label={`Objective, ${label}`}
         hint="The NERDC objective the unit must cover. Edit it to match the scheme."
         value={unit.objective}
-        onChangeText={(objective) => onPlan(updateUnit(plan, chapterIndex, unitIndex, { objective }))}
-        lines={3}
+        onChangeText={(objective) =>
+          onPlan(updateUnit(plan, chapterIndex, unitIndex, { objective }))
+        }
+        lines={Math.min(10, Math.max(3, Math.ceil(unit.objective.length / 95)))}
       />
-      <View style={{ flexDirection: 'row', gap: space[3], flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <View
+        style={{ flexDirection: 'row', gap: space[3], flexWrap: 'wrap', alignItems: 'flex-start' }}
+      >
         <View style={{ width: 170 }}>
           <Select
             label={`Stage, ${label}`}
@@ -126,12 +133,21 @@ function UnitEditor({
           <NumberField
             label={`Periods, ${label}`}
             value={unit.periods}
-            onNumber={(value) => onPlan(updateUnit(plan, chapterIndex, unitIndex, { periods: value ?? Number.NaN }))}
+            onNumber={(value) =>
+              onPlan(updateUnit(plan, chapterIndex, unitIndex, { periods: value ?? Number.NaN }))
+            }
           />
         </View>
       </View>
       {isFirst || isLast ? (
-        <View style={{ flexDirection: 'row', gap: space[3], flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: space[3],
+            flexWrap: 'wrap',
+            alignItems: 'flex-start',
+          }}
+        >
           {isFirst && chapterIndex > 0 ? (
             <Button
               label="Move to previous chapter"
@@ -157,7 +173,11 @@ function UnitEditor({
         </View>
       ) : null}
       {messages.map((message) => (
-        <Text key={message} accessibilityRole="alert" style={{ color: colors.danger, fontSize: 13 }}>
+        <Text
+          key={message}
+          accessibilityRole="alert"
+          style={{ color: colors.danger, fontSize: 13 }}
+        >
           ✕ {message}
         </Text>
       ))}
@@ -202,11 +222,15 @@ export function ChapterPlanEditor({
     <View style={{ gap: space[4] }}>
       <View style={{ flexDirection: 'row', gap: space[3], alignItems: 'center', flexWrap: 'wrap' }}>
         <P testID="plan-summary">
-          {plan.chapters.length} chapter{plan.chapters.length === 1 ? '' : 's'} · {unitCount(plan)} units · each chapter
-          needs {PLAN_MIN_UNITS} to {PLAN_MAX_UNITS} units
+          {plan.chapters.length} chapter{plan.chapters.length === 1 ? '' : 's'} · {unitCount(plan)}{' '}
+          units · each chapter needs {PLAN_MIN_UNITS} to {PLAN_MAX_UNITS} units
         </P>
         {errorCount > 0 ? (
-          <Badge label={`${errorCount} problem${errorCount === 1 ? '' : 's'} to fix`} glyph="✕" tone="danger" />
+          <Badge
+            label={`${errorCount} problem${errorCount === 1 ? '' : 's'} to fix`}
+            glyph="✕"
+            tone="danger"
+          />
         ) : (
           <Badge label="Plan is valid" glyph="✓" tone="success" />
         )}
@@ -225,7 +249,10 @@ export function ChapterPlanEditor({
             <Text
               key={issue.message}
               accessibilityRole={issue.severity === 'error' ? 'alert' : 'text'}
-              style={{ color: issue.severity === 'error' ? colors.danger : colors.amberText, fontSize: 14 }}
+              style={{
+                color: issue.severity === 'error' ? colors.danger : colors.amberText,
+                fontSize: 14,
+              }}
             >
               {issue.severity === 'error' ? '✕ ' : '⚠ '}
               {issue.message}
@@ -235,10 +262,19 @@ export function ChapterPlanEditor({
       ) : null}
 
       {plan.chapters.map((chapter, chapterIndex) => {
-        const chapterMessages = issuesForChapter(issues, chapterIndex).map((issue) => issue.message);
+        const chapterMessages = issuesForChapter(issues, chapterIndex).map(
+          (issue) => issue.message,
+        );
         return (
           <Card key={`${chapter.chapter_no}-${chapterIndex}`} style={{ gap: space[3] }}>
-            <View style={{ flexDirection: 'row', gap: space[3], alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: space[3],
+                alignItems: 'flex-start',
+                flexWrap: 'wrap',
+              }}
+            >
               <View style={{ flex: 1, minWidth: 260 }}>
                 <TextField
                   label={`Title, chapter ${chapter.chapter_no}`}
@@ -248,17 +284,36 @@ export function ChapterPlanEditor({
               </View>
               <Badge
                 label={`${chapter.units.length} unit${chapter.units.length === 1 ? '' : 's'}`}
-                glyph={chapter.units.length >= PLAN_MIN_UNITS && chapter.units.length <= PLAN_MAX_UNITS ? '✓' : '✕'}
-                tone={chapter.units.length >= PLAN_MIN_UNITS && chapter.units.length <= PLAN_MAX_UNITS ? 'success' : 'danger'}
+                glyph={
+                  chapter.units.length >= PLAN_MIN_UNITS && chapter.units.length <= PLAN_MAX_UNITS
+                    ? '✓'
+                    : '✕'
+                }
+                tone={
+                  chapter.units.length >= PLAN_MIN_UNITS && chapter.units.length <= PLAN_MAX_UNITS
+                    ? 'success'
+                    : 'danger'
+                }
               />
             </View>
             {chapter.theme ? (
-              <View style={{ flexDirection: 'row', gap: space[3], alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: space[3],
+                  alignItems: 'flex-start',
+                  flexWrap: 'wrap',
+                }}
+              >
                 <View style={{ flex: 1, minWidth: 200 }}>
                   <TextField
                     label={`Theme title, chapter ${chapter.chapter_no}`}
                     value={chapter.theme.title}
-                    onChangeText={(title) => setPlan(setTheme(plan, chapterIndex, { title, lens: chapter.theme?.lens ?? '' }))}
+                    onChangeText={(title) =>
+                      setPlan(
+                        setTheme(plan, chapterIndex, { title, lens: chapter.theme?.lens ?? '' }),
+                      )
+                    }
                   />
                 </View>
                 <View style={{ flex: 1, minWidth: 200 }}>
@@ -266,7 +321,11 @@ export function ChapterPlanEditor({
                     label={`Theme lens, chapter ${chapter.chapter_no}`}
                     hint="How this subject looks at the theme, for example Observation."
                     value={chapter.theme.lens}
-                    onChangeText={(lens) => setPlan(setTheme(plan, chapterIndex, { title: chapter.theme?.title ?? '', lens }))}
+                    onChangeText={(lens) =>
+                      setPlan(
+                        setTheme(plan, chapterIndex, { title: chapter.theme?.title ?? '', lens }),
+                      )
+                    }
                   />
                 </View>
                 <Button
@@ -284,12 +343,20 @@ export function ChapterPlanEditor({
                   accessibilityLabel={`Add a theme to chapter ${chapter.chapter_no}`}
                   variant="ghost"
                   small
-                  onPress={() => setPlan(setTheme(plan, chapterIndex, { title: 'New theme', lens: 'Observation' }))}
+                  onPress={() =>
+                    setPlan(
+                      setTheme(plan, chapterIndex, { title: 'New theme', lens: 'Observation' }),
+                    )
+                  }
                 />
               </View>
             )}
             {chapterMessages.map((message) => (
-              <Text key={message} accessibilityRole="alert" style={{ color: colors.danger, fontSize: 14 }}>
+              <Text
+                key={message}
+                accessibilityRole="alert"
+                style={{ color: colors.danger, fontSize: 14 }}
+              >
                 ✕ {message}
               </Text>
             ))}
@@ -301,7 +368,9 @@ export function ChapterPlanEditor({
                   chapterIndex={chapterIndex}
                   unitIndex={unitIndex}
                   plan={plan}
-                  messages={issuesForChapter(issues, chapterIndex, unitIndex).map((issue) => issue.message)}
+                  messages={issuesForChapter(issues, chapterIndex, unitIndex).map(
+                    (issue) => issue.message,
+                  )}
                   onPlan={setPlan}
                 />
               ))}
@@ -319,11 +388,14 @@ export function ChapterPlanEditor({
         <Banner tone="success" title="Plan applied" testID="plan-applied">
           <P>
             {result.chapters} chapter{result.chapters === 1 ? '' : 's'} and {result.units} unit
-            {result.units === 1 ? '' : 's'} saved as drafts. Open a unit below to draft it.
+            {result.units === 1 ? '' : 's'} saved as drafts. Open a unit in the list at the top of
+            this page to draft it.
           </P>
         </Banner>
       ) : null}
-      <View style={{ flexDirection: 'row', gap: space[3], alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <View
+        style={{ flexDirection: 'row', gap: space[3], alignItems: 'flex-start', flexWrap: 'wrap' }}
+      >
         <Button
           label="Apply plan"
           onPress={() => void apply.run()}

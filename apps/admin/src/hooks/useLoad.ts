@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toAdminError, type AdminApiError } from '../api/errors';
+import { useRuntime } from '../runtime/RuntimeProvider';
 
 export interface LoadState<T> {
   data: T | undefined;
@@ -17,6 +18,9 @@ export function useLoad<T>(loader: () => Promise<T>, deps: readonly unknown[]): 
   const [error, setError] = useState<AdminApiError | null>(null);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
+  // A different signed-in role can see different rows, so a role change (the demo switcher) loads everything again.
+  const { auth } = useRuntime();
+  const roleKey = auth?.step === 'ready' ? auth.role : '';
   const latest = useRef(0);
   const loaderRef = useRef(loader);
   loaderRef.current = loader;
@@ -42,7 +46,7 @@ export function useLoad<T>(loader: () => Promise<T>, deps: readonly unknown[]): 
       // A newer request (or an unmount) makes this answer stale.
       if (latest.current === request) latest.current = request + 1;
     };
-  }, [...deps, tick]);
+  }, [...deps, tick, roleKey]);
 
   const reload = useCallback(() => setTick((value) => value + 1), []);
   return { data, error, loading, reload };

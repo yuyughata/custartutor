@@ -26,12 +26,17 @@ describe('jumpTarget', () => {
 
   it('points a section id at its heading', () => {
     const id = sections[4]!.id;
-    expect(jumpTarget(`sections.${id}`, goldenUnit2)).toMatchObject({ heading: sections[4]!.heading });
+    expect(jumpTarget(`sections.${id}`, goldenUnit2)).toMatchObject({
+      heading: sections[4]!.heading,
+    });
   });
 
   it('falls back to the textbook tab when the section is unknown', () => {
     expect(jumpTarget('sections[99]', goldenUnit2)).toEqual({ tab: 'textbook', label: 'Textbook' });
-    expect(jumpTarget('sections.nope', goldenUnit2)).toEqual({ tab: 'textbook', label: 'Textbook' });
+    expect(jumpTarget('sections.nope', goldenUnit2)).toEqual({
+      tab: 'textbook',
+      label: 'Textbook',
+    });
   });
 
   it('finds the section that holds a question', () => {
@@ -44,14 +49,26 @@ describe('jumpTarget', () => {
         heading: withQuestion.heading,
       });
     }
-    expect(jumpTarget('questions.not_placed', goldenUnit2)).toEqual({ tab: 'workbook', label: 'Workbook' });
+    expect(jumpTarget('questions.not_placed', goldenUnit2)).toEqual({
+      tab: 'workbook',
+      label: 'Workbook',
+    });
   });
 
   it('maps workbook, manual, plan and header', () => {
-    expect(jumpTarget('workbook.tiers', goldenUnit2)).toEqual({ tab: 'workbook', label: 'Workbook' });
-    expect(jumpTarget('teacher_manual.materials', goldenUnit2)).toEqual({ tab: 'manual', label: "Teacher's manual" });
+    expect(jumpTarget('workbook.tiers', goldenUnit2)).toEqual({
+      tab: 'workbook',
+      label: 'Workbook',
+    });
+    expect(jumpTarget('teacher_manual.materials', goldenUnit2)).toEqual({
+      tab: 'manual',
+      label: "Teacher's manual",
+    });
     expect(jumpTarget('session_plan[0]', goldenUnit2)?.tab).toBe('manual');
-    expect(jumpTarget('header.objective', goldenUnit2)).toEqual({ tab: 'textbook', label: 'Unit header' });
+    expect(jumpTarget('header.objective', goldenUnit2)).toEqual({
+      tab: 'textbook',
+      label: 'Unit header',
+    });
   });
 
   it('returns null for no path or an unknown area', () => {

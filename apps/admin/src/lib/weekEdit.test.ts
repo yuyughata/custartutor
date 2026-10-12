@@ -85,7 +85,9 @@ describe('validateWeeks', () => {
       { week_no: 4, kind: 'teaching', topic: '   ', subtopics: ['x'] },
     ]);
     expect(issuesForRow(issues, 1)[0]?.message).toBe('Week 1 appears twice.');
-    expect(issuesForRow(issues, 2).some((i) => /whole number from 1 to 20/.test(i.message))).toBe(true);
+    expect(issuesForRow(issues, 2).some((i) => /whole number from 1 to 20/.test(i.message))).toBe(
+      true,
+    );
     expect(issuesForRow(issues, 3).some((i) => i.field === 'topic')).toBe(true);
     expect(hasErrors(issues)).toBe(true);
   });

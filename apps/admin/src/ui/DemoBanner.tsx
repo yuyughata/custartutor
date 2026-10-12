@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, useWindowDimensions } from 'react-native';
 import { ADMIN_ROLES, ROLE_LABELS, type AdminRole } from '../lib/roles';
 import { Select } from './Select';
 import { colors, space } from './theme';
@@ -18,6 +18,7 @@ export function DemoBanner({
   role: AdminRole | null;
   onRoleChange?: ((role: AdminRole) => void) | undefined;
 }): ReactNode {
+  const { width } = useWindowDimensions();
   return (
     <View
       accessibilityRole="alert"
@@ -39,9 +40,11 @@ export function DemoBanner({
         <Text style={{ color: colors.white, fontSize: 15, fontWeight: '800', letterSpacing: 0.3 }}>
           {DEMO_BANNER_TEXT}
         </Text>
-        <Text style={{ color: '#fbf1e4', fontSize: 12, lineHeight: 16 }}>
-          Nothing is saved or sent anywhere. Reloading the page starts over.
-        </Text>
+        {width >= 600 ? (
+          <Text style={{ color: '#fbf1e4', fontSize: 12, lineHeight: 16 }}>
+            Nothing is saved or sent anywhere. Reloading the page starts over.
+          </Text>
+        ) : null}
       </View>
       {role && onRoleChange ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2] }}>

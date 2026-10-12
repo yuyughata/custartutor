@@ -59,7 +59,12 @@ function Workspace({ context }: { context: UnitContext }): ReactNode {
   const [notes, setNotes] = useState('');
   const [key, setKey] = useState(newKey());
   const [jump, setJump] = useState<PreviewJump | null>(null);
-  const [outcome, setOutcome] = useState<{ version: number; summary: string; errors: number; warnings: number } | null>(null);
+  const [outcome, setOutcome] = useState<{
+    version: number;
+    summary: string;
+    errors: number;
+    warnings: number;
+  } | null>(null);
 
   const list = versions.data ?? [];
   const latest = list[0];
@@ -103,7 +108,10 @@ function Workspace({ context }: { context: UnitContext }): ReactNode {
     () => (selected ? api.units.version(selected.id) : Promise.resolve(null)),
     [api, selected?.id],
   );
-  const parsed = useMemo(() => (content.data ? parseVersionContent(content.data.content) : null), [content.data]);
+  const parsed = useMemo(
+    () => (content.data ? parseVersionContent(content.data.content) : null),
+    [content.data],
+  );
   const lint = useMemo(
     () => (parsed && selected ? buildLintView(selected.lint_report, parsed) : null),
     [parsed, selected],
@@ -129,7 +137,11 @@ function Workspace({ context }: { context: UnitContext }): ReactNode {
     setOutcome(null);
     await job.start(
       'unit_revise',
-      { unit_version_id: latest.id, instruction, ...(sectionIds.length > 0 ? { section_ids: sectionIds } : {}) },
+      {
+        unit_version_id: latest.id,
+        instruction,
+        ...(sectionIds.length > 0 ? { section_ids: sectionIds } : {}),
+      },
       newKey(),
     );
   });
@@ -161,7 +173,10 @@ function Workspace({ context }: { context: UnitContext }): ReactNode {
         </P>
         {runtime.mode === 'demo' ? (
           <Banner tone="warning" title="Demo: a stand-in model answers, not Claude">
-            <P>It replays prepared sample content shaped for this unit. Real drafts come from Claude when the app runs against the live project.</P>
+            <P>
+              It replays prepared sample content shaped for this unit. Real drafts come from Claude
+              when the app runs against the live project.
+            </P>
           </Banner>
         ) : null}
         <TextField
@@ -202,10 +217,15 @@ function Workspace({ context }: { context: UnitContext }): ReactNode {
             title={job.job.kind === 'unit_revise' ? 'Revising the unit' : 'Drafting the unit'}
           />
           {job.job.status === 'succeeded' && outcome ? (
-            <Banner tone="success" title={`Version ${outcome.version} is ready as a draft`} testID="draft-outcome">
+            <Banner
+              tone="success"
+              title={`Version ${outcome.version} is ready as a draft`}
+              testID="draft-outcome"
+            >
               <P>{outcome.summary}</P>
               <Small>
-                Lint: {outcome.errors} error{outcome.errors === 1 ? '' : 's'}, {outcome.warnings} warning
+                Lint: {outcome.errors} error{outcome.errors === 1 ? '' : 's'}, {outcome.warnings}{' '}
+                warning
                 {outcome.warnings === 1 ? '' : 's'}. Read it below before you submit it for review.
               </Small>
             </Banner>
@@ -218,7 +238,11 @@ function Workspace({ context }: { context: UnitContext }): ReactNode {
         </View>
       ) : null}
 
-      <Async state={versions} loadingLabel="Loading versions…" onSignInAgain={() => void recheckAuth()}>
+      <Async
+        state={versions}
+        loadingLabel="Loading versions…"
+        onSignInAgain={() => void recheckAuth()}
+      >
         {(all) =>
           all.length === 0 || !selected ? (
             <EmptyState title="No draft yet">
@@ -245,10 +269,17 @@ function Workspace({ context }: { context: UnitContext }): ReactNode {
               >
                 <Row>
                   <VersionStatusBadge status={selected.status} />
-                  <Badge label={selected.generated_by === 'ai' ? 'AI draft' : 'Human'} tone="neutral" />
+                  <Badge
+                    label={selected.generated_by === 'ai' ? 'AI draft' : 'Human'}
+                    tone="neutral"
+                  />
                   {selected.model ? (
                     <Badge
-                      label={selected.model === DEMO_MODEL_ID ? `${selected.model} (stand-in, not Claude)` : selected.model}
+                      label={
+                        selected.model === DEMO_MODEL_ID
+                          ? `${selected.model} (stand-in, not Claude)`
+                          : selected.model
+                      }
                       tone={selected.model === DEMO_MODEL_ID ? 'warning' : 'neutral'}
                       glyph={selected.model === DEMO_MODEL_ID ? '⚑' : undefined}
                     />
@@ -261,29 +292,69 @@ function Workspace({ context }: { context: UnitContext }): ReactNode {
                     <P>Only the latest version can be revised or moved through review.</P>
                   </Banner>
                 ) : null}
-                <View style={{ flexDirection: twoColumns ? 'row' : 'column', gap: space[4], alignItems: 'flex-start' }}>
-                  <View style={{ flex: twoColumns ? 3 : undefined, width: twoColumns ? undefined : '100%', minWidth: 0 }}>
-                    {content.error ? (
-                      <ErrorState error={content.error} onRetry={content.reload} />
-                    ) : !content.data || !parsed ? (
-                      <Loading label="Loading the draft…" />
-                    ) : parsed.unit ? (
-                      <UnitPreview versionId={selected.id} unit={parsed.unit} jump={jump} />
-                    ) : (
-                      <Banner tone="danger" title="This draft cannot be previewed" testID="parse-failed">
-                        <P>The content does not parse as a unit. The problems are listed under Lint.</P>
-                      </Banner>
-                    )}
+                <View
+                  style={{
+                    flexDirection: twoColumns ? 'row' : 'column',
+                    gap: space[4],
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <View
+                    style={{
+                      flex: twoColumns ? 3 : undefined,
+                      width: twoColumns ? undefined : '100%',
+                      minWidth: 0,
+                      // The preview stays in view while you read the checks beside it.
+                      ...(twoColumns ? { alignSelf: 'stretch' as const } : {}),
+                    }}
+                  >
+                    <View
+                      style={
+                        twoColumns ? ({ position: 'sticky', top: space[3] } as object) : undefined
+                      }
+                    >
+                      {content.error ? (
+                        <ErrorState error={content.error} onRetry={content.reload} />
+                      ) : !content.data || !parsed ? (
+                        <Loading label="Loading the draft…" />
+                      ) : parsed.unit ? (
+                        <UnitPreview versionId={selected.id} unit={parsed.unit} jump={jump} />
+                      ) : (
+                        <Banner
+                          tone="danger"
+                          title="This draft cannot be previewed"
+                          testID="parse-failed"
+                        >
+                          <P>
+                            The content does not parse as a unit. The problems are listed under
+                            Lint.
+                          </P>
+                        </Banner>
+                      )}
+                    </View>
                   </View>
-                  <View style={{ flex: twoColumns ? 2 : undefined, width: twoColumns ? undefined : '100%', gap: space[4], minWidth: 0 }}>
-                    {lint ? <LintPanel lint={lint} unit={content.data?.content} onJump={onJump} /> : <Loading label="Checking…" />}
+                  <View
+                    style={{
+                      flex: twoColumns ? 2 : undefined,
+                      width: twoColumns ? undefined : '100%',
+                      gap: space[4],
+                      minWidth: 0,
+                    }}
+                  >
+                    {lint ? (
+                      <LintPanel lint={lint} unit={content.data?.content} onJump={onJump} />
+                    ) : (
+                      <Loading label="Checking…" />
+                    )}
                     <ReviseBox
                       key={`${latest?.id}`}
                       unit={parsed?.unit ?? null}
                       versionNo={selected.version}
                       busy={revise.busy || running}
                       disabledReason={reviseReason}
-                      onRevise={(instruction, sectionIds) => void revise.run(instruction, sectionIds)}
+                      onRevise={(instruction, sectionIds) =>
+                        void revise.run(instruction, sectionIds)
+                      }
                     />
                   </View>
                 </View>
@@ -311,10 +382,16 @@ export default function UnitWorkspaceScreen(): ReactNode {
   const { recheckAuth } = useRuntime();
   const catalog = useCatalog();
   const context = useLoad(() => api.units.get(unitId), [api, unitId]);
-  usePageTitle(context.data ? `Unit ${context.data.unit.unit_no}: ${context.data.unit.title}` : 'Unit');
+  usePageTitle(
+    context.data ? `Unit ${context.data.unit.unit_no}: ${context.data.unit.title}` : 'Unit',
+  );
 
   return (
-    <Async state={context} loadingLabel="Loading the unit…" onSignInAgain={() => void recheckAuth()}>
+    <Async
+      state={context}
+      loadingLabel="Loading the unit…"
+      onSignInAgain={() => void recheckAuth()}
+    >
       {(data) => (
         <Async state={catalog}>
           {(names) => {
@@ -326,8 +403,20 @@ export default function UnitWorkspaceScreen(): ReactNode {
                   subtitle={`Chapter ${data.chapter.number}: ${data.chapter.title}${data.unit.week_no ? ` · Week ${data.unit.week_no}` : ''} · ${schemeTitle}`}
                   crumbs={[
                     { label: 'Schemes', href: '/schemes' },
-                    { label: schemeTitle, href: { pathname: '/schemes/[schemeId]', params: { schemeId: data.scheme.id } } },
-                    { label: 'Chapters', href: { pathname: '/schemes/[schemeId]/chapters', params: { schemeId: data.scheme.id } } },
+                    {
+                      label: schemeTitle,
+                      href: {
+                        pathname: '/schemes/[schemeId]',
+                        params: { schemeId: data.scheme.id },
+                      },
+                    },
+                    {
+                      label: 'Chapters',
+                      href: {
+                        pathname: '/schemes/[schemeId]/chapters',
+                        params: { schemeId: data.scheme.id },
+                      },
+                    },
                     { label: `Unit ${data.unit.unit_no}` },
                   ]}
                   badges={
@@ -348,4 +437,3 @@ export default function UnitWorkspaceScreen(): ReactNode {
     </Async>
   );
 }
-

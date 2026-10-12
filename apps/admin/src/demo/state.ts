@@ -180,7 +180,8 @@ export function createDemoState(now: Date = new Date()): DemoState {
     level_code: 'P1',
     term: 1,
     status: 'approved',
-    source_note: 'NERDC Primary 1 Basic Science scheme of work, Term 1 (sample data for demo mode).',
+    source_note:
+      'NERDC Primary 1 Basic Science scheme of work, Term 1 (sample data for demo mode).',
     created_at: iso,
     weeks: p1BasicScienceTerm1.weeks.map((week) => ({ ...week, subtopics: [...week.subtopics] })),
   };
@@ -220,7 +221,10 @@ export function createDemoState(now: Date = new Date()): DemoState {
   });
 
   const report = lintUnit(goldenUnit2);
-  const toFlag = (issue: { code: string; message: string; path?: string }, severity: 'note' | 'concern') => ({
+  const toFlag = (
+    issue: { code: string; message: string; path?: string },
+    severity: 'note' | 'concern',
+  ) => ({
     code: issue.code,
     message: issue.message,
     severity,

@@ -2,9 +2,15 @@
 // Pure and role-aware. The database enforces the same rules (set_unit_version_status, publish_unit_version
 // and the guard trigger); this module only decides what to SHOW. There is deliberately no action that
 // skips a step: nothing publishes without submit, approve and an explicit publish.
-import { can, whyNot, type AdminRole, type Capability } from './roles';
+import { whyNot, type AdminRole, type Capability } from './roles';
 
-export const VERSION_STATUSES = ['draft', 'in_review', 'approved', 'published', 'superseded'] as const;
+export const VERSION_STATUSES = [
+  'draft',
+  'in_review',
+  'approved',
+  'published',
+  'superseded',
+] as const;
 export type VersionStatus = (typeof VERSION_STATUSES)[number];
 
 export type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
@@ -104,11 +110,6 @@ export function workflowActions(input: WorkflowInput): WorkflowAction[] {
       ...gate(role, 'version.publish', [{ ok: !lintBlocking, reason: lintReason }]),
     },
   ];
-}
-
-/** Revising or redrafting makes a NEW draft, so it is open to whoever may start jobs, whatever the status. */
-export function canStartDraftJob(role: AdminRole | null | undefined): boolean {
-  return can(role, 'job.start');
 }
 
 export function versionStatusStyle(status: string): StatusStyle {

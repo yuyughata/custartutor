@@ -50,7 +50,13 @@ export function UnitPreview({
         backgroundColor: colors.white,
       }}
     >
-      <UnitView key={`${versionId}-${tab}`} unit={unit} mode="admin" initialTab={tab} maxWidth={760} />
+      <UnitView
+        key={`${versionId}-${tab}`}
+        unit={unit}
+        mode="admin"
+        initialTab={tab}
+        maxWidth={760}
+      />
     </View>
   );
 }

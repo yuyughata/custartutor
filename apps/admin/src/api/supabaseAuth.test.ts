@@ -24,13 +24,19 @@ describe('email code', () => {
     const { supabase, auth } = setup();
     await auth.sendCode(' admin@example.com ');
     expect(supabase.authCalls).toEqual([
-      { method: 'signInWithOtp', args: { email: 'admin@example.com', options: { shouldCreateUser: false } } },
+      {
+        method: 'signInWithOtp',
+        args: { email: 'admin@example.com', options: { shouldCreateUser: false } },
+      },
     ]);
   });
 
   it('says so when the email is not registered', async () => {
     const { supabase, auth } = setup();
-    supabase.authState.errors.signInWithOtp = { message: 'Signups not allowed for otp', status: 422 };
+    supabase.authState.errors.signInWithOtp = {
+      message: 'Signups not allowed for otp',
+      status: 422,
+    };
     const error = await caught(auth.sendCode('stranger@example.com'));
     expect(error).toMatchObject({ code: 'no_such_user', kind: 'forbidden' });
     expect(error.message).toMatch(/not registered/);
@@ -50,8 +56,14 @@ describe('email code', () => {
 
   it('explains a wrong or expired code and rate limiting', async () => {
     const { supabase, auth } = setup();
-    supabase.authState.errors.verifyOtp = { message: 'Token has expired or is invalid', status: 403 };
-    expect(await caught(auth.verifyCode('a@b.c', '000000'))).toMatchObject({ code: 'wrong_code', kind: 'invalid' });
+    supabase.authState.errors.verifyOtp = {
+      message: 'Token has expired or is invalid',
+      status: 403,
+    };
+    expect(await caught(auth.verifyCode('a@b.c', '000000'))).toMatchObject({
+      code: 'wrong_code',
+      kind: 'invalid',
+    });
     supabase.authState.errors.signInWithOtp = {
       message: 'For security purposes, you can only request this after 49 seconds.',
       status: 429,
@@ -74,7 +86,11 @@ describe('where the sign-in has got to', () => {
       { id: 'old', factor_type: 'totp', status: 'unverified' },
       { id: 'f1', factor_type: 'totp', status: 'verified' },
     ];
-    expect(await auth.state()).toEqual({ step: 'mfa_challenge', email: 'admin@example.com', factorId: 'f1' });
+    expect(await auth.state()).toEqual({
+      step: 'mfa_challenge',
+      email: 'admin@example.com',
+      factorId: 'f1',
+    });
   });
 
   it('offers enrolment when there is no verified factor', async () => {
@@ -156,7 +172,10 @@ describe('authenticator', () => {
 
   it('explains a wrong authenticator code', async () => {
     const { supabase, auth } = setup();
-    supabase.authState.errors['mfa.challengeAndVerify'] = { message: 'Invalid TOTP code entered', status: 400 };
+    supabase.authState.errors['mfa.challengeAndVerify'] = {
+      message: 'Invalid TOTP code entered',
+      status: 400,
+    };
     const error = await caught(auth.verifyTotp('f1', '000000'));
     expect(error).toMatchObject({ code: 'wrong_totp', kind: 'invalid' });
     expect(error.message).toMatch(/change every 30 seconds/);

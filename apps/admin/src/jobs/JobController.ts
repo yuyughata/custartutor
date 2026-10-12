@@ -102,7 +102,10 @@ export class JobController {
     return controller;
   }
 
-  private async settle(controller: AbortController, work: () => Promise<JobRow>): Promise<JobRow | undefined> {
+  private async settle(
+    controller: AbortController,
+    work: () => Promise<JobRow>,
+  ): Promise<JobRow | undefined> {
     try {
       const final = await work();
       if (!controller.signal.aborted) {

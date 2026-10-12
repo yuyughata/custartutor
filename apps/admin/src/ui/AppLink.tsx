@@ -14,7 +14,13 @@ interface ClickLike {
 }
 
 function isPlainClick(event: ClickLike): boolean {
-  return !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && (event.button ?? 0) === 0;
+  return (
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey &&
+    (event.button ?? 0) === 0
+  );
 }
 
 /** A real link (an <a> on the web) that asks before leaving a screen with unsaved changes. */

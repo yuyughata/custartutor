@@ -118,14 +118,29 @@ function SourcePicker({
       ) : (
         <View style={{ gap: space[2] }}>
           <Row>
-            <Button label={picked ? 'Choose a different file' : 'Choose a file'} variant="secondary" onPress={() => void choose.run()} busy={choose.busy} disabled={disabled} />
+            <Button
+              label={picked ? 'Choose a different file' : 'Choose a file'}
+              variant="secondary"
+              onPress={() => void choose.run()}
+              busy={choose.busy}
+              disabled={disabled}
+            />
             {picked ? <P>{picked.document.name}</P> : null}
           </Row>
-          {choose.error ? <Banner tone="danger" title="Could not read the file"><P>{choose.error.message}</P></Banner> : null}
-          {picked?.problem ? <Banner tone="warning" title="That file cannot be used"><P>{picked.problem}</P></Banner> : null}
+          {choose.error ? (
+            <Banner tone="danger" title="Could not read the file">
+              <P>{choose.error.message}</P>
+            </Banner>
+          ) : null}
+          {picked?.problem ? (
+            <Banner tone="warning" title="That file cannot be used">
+              <P>{picked.problem}</P>
+            </Banner>
+          ) : null}
           {picked && !picked.problem && picked.document.kind === 'pdf' ? (
             <Small>
-              This PDF will be stored in the private upload bucket and read by the model page by page (text and images).
+              This PDF will be stored in the private upload bucket and read by the model page by
+              page (text and images).
             </Small>
           ) : null}
           {picked && !picked.problem && picked.text !== undefined ? (
@@ -160,7 +175,10 @@ function ResultView({
   if (!parsed.success) {
     return (
       <Banner tone="danger" title="The result could not be read">
-        <P>The job finished, but its result is not a scheme draft. Start again, and tell the developers if it keeps happening.</P>
+        <P>
+          The job finished, but its result is not a scheme draft. Start again, and tell the
+          developers if it keeps happening.
+        </P>
       </Banner>
     );
   }
@@ -171,8 +189,8 @@ function ResultView({
     <View style={{ gap: space[4] }}>
       <Banner tone="info" title="Check this draft before it is saved" testID="scheme-draft-banner">
         <P>
-          Nothing has been saved yet. Edit the table below to match the source, then choose “Save as draft”. A
-          reviewer or super admin approves it afterwards.
+          Nothing has been saved yet. Edit the table below to match the source, then choose “Save as
+          draft”. A reviewer or super admin approves it afterwards.
         </P>
       </Banner>
       <SchemeDraftEditor
@@ -191,11 +209,21 @@ function ResultView({
       {savedId ? (
         <Card tone="core">
           <P>
-            The draft is saved. <AppLink href={{ pathname: '/schemes/[schemeId]', params: { schemeId: savedId } }}>Open the saved scheme</AppLink>
+            The draft is saved.{' '}
+            <AppLink href={{ pathname: '/schemes/[schemeId]', params: { schemeId: savedId } }}>
+              Open the saved scheme
+            </AppLink>
             {approvedId ? (
               <>
                 {' · '}
-                <AppLink href={{ pathname: '/schemes/[schemeId]/chapters', params: { schemeId: approvedId } }}>Plan chapters</AppLink>
+                <AppLink
+                  href={{
+                    pathname: '/schemes/[schemeId]/chapters',
+                    params: { schemeId: approvedId },
+                  }}
+                >
+                  Plan chapters
+                </AppLink>
               </>
             ) : null}
           </P>
@@ -254,7 +282,8 @@ export default function NewSchemeScreen(): ReactNode {
       if (!built.source) return setFormProblem(built.problem ?? 'There is no text to read.');
       source = built.source;
     } else {
-      if (!picked || picked.problem) return setFormProblem(picked?.problem ?? 'Choose a file first.');
+      if (!picked || picked.problem)
+        return setFormProblem(picked?.problem ?? 'Choose a file first.');
       if (classifyDocument(picked.document.name, picked.document.mimeType) === 'pdf') {
         const data = await picked.document.read();
         const { path } = await api.schemes.uploadPdf({
@@ -306,8 +335,8 @@ export default function NewSchemeScreen(): ReactNode {
       {runtime.mode === 'demo' && !job.job ? (
         <Banner tone="warning" title="Demo: the stand-in model does not read your document">
           <P>
-            It returns prepared sample content for the subject, level and term you choose. Use Basic Science, Primary 1
-            and Term 2 or 3 to see a full sample scheme.
+            It returns prepared sample content for the subject, level and term you choose. Use Basic
+            Science, Primary 1 and Term 2 or 3 to see a full sample scheme.
           </P>
         </Banner>
       ) : null}
@@ -322,7 +351,10 @@ export default function NewSchemeScreen(): ReactNode {
                     label="Subject"
                     value={subjectId}
                     placeholder="Choose a subject"
-                    options={loaded.subjects.map((subject) => ({ value: subject.id, label: subject.name }))}
+                    options={loaded.subjects.map((subject) => ({
+                      value: subject.id,
+                      label: subject.name,
+                    }))}
                     onChange={setSubjectId}
                     disabled={busy}
                   />
@@ -333,7 +365,10 @@ export default function NewSchemeScreen(): ReactNode {
               <Select
                 label="Level"
                 value={levelCode}
-                options={LevelCode.options.map((code) => ({ value: code, label: `Primary ${code.slice(1)}` }))}
+                options={LevelCode.options.map((code) => ({
+                  value: code,
+                  label: `Primary ${code.slice(1)}`,
+                }))}
                 onChange={setLevelCode}
                 disabled={busy}
               />
@@ -392,7 +427,13 @@ export default function NewSchemeScreen(): ReactNode {
           />
           {job.job.status === 'succeeded' ? (
             <Async state={catalog}>
-              {(loaded) => <ResultView job={job.job ?? { result: null }} catalog={loaded} fallbackSubjectId={subjectId} />}
+              {(loaded) => (
+                <ResultView
+                  job={job.job ?? { result: null }}
+                  catalog={loaded}
+                  fallbackSubjectId={subjectId}
+                />
+              )}
             </Async>
           ) : null}
           {job.job.status === 'failed' || job.job.status === 'cancelled' ? (
@@ -402,7 +443,12 @@ export default function NewSchemeScreen(): ReactNode {
           ) : null}
           {job.job.status === 'succeeded' ? (
             <Row>
-              <Button label="Discard this draft and start again" variant="ghost" small onPress={startOver} />
+              <Button
+                label="Discard this draft and start again"
+                variant="ghost"
+                small
+                onPress={startOver}
+              />
             </Row>
           ) : null}
         </>

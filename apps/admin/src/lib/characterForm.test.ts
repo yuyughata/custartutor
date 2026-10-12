@@ -22,7 +22,13 @@ const zuri: CharacterRecord = {
 describe('character form', () => {
   it('round-trips a record without inventing anything', () => {
     const form = toForm(zuri);
-    expect(form).toMatchObject({ ageYears: '4', ageNote: 'almost 5', gender: 'male', voiceNotes: 'Speaks softly', relationshipNote: '' });
+    expect(form).toMatchObject({
+      ageYears: '4',
+      ageNote: 'almost 5',
+      gender: 'male',
+      voiceNotes: 'Speaks softly',
+      relationshipNote: '',
+    });
     expect(fromForm(zuri, form)).toEqual(zuri);
   });
 
@@ -63,7 +69,9 @@ describe('character form', () => {
     expect(validateForm(toForm(zuri))).toEqual({});
     expect(validateForm({ ...toForm(zuri), name: ' ' }).name).toBeDefined();
     for (const bad of ['1', '21', '4.5', 'five']) {
-      expect(validateForm({ ...toForm(zuri), ageYears: bad }).ageYears).toMatch(/whole number from 2 to 20/);
+      expect(validateForm({ ...toForm(zuri), ageYears: bad }).ageYears).toMatch(
+        /whole number from 2 to 20/,
+      );
     }
     expect(validateForm({ ...toForm(zuri), ageYears: '' })).toEqual({});
   });
@@ -72,6 +80,8 @@ describe('character form', () => {
     expect(formsEqual(toForm(zuri), toForm(zuri))).toBe(true);
     expect(formsEqual(toForm(zuri), { ...toForm(zuri), pronouns: 'they' })).toBe(false);
     expect(statedFacts(zuri)).toEqual(['age 4 (almost 5)', 'male', 'he/him']);
-    expect(statedFacts({ ...zuri, traits: { personality: ['shy'] } })).toEqual(['1 personality trait']);
+    expect(statedFacts({ ...zuri, traits: { personality: ['shy'] } })).toEqual([
+      '1 personality trait',
+    ]);
   });
 });

@@ -8,7 +8,7 @@ const UNIT_ID = '22222222-2222-4222-8222-222222222222';
 
 /** A scripted job API: every step() finishes one more step of `total`. */
 function scriptedApi(total: number, options: { failCreate?: Error; failStepAt?: number } = {}) {
-  let done: string[] = [];
+  const done: string[] = [];
   let status: JobRow['status'] = 'queued';
   const row = (): JobRow => ({
     id: JOB_ID,
@@ -65,7 +65,9 @@ describe('JobController', () => {
       onFinished: (job) => finished.push(job.status),
     });
     const seen: string[] = [];
-    controller.subscribe((state) => seen.push(`${state.driving ? 'driving' : 'idle'}:${state.job?.status ?? '-'}`));
+    controller.subscribe((state) =>
+      seen.push(`${state.driving ? 'driving' : 'idle'}:${state.job?.status ?? '-'}`),
+    );
 
     const final = await controller.start('unit_generate', { unit_id: UNIT_ID }, 'idem-12345');
 
@@ -135,7 +137,12 @@ describe('JobController', () => {
   });
 
   it('reports a failed create without a job', async () => {
-    const error = new AdminApiError('kill_switch', 'kill_switch', 'AI drafting is switched off.', 503);
+    const error = new AdminApiError(
+      'kill_switch',
+      'kill_switch',
+      'AI drafting is switched off.',
+      503,
+    );
     const api = scriptedApi(3, { failCreate: error });
     const controller = new JobController({ api, pollMs: 1, sleep: instant });
     expect(await controller.start('unit_generate', { unit_id: UNIT_ID })).toBeUndefined();

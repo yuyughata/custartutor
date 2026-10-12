@@ -55,21 +55,56 @@ function Tile({ label, value, note }: { label: string; value: string; note?: str
         gap: 2,
       }}
     >
-      <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.primaryDark }}>{value}</Text>
+      <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '800', color: colors.primaryDark }}>
+        {value}
+      </Text>
       <Text style={{ fontSize: 13, color: colors.textSoft }}>{label}</Text>
       {note ? <Text style={{ fontSize: 12, color: colors.subtle }}>{note}</Text> : null}
     </View>
   );
 }
 
-function bucketColumns<Row extends UsageBucket>(name: string, key: (row: Row) => string): Column<Row>[] {
+function bucketColumns<Row extends UsageBucket>(
+  name: string,
+  key: (row: Row) => string,
+): Column<Row>[] {
   return [
     { key: 'name', header: name, flex: 1.6, render: (row) => <P>{key(row)}</P> },
-    { key: 'calls', header: 'Calls', width: 80, align: 'right', render: (row) => <P>{row.calls}</P> },
-    { key: 'in', header: 'Input', width: 100, align: 'right', render: (row) => <P>{formatTokens(row.input_tokens)}</P> },
-    { key: 'out', header: 'Output', width: 100, align: 'right', render: (row) => <P>{formatTokens(row.output_tokens)}</P> },
-    { key: 'cr', header: 'Cache read', width: 110, align: 'right', render: (row) => <P>{formatTokens(row.cache_read_tokens)}</P> },
-    { key: 'cw', header: 'Cache write', width: 110, align: 'right', render: (row) => <P>{formatTokens(row.cache_creation_tokens)}</P> },
+    {
+      key: 'calls',
+      header: 'Calls',
+      width: 80,
+      align: 'right',
+      render: (row) => <P>{row.calls}</P>,
+    },
+    {
+      key: 'in',
+      header: 'Input',
+      width: 100,
+      align: 'right',
+      render: (row) => <P>{formatTokens(row.input_tokens)}</P>,
+    },
+    {
+      key: 'out',
+      header: 'Output',
+      width: 100,
+      align: 'right',
+      render: (row) => <P>{formatTokens(row.output_tokens)}</P>,
+    },
+    {
+      key: 'cr',
+      header: 'Cache read',
+      width: 110,
+      align: 'right',
+      render: (row) => <P>{formatTokens(row.cache_read_tokens)}</P>,
+    },
+    {
+      key: 'cw',
+      header: 'Cache write',
+      width: 110,
+      align: 'right',
+      render: (row) => <P>{formatTokens(row.cache_creation_tokens)}</P>,
+    },
     {
       key: 'cost',
       header: 'Est. cost',
@@ -106,7 +141,9 @@ function UsageTables({ summary }: { summary: UsageSummary }): ReactNode {
       <Section title="By kind of job">
         <DataTable
           label="Usage by kind"
-          columns={bucketColumns<UsageSummary['by_kind'][number]>('Kind', (row) => row.kind.replace(/_/g, ' '))}
+          columns={bucketColumns<UsageSummary['by_kind'][number]>('Kind', (row) =>
+            row.kind.replace(/_/g, ' '),
+          )}
           rows={summary.by_kind}
           rowKey={(row) => row.kind}
           minWidth={760}
@@ -133,7 +170,10 @@ function UsagePanel(): ReactNode {
             label="Period"
             hideLabel
             value={preset}
-            options={(Object.keys(RANGE_LABELS) as RangePreset[]).map((value) => ({ value, label: RANGE_LABELS[value] }))}
+            options={(Object.keys(RANGE_LABELS) as RangePreset[]).map((value) => ({
+              value,
+              label: RANGE_LABELS[value],
+            }))}
             onChange={(value) => setPreset(value as RangePreset)}
           />
         </View>
@@ -141,22 +181,35 @@ function UsagePanel(): ReactNode {
     >
       {runtime.mode === 'demo' ? (
         <Banner tone="warning" title="Demo usage">
-          <P>These are the calls the stand-in model reported during this demo session. They are not real Claude usage or cost.</P>
+          <P>
+            These are the calls the stand-in model reported during this demo session. They are not
+            real Claude usage or cost.
+          </P>
         </Banner>
       ) : null}
       <Async state={summary} loadingLabel="Loading usage…">
         {(data) => (
           <View style={{ gap: space[4] }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[3] }} testID="usage-totals">
+            <View
+              style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[3] }}
+              testID="usage-totals"
+            >
               <Tile label="Model calls" value={String(data.totals.calls)} />
               <Tile label="Input tokens" value={formatTokens(data.totals.input_tokens)} />
               <Tile label="Output tokens" value={formatTokens(data.totals.output_tokens)} />
               <Tile label="Cache read tokens" value={formatTokens(data.totals.cache_read_tokens)} />
-              <Tile label="Cache write tokens" value={formatTokens(data.totals.cache_creation_tokens)} />
+              <Tile
+                label="Cache write tokens"
+                value={formatTokens(data.totals.cache_creation_tokens)}
+              />
               <Tile
                 label="Estimated cost"
                 value={formatCost(data.totals.est_cost_usd, data.totals.unpriced_calls)}
-                note={data.totals.est_cost_usd === null ? 'No price entered for the model(s) used' : undefined}
+                note={
+                  data.totals.est_cost_usd === null
+                    ? 'No price entered for the model(s) used'
+                    : undefined
+                }
               />
             </View>
             {Object.keys(data.totals.jobs_by_status).length > 0 ? (
@@ -175,8 +228,8 @@ function UsagePanel(): ReactNode {
               <UsageTables summary={data} />
             )}
             <Small>
-              Cost shows “unknown” where no price has been entered for the model. Unknown is not zero: it means the
-              cost cannot be worked out.
+              Cost shows “unknown” where no price has been entered for the model. Unknown is not
+              zero: it means the cost cannot be worked out.
             </Small>
           </View>
         )}
@@ -187,15 +240,37 @@ function UsagePanel(): ReactNode {
 
 // --- settings --------------------------------------------------------------------------------------
 
-function SavedLine({ busy, dirty, savedAt }: { busy: boolean; dirty: boolean; savedAt: Date | null }): ReactNode {
+function SavedLine({
+  busy,
+  dirty,
+  savedAt,
+}: {
+  busy: boolean;
+  dirty: boolean;
+  savedAt: Date | null;
+}): ReactNode {
   return (
     <Small>
-      {busy ? 'Saving…' : dirty ? 'Unsaved changes.' : savedAt ? `Saved at ${formatDateTime(savedAt.toISOString())}.` : 'Up to date.'}
+      {busy
+        ? 'Saving…'
+        : dirty
+          ? 'Unsaved changes.'
+          : savedAt
+            ? `Saved at ${formatDateTime(savedAt.toISOString())}.`
+            : 'Up to date.'}
     </Small>
   );
 }
 
-function KillSwitch({ settings, editable, onSaved }: { settings: AiSettings; editable: boolean; onSaved: () => void }): ReactNode {
+function KillSwitch({
+  settings,
+  editable,
+  onSaved,
+}: {
+  settings: AiSettings;
+  editable: boolean;
+  onSaved: () => void;
+}): ReactNode {
   const api = useApi();
   const save = useAction(async (value: boolean) => {
     await api.settings.set('ai.kill_switch', value);
@@ -211,7 +286,9 @@ function KillSwitch({ settings, editable, onSaved }: { settings: AiSettings; edi
         hint="When on, no new Claude call is made by any job. Running jobs stop at their next step."
       />
       <P>
-        {settings.kill_switch ? 'The kill switch is ON: AI drafting is stopped.' : 'The kill switch is off: AI drafting is allowed.'}
+        {settings.kill_switch
+          ? 'The kill switch is ON: AI drafting is stopped.'
+          : 'The kill switch is off: AI drafting is allowed.'}
       </P>
       {save.error ? (
         <Banner tone="danger" title="The kill switch was not changed">
@@ -222,14 +299,23 @@ function KillSwitch({ settings, editable, onSaved }: { settings: AiSettings; edi
   );
 }
 
-function Budgets({ settings, editable, onSaved }: { settings: AiSettings; editable: boolean; onSaved: () => void }): ReactNode {
+function Budgets({
+  settings,
+  editable,
+  onSaved,
+}: {
+  settings: AiSettings;
+  editable: boolean;
+  onSaved: () => void;
+}): ReactNode {
   const api = useApi();
   const [perJob, setPerJob] = useState(capText(settings.budget.max_usd_per_job));
   const [daily, setDaily] = useState(capText(settings.budget.daily_usd_cap));
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const a = parseCap(perJob);
   const b = parseCap(daily);
-  const dirty = a.value !== settings.budget.max_usd_per_job || b.value !== settings.budget.daily_usd_cap;
+  const dirty =
+    a.value !== settings.budget.max_usd_per_job || b.value !== settings.budget.daily_usd_cap;
   useUnsavedChanges(dirty);
   const save = useAction(async () => {
     if (a.problem || b.problem) return;
@@ -239,25 +325,59 @@ function Budgets({ settings, editable, onSaved }: { settings: AiSettings; editab
   });
   return (
     <Section title="Spending caps" testID="budgets">
-      <Small>Caps in US dollars, checked before every step. Only calls with a price entered count towards a cap. Leave empty for no cap.</Small>
+      <Small>
+        Caps in US dollars, checked before every step. Only calls with a price entered count towards
+        a cap. Leave empty for no cap.
+      </Small>
       <Row align="flex-start" gap={space[4]}>
         <View style={{ width: 220 }}>
-          <TextField label="Cap per job (USD)" value={perJob} onChangeText={setPerJob} keyboardType="decimal-pad" error={a.problem ?? null} editable={editable} />
+          <TextField
+            label="Cap per job (USD)"
+            value={perJob}
+            onChangeText={setPerJob}
+            keyboardType="decimal-pad"
+            error={a.problem ?? null}
+            editable={editable}
+          />
         </View>
         <View style={{ width: 220 }}>
-          <TextField label="Daily cap (USD)" value={daily} onChangeText={setDaily} keyboardType="decimal-pad" error={b.problem ?? null} editable={editable} />
+          <TextField
+            label="Daily cap (USD)"
+            value={daily}
+            onChangeText={setDaily}
+            keyboardType="decimal-pad"
+            error={b.problem ?? null}
+            editable={editable}
+          />
         </View>
       </Row>
-      {save.error ? <Banner tone="danger" title="The caps were not saved"><P>{save.error.message}</P></Banner> : null}
+      {save.error ? (
+        <Banner tone="danger" title="The caps were not saved">
+          <P>{save.error.message}</P>
+        </Banner>
+      ) : null}
       <Row align="flex-start">
-        <Button label="Save caps" onPress={() => void save.run()} busy={save.busy} disabled={!editable || !dirty || Boolean(a.problem || b.problem)} />
+        <Button
+          label="Save caps"
+          onPress={() => void save.run()}
+          busy={save.busy}
+          disabled={!editable || !dirty || Boolean(a.problem || b.problem)}
+        />
         <SavedLine busy={save.busy} dirty={dirty} savedAt={savedAt} />
       </Row>
     </Section>
   );
 }
 
-function Models({ settings, editable, onSaved }: { settings: AiSettings; editable: boolean; onSaved: () => void }): ReactNode {
+function Models({
+  settings,
+  editable,
+  onSaved,
+}: {
+  settings: AiSettings;
+  editable: boolean;
+  onSaved: () => void;
+}): ReactNode {
   const api = useApi();
   const { runtime } = useRuntime();
   const [models, setModels] = useState(settings.models);
@@ -278,8 +398,11 @@ function Models({ settings, editable, onSaved }: { settings: AiSettings; editabl
   return (
     <Section title="Models" testID="models">
       <Small>
-        The model used for each kind of work. Authoring writes drafts, tutor talks with pupils, moderation checks messages.
-        {runtime.mode === 'demo' ? ' In demo mode the stand-in model answers whatever these say.' : ''}
+        The model used for each kind of work. Authoring writes drafts, tutor talks with pupils,
+        moderation checks messages.
+        {runtime.mode === 'demo'
+          ? ' In demo mode the stand-in model answers whatever these say.'
+          : ''}
       </Small>
       <Row align="flex-start" gap={space[4]}>
         {(['authoring', 'tutor', 'moderation'] as const).map((task) => (
@@ -295,16 +418,33 @@ function Models({ settings, editable, onSaved }: { settings: AiSettings; editabl
           </View>
         ))}
       </Row>
-      {save.error ? <Banner tone="danger" title="The models were not saved"><P>{save.error.message}</P></Banner> : null}
+      {save.error ? (
+        <Banner tone="danger" title="The models were not saved">
+          <P>{save.error.message}</P>
+        </Banner>
+      ) : null}
       <Row align="flex-start">
-        <Button label="Save models" onPress={() => void save.run()} busy={save.busy} disabled={!editable || !dirty || blank} />
+        <Button
+          label="Save models"
+          onPress={() => void save.run()}
+          busy={save.busy}
+          disabled={!editable || !dirty || blank}
+        />
         <SavedLine busy={save.busy} dirty={dirty} savedAt={savedAt} />
       </Row>
     </Section>
   );
 }
 
-function Prices({ settings, editable, onSaved }: { settings: AiSettings; editable: boolean; onSaved: () => void }): ReactNode {
+function Prices({
+  settings,
+  editable,
+  onSaved,
+}: {
+  settings: AiSettings;
+  editable: boolean;
+  onSaved: () => void;
+}): ReactNode {
   const api = useApi();
   const [rows, setRows] = useState<PriceRow[]>(rowsFromPrices(settings.prices));
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -336,18 +476,27 @@ function Prices({ settings, editable, onSaved }: { settings: AiSettings; editabl
           variant="secondary"
           small
           disabled={!editable}
-          onPress={() => setRows([...rows, emptyPriceRow(missing.find((model) => !rows.some((row) => row.model === model)) ?? '')])}
+          onPress={() =>
+            setRows([
+              ...rows,
+              emptyPriceRow(
+                missing.find((model) => !rows.some((row) => row.model === model)) ?? '',
+              ),
+            ])
+          }
         />
       }
     >
       <Banner tone="info" title="Prices are entered by the owner">
         <P>
-          US dollars per million tokens. Nothing is built in, so cost estimates are only as right as these numbers; a
-          model with no price shows its cost as “unknown”.
+          US dollars per million tokens. Nothing is built in, so cost estimates are only as right as
+          these numbers; a model with no price shows its cost as “unknown”.
         </P>
       </Banner>
       {missing.length > 0 ? (
-        <Small>No price yet for: {missing.join(', ')}. Their calls are counted but their cost is unknown.</Small>
+        <Small>
+          No price yet for: {missing.join(', ')}. Their calls are counted but their cost is unknown.
+        </Small>
       ) : null}
       {rows.length === 0 ? <Small>No prices entered.</Small> : null}
       {rows.map((row, index) => (
@@ -363,12 +512,20 @@ function Prices({ settings, editable, onSaved }: { settings: AiSettings; editabl
         >
           <Row align="flex-start" gap={space[3]}>
             <View style={{ minWidth: 220, flexGrow: 1 }}>
-              <TextField label={`Model name, price row ${index + 1}`} value={row.model} onChangeText={(model) => patch(index, { model })} editable={editable} mono />
+              <TextField
+                label={`Model name, price row ${index + 1}`}
+                visibleLabel="Model name"
+                value={row.model}
+                onChangeText={(model) => patch(index, { model })}
+                editable={editable}
+                mono
+              />
             </View>
             {fields.map((field) => (
               <View key={field.key} style={{ width: 120 }}>
                 <TextField
                   label={`${field.label} per million tokens, row ${index + 1}`}
+                  visibleLabel={`${field.label} $/M`}
                   value={row[field.key]}
                   onChangeText={(value) => patch(index, { [field.key]: value })}
                   keyboardType="decimal-pad"
@@ -392,9 +549,18 @@ function Prices({ settings, editable, onSaved }: { settings: AiSettings; editabl
           ) : null}
         </View>
       ))}
-      {save.error ? <Banner tone="danger" title="The prices were not saved"><P>{save.error.message}</P></Banner> : null}
+      {save.error ? (
+        <Banner tone="danger" title="The prices were not saved">
+          <P>{save.error.message}</P>
+        </Banner>
+      ) : null}
       <Row align="flex-start">
-        <Button label="Save prices" onPress={() => void save.run()} busy={save.busy} disabled={!editable || !dirty || !validation.ok} />
+        <Button
+          label="Save prices"
+          onPress={() => void save.run()}
+          busy={save.busy}
+          disabled={!editable || !dirty || !validation.ok}
+        />
         <SavedLine busy={save.busy} dirty={dirty} savedAt={savedAt} />
       </Row>
     </Section>
@@ -433,7 +599,10 @@ export default function UsageScreen(): ReactNode {
   const { role } = useSession();
   return (
     <View style={{ gap: space[4] }}>
-      <PageHeader title="Usage & settings" subtitle="What Claude calls cost, and the switches around them." />
+      <PageHeader
+        title="Usage & settings"
+        subtitle="What Claude calls cost, and the switches around them."
+      />
       {can(role, 'usage.view') ? (
         <UsagePanel />
       ) : (

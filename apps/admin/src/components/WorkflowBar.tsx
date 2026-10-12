@@ -33,12 +33,23 @@ function PackInfo({ pack }: { pack: PackResult }): ReactNode {
   if (pack.demo) {
     return (
       <Banner tone="warning" title="Demo: recorded only" testID="pack-demo">
-        <P>No lesson pack was built and nothing reached any learner. In live mode this step builds the pack and shows its hash.</P>
+        <P>
+          No lesson pack was built and nothing reached any learner. In live mode this step builds
+          the pack and shows its hash.
+        </P>
       </Banner>
     );
   }
   return (
-    <Banner tone="success" title={pack.already_built ? 'Published. The pack was already built.' : 'Published and the pack is built'} testID="pack-built">
+    <Banner
+      tone="success"
+      title={
+        pack.already_built
+          ? 'Published. The pack was already built.'
+          : 'Published and the pack is built'
+      }
+      testID="pack-built"
+    >
       <Small>Pack hash (SHA-256)</Small>
       <Mono>{pack.content_hash}</Mono>
       <Small>
@@ -69,7 +80,8 @@ export function WorkflowBar({
   const actions = workflowActions({ status: version.status, role, lintBlocking, isLatest });
 
   const publication = useLoad(
-    () => (version.status === 'published' ? api.units.publication(version.id) : Promise.resolve(null)),
+    () =>
+      version.status === 'published' ? api.units.publication(version.id) : Promise.resolve(null),
     [api, version.id, version.status],
   );
 
@@ -116,11 +128,14 @@ export function WorkflowBar({
         <VersionStatusBadge status={version.status} />
       </View>
       <Small>
-        Draft → In review → Approved → Published. Claude never moves a version forward: each step is a person pressing
-        a button, and publishing needs an approved version.
+        Draft → In review → Approved → Published. Claude never moves a version forward: each step is
+        a person pressing a button, and publishing needs an approved version.
       </Small>
       {!isLatest && ['draft', 'in_review', 'approved'].includes(version.status) ? (
-        <Small>This is not the latest version, so it cannot move through the workflow. Select the latest version.</Small>
+        <Small>
+          This is not the latest version, so it cannot move through the workflow. Select the latest
+          version.
+        </Small>
       ) : null}
 
       {move.error ? (
@@ -134,7 +149,9 @@ export function WorkflowBar({
         </Banner>
       ) : null}
 
-      <View style={{ flexDirection: 'row', gap: space[4], flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <View
+        style={{ flexDirection: 'row', gap: space[4], flexWrap: 'wrap', alignItems: 'flex-start' }}
+      >
         {actions.map((action) => (
           <Button
             key={action.id}
@@ -149,7 +166,9 @@ export function WorkflowBar({
             }}
           />
         ))}
-        {actions.length === 0 && version.status !== 'published' ? <Small>No workflow step is available for this version.</Small> : null}
+        {actions.length === 0 && version.status !== 'published' ? (
+          <Small>No workflow step is available for this version.</Small>
+        ) : null}
       </View>
 
       {version.status === 'published' ? (
@@ -158,14 +177,16 @@ export function WorkflowBar({
             <>
               <P>
                 Published {formatDateTime(publication.data.published_at)}
-                {publication.data.is_current ? ' and current.' : ' (a newer version has replaced it).'}
+                {publication.data.is_current
+                  ? ' and current.'
+                  : ' (a newer version has replaced it).'}
               </P>
               {publication.data.content_hash ? (
                 <View style={{ gap: 2 }}>
                   <Small>Pack hash (SHA-256)</Small>
                   <Mono>{publication.data.content_hash}</Mono>
                 </View>
-              ) : (
+              ) : published.phase === 'published' ? null : (
                 <Banner tone="warning" title="The lesson pack is not built yet">
                   <P>Learners cannot download this version until its pack is built.</P>
                   {retryPack.error || buildExisting.error ? (
@@ -192,11 +213,20 @@ export function WorkflowBar({
         <View style={{ gap: space[2] }} testID="publish-result">
           {published.pack ? <PackInfo pack={published.pack} /> : null}
           {published.packError ? (
-            <Banner tone="warning" title="Published, but the pack was not built" testID="pack-error">
+            <Banner
+              tone="warning"
+              title="Published, but the pack was not built"
+              testID="pack-error"
+            >
               <P>{published.packError.message}</P>
               <P>The version is published. Learners cannot download it until the pack is built.</P>
               {retryPack.error ? <P>{retryPack.error.message}</P> : null}
-              <Button label="Build the pack again" small onPress={() => void retryPack.run()} busy={retryPack.busy} />
+              <Button
+                label="Build the pack again"
+                small
+                onPress={() => void retryPack.run()}
+                busy={retryPack.busy}
+              />
             </Banner>
           ) : null}
         </View>
@@ -211,9 +241,18 @@ export function WorkflowBar({
         onCancel={() => setConfirmPublish(false)}
       >
         <View style={{ gap: space[2] }}>
-          <P>This version was approved by a person. Publishing makes it the version learners’ devices download.</P>
-          <P>Two steps follow: the version is published, then its lesson pack is built. If the pack step fails, the version stays published and you can build the pack again.</P>
-          <P>Publishing cannot be undone here. To replace it, approve and publish a newer version.{modeNote}</P>
+          <P>
+            This version was approved by a person. Publishing makes it the version learners’ devices
+            download.
+          </P>
+          <P>
+            Two steps follow: the version is published, then its lesson pack is built. If the pack
+            step fails, the version stays published and you can build the pack again.
+          </P>
+          <P>
+            Publishing cannot be undone here. To replace it, approve and publish a newer version.
+            {modeNote}
+          </P>
         </View>
       </ConfirmDialog>
     </Section>

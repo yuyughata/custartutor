@@ -6,10 +6,19 @@ import { AdminApiError, fromPostgrest, toAdminError } from './errors';
 import { AdminUserRow, parseResponse } from './schemas';
 import type { AdminAuth, AuthState, TotpEnrolment } from './types';
 
-function authError(error: { message?: string; code?: string; status?: number }, fallback: string): AdminApiError {
+function authError(
+  error: { message?: string; code?: string; status?: number },
+  fallback: string,
+): AdminApiError {
   const message = error.message ?? '';
   if (/invalid|expired|incorrect|token/i.test(message) && /otp|token|code/i.test(message)) {
-    return new AdminApiError('invalid', 'wrong_code', 'That code is not right, or it has expired. Check it and try again.', error.status, error);
+    return new AdminApiError(
+      'invalid',
+      'wrong_code',
+      'That code is not right, or it has expired. Check it and try again.',
+      error.status,
+      error,
+    );
   }
   if (/signups? not allowed|user not found/i.test(message)) {
     return new AdminApiError(
@@ -20,7 +29,10 @@ function authError(error: { message?: string; code?: string; status?: number }, 
       error,
     );
   }
-  if (/rate limit|too many|only request this (?:after|once)/i.test(message) || error.status === 429) {
+  if (
+    /rate limit|too many|only request this (?:after|once)/i.test(message) ||
+    error.status === 429
+  ) {
     return new AdminApiError(
       'unknown',
       'rate_limited',
@@ -30,7 +42,13 @@ function authError(error: { message?: string; code?: string; status?: number }, 
     );
   }
   if (/failed to fetch|network/i.test(message)) return toAdminError(new Error(message));
-  return new AdminApiError('unknown', error.code ?? 'auth_error', `${fallback} ${message}`.trim(), error.status, error);
+  return new AdminApiError(
+    'unknown',
+    error.code ?? 'auth_error',
+    `${fallback} ${message}`.trim(),
+    error.status,
+    error,
+  );
 }
 
 export function createSupabaseAuth(supabase: SupabaseClient): AdminAuth {

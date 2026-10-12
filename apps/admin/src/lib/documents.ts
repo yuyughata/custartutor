@@ -1,6 +1,6 @@
 // Deciding what to do with a file the person picked for a scheme: a PDF is uploaded and Claude reads it
 // natively; a DOCX is turned into text in the browser; plain text is used as it is. Pure, so it is tested.
-import { SchemeSource } from '@custar/authoring-core';
+import type { SchemeSource } from '@custar/authoring-core';
 
 export type DocumentKind = 'pdf' | 'docx' | 'text' | 'unsupported';
 
@@ -28,7 +28,8 @@ export function unsupportedMessage(name: string): string {
 
 export function sizeProblem(kind: DocumentKind, bytes: number): string | null {
   if (bytes === 0) return 'That file is empty.';
-  if (kind === 'pdf' && bytes > MAX_UPLOAD_BYTES) return 'That PDF is larger than 20 MB. Split it or remove pages.';
+  if (kind === 'pdf' && bytes > MAX_UPLOAD_BYTES)
+    return 'That PDF is larger than 20 MB. Split it or remove pages.';
   if (kind !== 'pdf' && bytes > MAX_UPLOAD_BYTES) return 'That file is larger than 20 MB.';
   return null;
 }
@@ -41,7 +42,8 @@ export interface TextSourceResult {
 /** Text typed, pasted or converted from a DOCX, as a `text` source of the job. */
 export function textSource(text: string, filename: string): TextSourceResult {
   const clean = text.replace(/\r\n/g, '\n').trim();
-  if (clean === '') return { problem: 'There is no text to read. Paste the scheme of work or choose a file.' };
+  if (clean === '')
+    return { problem: 'There is no text to read. Paste the scheme of work or choose a file.' };
   if (clean.length > MAX_SOURCE_CHARS) {
     return {
       problem: `That text is ${clean.length.toLocaleString('en-GB')} characters long; the limit is ${MAX_SOURCE_CHARS.toLocaleString('en-GB')}. Use only the pages for this term.`,

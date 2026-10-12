@@ -2,7 +2,13 @@
 // table in docs/m2-plan.md. This is for HIDING and DISABLING buttons only: the database decides, and every
 // screen still handles a server refusal gracefully.
 
-export const ADMIN_ROLES = ['super_admin', 'content_editor', 'reviewer', 'support', 'analyst'] as const;
+export const ADMIN_ROLES = [
+  'super_admin',
+  'content_editor',
+  'reviewer',
+  'support',
+  'analyst',
+] as const;
 export type AdminRole = (typeof ADMIN_ROLES)[number];
 
 export function isAdminRole(value: unknown): value is AdminRole {
@@ -97,4 +103,23 @@ export function visibleNav(role: AdminRole | null | undefined): NavItem[] {
     if (item.id === 'usage') return can(role, 'usage.view') || can(role, 'settings.view');
     return can(role, item.requires);
   });
+}
+
+const CONTENT_ROUTES = ['/schemes', '/units', '/jobs', '/characters'];
+
+/**
+ * Whether a role may open a page at all. Home and the demo-only preview are open to every signed-in role; the
+ * content pages need content access and the usage page needs usage or settings access. The server has the
+ * final say; this only keeps a role from landing on a page it cannot use.
+ */
+export function canOpenRoute(role: AdminRole | null | undefined, pathname: string): boolean {
+  if (role == null) return false;
+  if (pathname === '/' || pathname === '' || pathname.startsWith('/preview')) return true;
+  if (pathname === '/usage' || pathname.startsWith('/usage/')) {
+    return can(role, 'usage.view') || can(role, 'settings.view');
+  }
+  if (CONTENT_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
+    return can(role, 'content.view');
+  }
+  return true;
 }

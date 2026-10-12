@@ -51,14 +51,24 @@ export function PageHeader({
         </View>
       ) : null}
       <View
-        style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space[4], flexWrap: 'wrap' }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: space[4],
+          flexWrap: 'wrap',
+        }}
       >
         <View style={{ flexShrink: 1, gap: space[1], minWidth: 240 }}>
           <H1>{title}</H1>
           {subtitle ? <P style={{ color: colors.subtle }}>{subtitle}</P> : null}
-          {badges ? <View style={{ flexDirection: 'row', gap: space[2], flexWrap: 'wrap' }}>{badges}</View> : null}
+          {badges ? (
+            <View style={{ flexDirection: 'row', gap: space[2], flexWrap: 'wrap' }}>{badges}</View>
+          ) : null}
         </View>
-        {actions ? <View style={{ flexDirection: 'row', gap: space[3], flexWrap: 'wrap' }}>{actions}</View> : null}
+        {actions ? (
+          <View style={{ flexDirection: 'row', gap: space[3], flexWrap: 'wrap' }}>{actions}</View>
+        ) : null}
       </View>
     </View>
   );

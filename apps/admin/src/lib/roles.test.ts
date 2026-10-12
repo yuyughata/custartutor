@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ADMIN_ROLES,
+  canOpenRoute,
   CAPABILITIES,
   can,
   isAdminRole,
@@ -12,7 +13,13 @@ import {
 
 describe('role matrix', () => {
   it('knows the five roles', () => {
-    expect(ADMIN_ROLES).toEqual(['super_admin', 'content_editor', 'reviewer', 'support', 'analyst']);
+    expect(ADMIN_ROLES).toEqual([
+      'super_admin',
+      'content_editor',
+      'reviewer',
+      'support',
+      'analyst',
+    ]);
     expect(isAdminRole('reviewer')).toBe(true);
     expect(isAdminRole('owner')).toBe(false);
     expect(isAdminRole(undefined)).toBe(false);
@@ -73,5 +80,40 @@ describe('role matrix', () => {
     expect(ids('analyst')).toEqual(['usage']);
     expect(ids('support')).toEqual([]);
     expect(ids(null)).toEqual([]);
+  });
+});
+
+describe('canOpenRoute', () => {
+  it('opens home and the preview for every signed-in role', () => {
+    for (const role of ADMIN_ROLES) {
+      expect(canOpenRoute(role, '/')).toBe(true);
+      expect(canOpenRoute(role, '/preview/golden-unit-2')).toBe(true);
+    }
+    expect(canOpenRoute(null, '/')).toBe(false);
+  });
+
+  it('keeps content pages for content staff', () => {
+    for (const path of [
+      '/schemes',
+      '/schemes/new',
+      '/schemes/abc/chapters',
+      '/units/abc',
+      '/jobs/abc',
+      '/characters',
+    ]) {
+      expect(canOpenRoute('reviewer', path)).toBe(true);
+      expect(canOpenRoute('analyst', path)).toBe(false);
+      expect(canOpenRoute('support', path)).toBe(false);
+    }
+  });
+
+  it('opens usage for analysts and settings readers', () => {
+    expect(canOpenRoute('analyst', '/usage')).toBe(true);
+    expect(canOpenRoute('reviewer', '/usage')).toBe(true);
+    expect(canOpenRoute('support', '/usage')).toBe(false);
+  });
+
+  it('does not mistake a longer name for a content route', () => {
+    expect(canOpenRoute('support', '/schemes-archive')).toBe(true);
   });
 });

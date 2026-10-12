@@ -40,10 +40,14 @@ describe('step names', () => {
   });
 
   it('uses the engine step names exactly, per job kind', () => {
-    expect(stepLabel('extract', 'scheme_ingest')).toBe('Reading the document and listing the weeks');
+    expect(stepLabel('extract', 'scheme_ingest')).toBe(
+      'Reading the document and listing the weeks',
+    );
     expect(stepLabel('check', 'scheme_ingest')).toBe('Checking the weeks for gaps and odd entries');
     expect(stepLabel('group', 'chapter_plan')).toBe('Grouping the teaching weeks into chapters');
-    expect(stepLabel('title', 'chapter_plan')).toBe('Naming the chapters and units, proposing themes');
+    expect(stepLabel('title', 'chapter_plan')).toBe(
+      'Naming the chapters and units, proposing themes',
+    );
     expect(stepLabel('patch', 'unit_revise')).toBe('Working out the changes');
     expect(stepLabel('review', 'unit_revise')).toBe('Advisory review of the change');
     expect(stepLabel('review', 'unit_generate')).toBe('Advisory review');
@@ -75,8 +79,14 @@ describe('labels', () => {
       currentLabel: 'Writing "Concept 1"',
     });
     expect(summarizeProgress(job()).fraction).toBeCloseTo(2 / 9);
-    expect(summarizeProgress(job({ status: 'succeeded', progress: { done: ['a'], next: null, total: 1 } })).fraction).toBe(1);
-    expect(summarizeProgress(job({ progress: { done: [], next: null, total: 0 } })).fraction).toBe(0);
+    expect(
+      summarizeProgress(
+        job({ status: 'succeeded', progress: { done: ['a'], next: null, total: 1 } }),
+      ).fraction,
+    ).toBe(1);
+    expect(summarizeProgress(job({ progress: { done: [], next: null, total: 0 } })).fraction).toBe(
+      0,
+    );
     expect(jobHeadline(job())).toBe('Draft a unit · 2 of 9 steps');
     expect(jobHeadline(job({ status: 'queued' }))).toBe('Draft a unit');
   });
@@ -118,17 +128,24 @@ describe('explainJobError', () => {
   });
 
   it('uses the server message for an unknown code', () => {
-    const out = explainJobError({ code: 'weird', message: 'Something odd happened' }, { status: 'failed', attempts: 0 });
+    const out = explainJobError(
+      { code: 'weird', message: 'Something odd happened' },
+      { status: 'failed', attempts: 0 },
+    );
     expect(out?.title).toBe('Something odd happened');
     expect(out?.detail).toBeUndefined();
   });
 
   it('explains switch and budget stops', () => {
-    expect(explainJobError({ code: 'kill_switch', message: 'off' }, { status: 'failed', attempts: 0 })?.title).toBe(
-      'AI drafting is switched off.',
-    );
-    expect(explainJobError({ code: 'budget_exceeded', message: 'cap' }, { status: 'failed', attempts: 0 })?.hint).toMatch(
-      /raise the cap/,
-    );
+    expect(
+      explainJobError({ code: 'kill_switch', message: 'off' }, { status: 'failed', attempts: 0 })
+        ?.title,
+    ).toBe('AI drafting is switched off.');
+    expect(
+      explainJobError(
+        { code: 'budget_exceeded', message: 'cap' },
+        { status: 'failed', attempts: 0 },
+      )?.hint,
+    ).toMatch(/raise the cap/);
   });
 });

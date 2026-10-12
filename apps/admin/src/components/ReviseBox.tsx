@@ -32,8 +32,9 @@ export function ReviseBox({
   return (
     <Section title="Revise with Claude" testID="revise-box">
       <Small>
-        Describe what to change in version {versionNo}. Claude writes a NEW draft version with the change; this version
-        stays as it is, and the new one has to be reviewed and approved like any other.
+        Describe what to change in version {versionNo}. Claude writes a NEW draft version with the
+        change; this version stays as it is, and the new one has to be reviewed and approved like
+        any other.
       </Small>
       <TextField
         label="What should change?"
@@ -54,8 +55,17 @@ export function ReviseBox({
               setLimiting(!limiting);
             }}
           >
-            <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13, textDecorationLine: 'underline' }}>
-              {limiting ? 'Let Claude decide which sections change' : 'Limit the change to specific sections (optional)'}
+            <Text
+              style={{
+                color: colors.primary,
+                fontWeight: '700',
+                fontSize: 13,
+                textDecorationLine: 'underline',
+              }}
+            >
+              {limiting
+                ? 'Let Claude decide which sections change'
+                : 'Limit the change to specific sections (optional)'}
             </Text>
           </Pressable>
           {limiting ? (
@@ -69,7 +79,11 @@ export function ReviseBox({
                     accessibilityState={{ checked: on, disabled: busy }}
                     accessibilityLabel={`Limit to section ${section.heading}`}
                     disabled={busy}
-                    onPress={() => setPicked(on ? picked.filter((id) => id !== section.id) : [...picked, section.id])}
+                    onPress={() =>
+                      setPicked(
+                        on ? picked.filter((id) => id !== section.id) : [...picked, section.id],
+                      )
+                    }
                     style={{
                       minHeight: MIN_TARGET - 8,
                       justifyContent: 'center',
@@ -80,7 +94,9 @@ export function ReviseBox({
                       backgroundColor: on ? colors.primaryTint : colors.white,
                     }}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: on ? '700' : '400', color: colors.text }}>
+                    <Text
+                      style={{ fontSize: 13, fontWeight: on ? '700' : '400', color: colors.text }}
+                    >
                       {on ? '✓ ' : ''}
                       {section.heading}
                     </Text>

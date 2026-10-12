@@ -11,7 +11,10 @@ export const RANGE_LABELS: Record<RangePreset, string> = {
 };
 
 /** UTC day boundaries; `to` is exclusive (the start of tomorrow), so today's calls are included. */
-export function usageRange(preset: RangePreset, now: Date = new Date()): { from: string; to: string } {
+export function usageRange(
+  preset: RangePreset,
+  now: Date = new Date(),
+): { from: string; to: string } {
   const dayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   const to = new Date(dayStart + 86_400_000);
   let from: Date;
@@ -66,9 +69,12 @@ export function validatePriceRows(rows: readonly PriceRow[]): PriceProblems {
     if (model === '') problems[index] = 'Enter the model name.';
     else if (seen.has(model)) problems[index] = `${model} is listed twice.`;
     else if (
-      [row.input, row.output, row.cacheRead, row.cacheWrite].some((value) => parseAmount(value) === null)
+      [row.input, row.output, row.cacheRead, row.cacheWrite].some(
+        (value) => parseAmount(value) === null,
+      )
     ) {
-      problems[index] = 'Enter all four prices as numbers of 0 or more (US dollars per million tokens).';
+      problems[index] =
+        'Enter all four prices as numbers of 0 or more (US dollars per million tokens).';
     }
     seen.add(model);
   });
@@ -91,7 +97,9 @@ export function pricesFromRows(rows: readonly PriceRow[]): AiSettings['prices'] 
 
 export function pricesEqual(rows: readonly PriceRow[], prices: AiSettings['prices']): boolean {
   const a = rowsFromPrices(prices);
-  return JSON.stringify(a) === JSON.stringify(rows.map((row) => ({ ...row, model: row.model.trim() })));
+  return (
+    JSON.stringify(a) === JSON.stringify(rows.map((row) => ({ ...row, model: row.model.trim() })))
+  );
 }
 
 /** Models in use that have no price entered: their cost is shown as "unknown". */
@@ -109,7 +117,8 @@ export function parseCap(text: string): CapParse {
   const trimmed = text.trim();
   if (trimmed === '') return { value: null };
   const value = Number(trimmed);
-  if (!Number.isFinite(value) || value <= 0) return { value: null, problem: 'Enter an amount above 0, or leave it empty for no cap.' };
+  if (!Number.isFinite(value) || value <= 0)
+    return { value: null, problem: 'Enter an amount above 0, or leave it empty for no cap.' };
   return { value };
 }
 

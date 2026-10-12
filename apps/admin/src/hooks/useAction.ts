@@ -14,7 +14,9 @@ export interface ActionState<A extends unknown[], R> {
  * only claim success after `run` resolved with a value: that is the "nothing is saved until the RPC
  * resolved" rule.
  */
-export function useAction<A extends unknown[], R>(action: (...args: A) => Promise<R>): ActionState<A, R> {
+export function useAction<A extends unknown[], R>(
+  action: (...args: A) => Promise<R>,
+): ActionState<A, R> {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AdminApiError | null>(null);
   const alive = useRef(true);

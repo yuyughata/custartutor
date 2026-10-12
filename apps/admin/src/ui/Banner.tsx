@@ -55,8 +55,14 @@ export function Banner({
         {GLYPH[tone]}
       </Text>
       <View style={{ flex: 1, gap: space[1] }}>
-        <Text style={{ color: palette.text, fontSize: 15, lineHeight: 22, fontWeight: '700' }}>{title}</Text>
-        {typeof children === 'string' ? <P style={{ color: palette.text }}>{children}</P> : children}
+        <Text style={{ color: palette.text, fontSize: 15, lineHeight: 22, fontWeight: '700' }}>
+          {title}
+        </Text>
+        {typeof children === 'string' ? (
+          <P style={{ color: palette.text }}>{children}</P>
+        ) : (
+          children
+        )}
         {action}
       </View>
     </View>

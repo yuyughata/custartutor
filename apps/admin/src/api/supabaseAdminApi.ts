@@ -5,7 +5,7 @@
 // supabase-js client that records calls (supabaseAdminApi.test.ts). The RPC names and argument names follow
 // docs/m2-plan.md and supabase/migrations/README.md; reconcile them with the final migrations.
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { z } from 'zod';
+import type { z } from 'zod';
 import type { AiJobResponse, JobKind, JobRow } from '@custar/authoring-core';
 import {
   AdminApiError,
@@ -70,7 +70,8 @@ const JOB_COLUMNS =
 const JOB_SUMMARY_COLUMNS = JOB_COLUMNS.replace(',result', '');
 
 const SCHEME_COLUMNS = 'id,subject_id,level_code,term,status,source_note,created_at';
-const UNIT_COLUMNS = 'id,chapter_id,unit_no,week_no,kind,title,objective,stage,periods,status,deleted_at';
+const UNIT_COLUMNS =
+  'id,chapter_id,unit_no,week_no,kind,title,objective,stage,periods,status,deleted_at';
 const VERSION_COLUMNS =
   'id,unit_id,version,schema_version,status,generated_by,model,prompt_version,lint_report,base_version_id,created_by,created_at';
 const CHARACTER_COLUMNS = 'id,slug,name,traits,voice,active';
@@ -151,7 +152,12 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
   async function accessToken(): Promise<string> {
     const { data, error } = await supabase.auth.getSession();
     if (error || !data.session) {
-      throw new AdminApiError('unauthenticated', 'not_authenticated', 'Your session has ended. Please sign in again.', 401);
+      throw new AdminApiError(
+        'unauthenticated',
+        'not_authenticated',
+        'Your session has ended. Please sign in again.',
+        401,
+      );
     }
     return data.session.access_token;
   }
@@ -206,7 +212,10 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
     async step(jobId: string): Promise<AiJobResponse> {
       const json = await callFunction('ai-job', { action: 'step', job_id: jobId });
       const parsed = parseResponse(AiJobResponseSchema, json, 'the job step');
-      return { job: parsed.job as JobRow, ...(parsed.busy !== undefined ? { busy: parsed.busy } : {}) };
+      return {
+        job: parsed.job as JobRow,
+        ...(parsed.busy !== undefined ? { busy: parsed.busy } : {}),
+      };
     },
     get: getJob,
     async cancel(jobId: string) {
@@ -331,7 +340,10 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
           reviewQueue('in_review'),
           reviewQueue('approved'),
           jobs.list({ status: ['queued', 'running', 'failed'], limit: 20 }),
-          supabase.from('units').select('id', { count: 'exact', head: true }).is('deleted_at', null),
+          supabase
+            .from('units')
+            .select('id', { count: 'exact', head: true })
+            .is('deleted_at', null),
         ]);
         if (unitCount.error) throw fromPostgrest(unitCount.error, 'Could not count units.');
         return {
@@ -341,8 +353,9 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
             units: unitCount.count ?? 0,
             versionsInReview: inReview.length,
             versionsReadyToPublish: approved.length,
-            jobsRunning: activeJobs.filter((job) => job.status === 'running' || job.status === 'queued')
-              .length,
+            jobsRunning: activeJobs.filter(
+              (job) => job.status === 'running' || job.status === 'queued',
+            ).length,
             jobsFailed: activeJobs.filter((job) => job.status === 'failed').length,
           },
           schemesAwaitingApproval: schemes.filter((scheme) => scheme.status === 'draft'),
@@ -362,7 +375,13 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
           .eq('id', schemeId)
           .maybeSingle();
         const row = unwrap(result as QueryResult<unknown>, 'Could not read the scheme.');
-        if (!row) throw new AdminApiError('not_found', 'scheme_not_found', 'That scheme no longer exists.', 404);
+        if (!row)
+          throw new AdminApiError(
+            'not_found',
+            'scheme_not_found',
+            'That scheme no longer exists.',
+            404,
+          );
         const parsed = parseResponse(SchemeDetailRow, row, 'the scheme');
         return {
           ...toSchemeSummary(parsed),
@@ -379,7 +398,12 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
       async uploadPdf(file) {
         const { data, error } = await supabase.auth.getSession();
         if (error || !data.session) {
-          throw new AdminApiError('unauthenticated', 'not_authenticated', 'Your session has ended. Please sign in again.', 401);
+          throw new AdminApiError(
+            'unauthenticated',
+            'not_authenticated',
+            'Your session has ended. Please sign in again.',
+            401,
+          );
         }
         const path = `${data.session.user.id}/${randomId()}-${safeFileName(file.name)}`;
         const upload = await supabase.storage
@@ -388,7 +412,13 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
         if (upload.error) {
           const message = upload.error.message ?? '';
           if (/exceed|too large|maximum|payload/i.test(message)) {
-            throw new AdminApiError('invalid', 'file_too_large', 'That file is too large. The limit is 20 MB.', 413, upload.error);
+            throw new AdminApiError(
+              'invalid',
+              'file_too_large',
+              'That file is too large. The limit is 20 MB.',
+              413,
+              upload.error,
+            );
           }
           throw fromPostgrest({ message }, 'Could not upload the file.');
         }
@@ -437,7 +467,8 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
           .eq('id', unitId)
           .maybeSingle();
         const row = unwrap(result as QueryResult<unknown>, 'Could not read the unit.');
-        if (!row) throw new AdminApiError('not_found', 'not_found', 'That unit no longer exists.', 404);
+        if (!row)
+          throw new AdminApiError('not_found', 'not_found', 'That unit no longer exists.', 404);
         const parsed = parseResponse(UnitContextRow, row, 'the unit');
         return {
           unit: {
@@ -485,7 +516,13 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
           .eq('id', versionId)
           .maybeSingle();
         const row = unwrap(result as QueryResult<unknown>, 'Could not read the version.');
-        if (!row) throw new AdminApiError('not_found', 'unit_version_not_found', 'That version no longer exists.', 404);
+        if (!row)
+          throw new AdminApiError(
+            'not_found',
+            'unit_version_not_found',
+            'That version no longer exists.',
+            404,
+          );
         return parseResponse(UnitVersionFullRow, row, 'the version') as UnitVersionFull;
       },
       async setVersionStatus(versionId, status) {
@@ -518,7 +555,9 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
       async publication(versionId) {
         const result = await supabase
           .from('published_units')
-          .select('id,unit_id,version_no,is_current,content_hash,pack_manifest_path,pack_built_at,published_at')
+          .select(
+            'id,unit_id,version_no,is_current,content_hash,pack_manifest_path,pack_built_at,published_at',
+          )
           .eq('unit_version_id', versionId)
           .maybeSingle();
         const row = unwrap(result as QueryResult<unknown>, 'Could not read the publication.');

@@ -69,10 +69,17 @@ export default function JobsScreen(): ReactNode {
       header: 'Job',
       flex: 1.4,
       render: (job) => (
-        <AppLink href={{ pathname: '/jobs/[jobId]', params: { jobId: job.id } }}>{jobKindLabel(job.kind)}</AppLink>
+        <AppLink href={{ pathname: '/jobs/[jobId]', params: { jobId: job.id } }}>
+          {jobKindLabel(job.kind)}
+        </AppLink>
       ),
     },
-    { key: 'status', header: 'Status', width: 120, render: (job) => <JobStatusBadge status={job.status} /> },
+    {
+      key: 'status',
+      header: 'Status',
+      width: 120,
+      render: (job) => <JobStatusBadge status={job.status} />,
+    },
     {
       key: 'progress',
       header: 'Steps',
@@ -88,14 +95,26 @@ export default function JobsScreen(): ReactNode {
       width: 100,
       render: (job) => {
         const target = jobTarget(job);
-        return target ? <AppLink href={target.href as never}>{target.label}</AppLink> : <Small>–</Small>;
+        return target ? (
+          <AppLink href={target.href as never}>{target.label}</AppLink>
+        ) : (
+          <Small>–</Small>
+        );
       },
     },
     {
       key: 'by',
       header: 'By',
       width: 130,
-      render: (job) => <Small>{job.created_by === null ? 'unknown' : job.created_by === userId ? 'You' : `Staff ${shortId(job.created_by)}`}</Small>,
+      render: (job) => (
+        <Small>
+          {job.created_by === null
+            ? 'unknown'
+            : job.created_by === userId
+              ? 'You'
+              : `Staff ${shortId(job.created_by)}`}
+        </Small>
+      ),
     },
   ];
 
@@ -104,7 +123,14 @@ export default function JobsScreen(): ReactNode {
       <PageHeader
         title="Jobs"
         subtitle="Everything Claude was asked to do, newest first."
-        actions={<Button label="Refresh" variant="secondary" onPress={reload} busy={jobs.loading && jobs.data !== undefined} />}
+        actions={
+          <Button
+            label="Refresh"
+            variant="secondary"
+            onPress={reload}
+            busy={jobs.loading && jobs.data !== undefined}
+          />
+        }
       />
       <View style={{ width: 220 }}>
         <Select
@@ -128,7 +154,10 @@ export default function JobsScreen(): ReactNode {
             minWidth={820}
             empty={
               <EmptyState title="No jobs yet">
-                <P>Jobs appear here when a scheme is read, chapters are proposed or a unit is drafted or revised.</P>
+                <P>
+                  Jobs appear here when a scheme is read, chapters are proposed or a unit is drafted
+                  or revised.
+                </P>
               </EmptyState>
             }
           />

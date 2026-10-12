@@ -85,7 +85,9 @@ function WeekRow({
         backgroundColor: hasError ? colors.dangerTint : colors.white,
       }}
     >
-      <View style={{ flexDirection: wide ? 'row' : 'column', gap: space[3], alignItems: 'flex-start' }}>
+      <View
+        style={{ flexDirection: wide ? 'row' : 'column', gap: space[3], alignItems: 'flex-start' }}
+      >
         <View role="cell" style={{ width: wide ? 76 : 120 }}>
           <NumberField
             label={`Week number, row ${row}`}
@@ -107,7 +109,10 @@ function WeekRow({
             disabled={disabled}
           />
         </View>
-        <View role="cell" style={{ flex: wide ? 1 : undefined, width: wide ? undefined : '100%', minWidth: 200 }}>
+        <View
+          role="cell"
+          style={{ flex: wide ? 1 : undefined, width: wide ? undefined : '100%', minWidth: 200 }}
+        >
           <TextField
             label={`Topic, row ${row}`}
             hideLabel={wide}
@@ -118,7 +123,10 @@ function WeekRow({
             editable={!disabled}
           />
         </View>
-        <View role="cell" style={{ flex: wide ? 2 : undefined, width: wide ? undefined : '100%', minWidth: 240 }}>
+        <View
+          role="cell"
+          style={{ flex: wide ? 2 : undefined, width: wide ? undefined : '100%', minWidth: 240 }}
+        >
           <TextField
             label={`Subtopics, row ${row}`}
             hideLabel={wide}
@@ -144,18 +152,30 @@ function WeekRow({
         <Text
           key={`${message.message}-${at}`}
           accessibilityRole={message.severity === 'error' ? 'alert' : 'text'}
-          style={{ color: message.severity === 'error' ? colors.danger : colors.amberText, fontSize: 13 }}
+          style={{
+            color: message.severity === 'error' ? colors.danger : colors.amberText,
+            fontSize: 13,
+          }}
         >
           {message.severity === 'error' ? '✕ ' : '⚠ '}
           {message.message}
         </Text>
       ))}
       {flags.length > 0 ? (
-        <View style={{ gap: space[1], backgroundColor: colors.amberTint, padding: space[2], borderRadius: radii.md }}>
+        <View
+          style={{
+            gap: space[1],
+            backgroundColor: colors.amberTint,
+            padding: space[2],
+            borderRadius: radii.md,
+          }}
+        >
           <Small>Model notes about this week</Small>
           {sortFlags(flags).map((flag, at) => (
             <Text key={`${flag.code}-${at}`} style={{ fontSize: 13, color: colors.text }}>
-              <Text style={{ fontWeight: '700' }}>{flag.severity === 'concern' ? 'Concern: ' : 'Note: '}</Text>
+              <Text style={{ fontWeight: '700' }}>
+                {flag.severity === 'concern' ? 'Concern: ' : 'Note: '}
+              </Text>
               {flag.message}
             </Text>
           ))}
@@ -175,14 +195,17 @@ export function SchemeDraftEditor(props: SchemeDraftEditorProps): ReactNode {
   const [sourceNote, setSourceNote] = useState(props.initialSourceNote);
   const [schemeId, setSchemeId] = useState<string | null>(props.schemeId);
   const [saved, setSaved] = useState<{ weeks: SchemeWeek[]; note: string; at: Date } | null>(
-    props.schemeId ? { weeks: props.initialWeeks, note: props.initialSourceNote, at: new Date(0) } : null,
+    props.schemeId
+      ? { weeks: props.initialWeeks, note: props.initialSourceNote, at: new Date(0) }
+      : null,
   );
   const [approved, setApproved] = useState(false);
   const [confirmApprove, setConfirmApprove] = useState(false);
 
   const issues = useMemo(() => validateWeeks(weeks), [weeks]);
   const blocked = hasErrors(issues);
-  const edited = saved === null || !weeksEqual(weeks, saved.weeks) || sourceNote.trim() !== saved.note.trim();
+  const edited =
+    saved === null || !weeksEqual(weeks, saved.weeks) || sourceNote.trim() !== saved.note.trim();
   useUnsavedChanges(edited && !approved);
 
   const counts = countByKind(weeks);
@@ -228,8 +251,8 @@ export function SchemeDraftEditor(props: SchemeDraftEditorProps): ReactNode {
     return (
       <Banner tone="success" title="Scheme approved" testID="scheme-approved">
         <P>
-          {props.subjectName} · {props.levelName} · Term {props.term} is approved. The weeks can no longer be edited here.
-          You can now plan its chapters.
+          {props.subjectName} · {props.levelName} · Term {props.term} is approved. The weeks can no
+          longer be edited here. You can now plan its chapters.
         </P>
       </Banner>
     );
@@ -250,8 +273,8 @@ export function SchemeDraftEditor(props: SchemeDraftEditorProps): ReactNode {
       {props.flags.length > 0 ? (
         <Section title="Notes from the model" tone="muted" testID="scheme-flags">
           <P>
-            The model flagged these while reading the document. They are advisory: check each one against the
-            source, then correct the table below.
+            The model flagged these while reading the document. They are advisory: check each one
+            against the source, then correct the table below.
           </P>
           <FlagList flags={props.flags} />
         </Section>
@@ -269,19 +292,52 @@ export function SchemeDraftEditor(props: SchemeDraftEditorProps): ReactNode {
 
       <Section
         title={`Weeks (${counts.teaching} teaching, ${counts.other} other)`}
-        action={<Button label="Add week" variant="secondary" small onPress={() => setWeeks(addWeek(weeks))} />}
+        action={
+          <Button
+            label="Add week"
+            variant="secondary"
+            small
+            onPress={() => setWeeks(addWeek(weeks))}
+          />
+        }
       >
-        <View role="table" aria-label="Scheme weeks" style={{ borderWidth: 1, borderColor: colors.border, borderRadius: radii.md, overflow: 'hidden' }}>
+        <View
+          role="table"
+          aria-label="Scheme weeks"
+          style={{
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: radii.md,
+            overflow: 'hidden',
+          }}
+        >
           {wide ? (
             <View
               role="row"
-              style={{ flexDirection: 'row', gap: space[3], padding: space[3], backgroundColor: colors.page, borderBottomWidth: 2, borderBottomColor: colors.border }}
+              style={{
+                flexDirection: 'row',
+                gap: space[3],
+                padding: space[3],
+                backgroundColor: colors.page,
+                borderBottomWidth: 2,
+                borderBottomColor: colors.border,
+              }}
             >
-              <View role="columnheader" style={{ width: 76 }}><Label>Week</Label></View>
-              <View role="columnheader" style={{ width: 160 }}><Label>Kind</Label></View>
-              <View role="columnheader" style={{ flex: 1 }}><Label>Topic</Label></View>
-              <View role="columnheader" style={{ flex: 2 }}><Label>Subtopics (one per line)</Label></View>
-              <View role="columnheader" style={{ width: 84 }}><Label>Row</Label></View>
+              <View role="columnheader" style={{ width: 76 }}>
+                <Label>Week</Label>
+              </View>
+              <View role="columnheader" style={{ width: 160 }}>
+                <Label>Kind</Label>
+              </View>
+              <View role="columnheader" style={{ flex: 1 }}>
+                <Label>Topic</Label>
+              </View>
+              <View role="columnheader" style={{ flex: 2 }}>
+                <Label>Subtopics (one per line)</Label>
+              </View>
+              <View role="columnheader" style={{ width: 84 }}>
+                <Label>Row</Label>
+              </View>
             </View>
           ) : null}
           {weeks.length === 0 ? (
@@ -303,11 +359,17 @@ export function SchemeDraftEditor(props: SchemeDraftEditorProps): ReactNode {
             />
           ))}
         </View>
-        {issues.filter((issue) => issue.index === -1).map((issue) => (
-          <Text key={issue.message} accessibilityRole="alert" style={{ color: colors.danger, fontSize: 14 }}>
-            ✕ {issue.message}
-          </Text>
-        ))}
+        {issues
+          .filter((issue) => issue.index === -1)
+          .map((issue) => (
+            <Text
+              key={issue.message}
+              accessibilityRole="alert"
+              style={{ color: colors.danger, fontSize: 14 }}
+            >
+              ✕ {issue.message}
+            </Text>
+          ))}
       </Section>
 
       <View style={{ gap: space[3] }}>
@@ -322,13 +384,27 @@ export function SchemeDraftEditor(props: SchemeDraftEditorProps): ReactNode {
           </Banner>
         ) : null}
         <P testID="scheme-save-status">{status}</P>
-        <View style={{ flexDirection: 'row', gap: space[4], flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: space[4],
+            flexWrap: 'wrap',
+            alignItems: 'flex-start',
+          }}
+        >
           <Button
             label="Save as draft"
             onPress={() => void save.run()}
             busy={save.busy}
             disabled={Boolean(canSave) || blocked || !edited}
-            reason={canSave ?? (blocked ? 'Fix the problems marked in the table first.' : !edited ? 'Nothing has changed since the last save.' : null)}
+            reason={
+              canSave ??
+              (blocked
+                ? 'Fix the problems marked in the table first.'
+                : !edited
+                  ? 'Nothing has changed since the last save.'
+                  : null)
+            }
           />
           <Button
             label="Approve scheme"
@@ -350,11 +426,12 @@ export function SchemeDraftEditor(props: SchemeDraftEditorProps): ReactNode {
       >
         <View style={{ gap: space[2] }}>
           <P>
-            {props.subjectName} · {props.levelName} · Term {props.term}: {counts.teaching} teaching weeks.
+            {props.subjectName} · {props.levelName} · Term {props.term}: {counts.teaching} teaching
+            weeks.
           </P>
           <P>
-            An approved scheme can no longer be replaced or edited here, and chapters can be planned from it.
-            Approving does not publish anything to learners.
+            An approved scheme can no longer be replaced or edited here, and chapters can be planned
+            from it. Approving does not publish anything to learners.
           </P>
         </View>
       </ConfirmDialog>

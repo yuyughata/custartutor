@@ -21,7 +21,12 @@ import { space } from '../ui/theme';
 function ReadOnlyWeeks({ scheme }: { scheme: SchemeDetail }): ReactNode {
   const columns: Column<SchemeDetail['weeks'][number]>[] = [
     { key: 'week', header: 'Week', width: 70, render: (week) => <P>{week.week_no}</P> },
-    { key: 'kind', header: 'Kind', width: 140, render: (week) => <P>{weekKindLabel(week.kind)}</P> },
+    {
+      key: 'kind',
+      header: 'Kind',
+      width: 140,
+      render: (week) => <P>{weekKindLabel(week.kind)}</P>,
+    },
     { key: 'topic', header: 'Topic', flex: 1, render: (week) => <P>{week.topic}</P> },
     {
       key: 'subtopics',
@@ -37,7 +42,13 @@ function ReadOnlyWeeks({ scheme }: { scheme: SchemeDetail }): ReactNode {
     },
   ];
   return (
-    <DataTable label="Scheme weeks" columns={columns} rows={scheme.weeks} rowKey={(week) => String(week.week_no)} minWidth={720} />
+    <DataTable
+      label="Scheme weeks"
+      columns={columns}
+      rows={scheme.weeks}
+      rowKey={(week) => String(week.week_no)}
+      minWidth={720}
+    />
   );
 }
 
@@ -50,7 +61,11 @@ export default function SchemeDetailScreen(): ReactNode {
   usePageTitle(scheme.data ? 'Scheme' : 'Scheme');
 
   return (
-    <Async state={scheme} loadingLabel="Loading the scheme…" onSignInAgain={() => void recheckAuth()}>
+    <Async
+      state={scheme}
+      loadingLabel="Loading the scheme…"
+      onSignInAgain={() => void recheckAuth()}
+    >
       {(data) => (
         <Async state={catalog}>
           {(names) => {
@@ -64,7 +79,12 @@ export default function SchemeDetailScreen(): ReactNode {
                   subtitle={data.source_note ?? undefined}
                   actions={
                     data.status === 'approved' ? (
-                      <AppLink href={{ pathname: '/schemes/[schemeId]/chapters', params: { schemeId: data.id } }}>
+                      <AppLink
+                        href={{
+                          pathname: '/schemes/[schemeId]/chapters',
+                          params: { schemeId: data.id },
+                        }}
+                      >
                         Plan chapters and units
                       </AppLink>
                     ) : undefined
@@ -73,7 +93,10 @@ export default function SchemeDetailScreen(): ReactNode {
                 {data.status === 'draft' ? (
                   <>
                     <Banner tone="warning" title="This scheme is a draft">
-                      <P>It has not been approved. A reviewer or super admin approves it once the weeks match the source.</P>
+                      <P>
+                        It has not been approved. A reviewer or super admin approves it once the
+                        weeks match the source.
+                      </P>
                     </Banner>
                     <SchemeDraftEditor
                       key={`${data.id}-${data.weeks.length}`}

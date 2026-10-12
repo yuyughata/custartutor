@@ -39,7 +39,8 @@ export function RuntimeProvider({ children }: { children: ReactNode }): ReactNod
     let alive = true;
     createRuntime().then(
       (created) => alive && setRuntime(created),
-      (cause: unknown) => alive && setStartError(cause instanceof Error ? cause.message : String(cause)),
+      (cause: unknown) =>
+        alive && setStartError(cause instanceof Error ? cause.message : String(cause)),
     );
     return () => {
       alive = false;

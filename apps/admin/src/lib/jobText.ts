@@ -1,7 +1,12 @@
 // Plain-words text for jobs: kind and status labels, step names, progress and errors. Step names come from the
 // engine (`nextStep`) and are only specified loosely, so `stepLabel` matches the shapes it knows and falls back
 // to a readable version of whatever it is given.
-import { MAX_STEP_ATTEMPTS, type JobError, type JobKind, type JobRow } from '@custar/authoring-core';
+import {
+  MAX_STEP_ATTEMPTS,
+  type JobError,
+  type JobKind,
+  type JobRow,
+} from '@custar/authoring-core';
 import type { StatusTone } from './workflow';
 
 export const JOB_KIND_LABELS: Record<JobKind, string> = {
@@ -30,7 +35,9 @@ export const JOB_STATUS_STYLE: Record<JobRow['status'], JobStatusStyle> = {
 };
 
 export function jobStatusStyle(status: string): JobStatusStyle {
-  return JOB_STATUS_STYLE[status as JobRow['status']] ?? { label: status, glyph: '?', tone: 'neutral' };
+  return (
+    JOB_STATUS_STYLE[status as JobRow['status']] ?? { label: status, glyph: '?', tone: 'neutral' }
+  );
 }
 
 export function isTerminal(status: JobRow['status']): boolean {
@@ -120,7 +127,9 @@ export function stepLabel(step: string, kind?: JobKind): string {
       return `Writing "${humanizeId(tail)}"`;
     }
     if (headKey === 'repair' || headKey === 'fix') {
-      return /^\d+$/.test(tail) ? `Fixing problems (round ${tail})` : `Fixing "${humanizeId(tail)}"`;
+      return /^\d+$/.test(tail)
+        ? `Fixing problems (round ${tail})`
+        : `Fixing "${humanizeId(tail)}"`;
     }
     if (headKey === 'revise' || headKey === 'rewrite') return `Rewriting "${humanizeId(tail)}"`;
     if (headKey === 'review') return `Advisory review: ${humanizeId(tail)}`;
@@ -141,7 +150,9 @@ export interface ProgressSummary {
   currentLabel: string | null;
 }
 
-export function summarizeProgress(job: Pick<JobRow, 'progress' | 'status'> & { kind?: JobKind }): ProgressSummary {
+export function summarizeProgress(
+  job: Pick<JobRow, 'progress' | 'status'> & { kind?: JobKind },
+): ProgressSummary {
   const done = job.progress.done.length;
   const total = Math.max(job.progress.total, done);
   const finished = job.status === 'succeeded';
@@ -186,7 +197,10 @@ const ERROR_TEXT: Record<string, { title: string; hint?: string }> = {
     title: 'A step took too long and was stopped.',
     hint: 'It is tried again automatically.',
   },
-  invalid_input: { title: 'The job’s input was not valid.', hint: 'Check the scheme or unit and start again.' },
+  invalid_input: {
+    title: 'The job’s input was not valid.',
+    hint: 'Check the scheme or unit and start again.',
+  },
   internal: { title: 'Something went wrong on the server.', hint: 'Try again in a moment.' },
   kill_switch: {
     title: 'AI drafting is switched off.',
@@ -229,6 +243,8 @@ export function explainJobError(
 export function jobHeadline(job: Pick<JobRow, 'kind' | 'progress' | 'status'>): string {
   const progress = summarizeProgress(job);
   const steps =
-    progress.total > 0 && job.status !== 'queued' ? ` · ${progress.done} of ${progress.total} steps` : '';
+    progress.total > 0 && job.status !== 'queued'
+      ? ` · ${progress.done} of ${progress.total} steps`
+      : '';
   return `${jobKindLabel(job.kind)}${steps}`;
 }

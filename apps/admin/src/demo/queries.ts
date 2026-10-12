@@ -17,7 +17,9 @@ export function chapterOf(state: DemoState, unit: DemoUnit): DemoChapter {
 }
 
 export function versionsOf(state: DemoState, unitId: string): UnitVersionFull[] {
-  return state.versions.filter((version) => version.unit_id === unitId).sort((a, b) => b.version - a.version);
+  return state.versions
+    .filter((version) => version.unit_id === unitId)
+    .sort((a, b) => b.version - a.version);
 }
 
 export function latestVersionOf(state: DemoState, unitId: string): UnitVersionFull | undefined {

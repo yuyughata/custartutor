@@ -4,7 +4,13 @@ import { useEffect, type ReactNode } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import type { JobRow } from '@custar/authoring-core';
 import type { AdminApiError } from '../api/errors';
-import { explainJobError, isTerminal, jobKindLabel, stepLabel, summarizeProgress } from '../lib/jobText';
+import {
+  explainJobError,
+  isTerminal,
+  jobKindLabel,
+  stepLabel,
+  summarizeProgress,
+} from '../lib/jobText';
 import { scrollToTestId } from '../platform/scroll';
 import { Badge, JobStatusBadge } from '../ui/Badge';
 import { Banner } from '../ui/Banner';
@@ -38,7 +44,12 @@ function ProgressBar({ fraction, label }: { fraction: number; label: string }): 
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(fraction * 100)}
-      style={{ height: 10, borderRadius: radii.pill, backgroundColor: colors.border, overflow: 'hidden' }}
+      style={{
+        height: 10,
+        borderRadius: radii.pill,
+        backgroundColor: colors.border,
+        overflow: 'hidden',
+      }}
     >
       <View
         style={{
@@ -100,20 +111,31 @@ export function JobPanel({
 
       <View role="list" aria-label="Steps" style={{ gap: space[1] }}>
         {job.progress.done.map((step) => (
-          <View key={`done-${step}`} role="listitem" style={{ flexDirection: 'row', gap: space[2] }}>
+          <View
+            key={`done-${step}`}
+            role="listitem"
+            style={{ flexDirection: 'row', gap: space[2] }}
+          >
             <Text aria-hidden style={{ color: colors.success, width: 16, fontWeight: '700' }}>
               ✓
             </Text>
-            <Text style={{ color: colors.textSoft, fontSize: 14 }}>{stepLabel(step, job.kind)}</Text>
+            <Text style={{ color: colors.textSoft, fontSize: 14 }}>
+              {stepLabel(step, job.kind)}
+            </Text>
             <Text style={{ color: colors.subtle, fontSize: 12 }}>done</Text>
           </View>
         ))}
         {job.progress.next && !terminal ? (
-          <View role="listitem" style={{ flexDirection: 'row', gap: space[2], alignItems: 'center' }}>
+          <View
+            role="listitem"
+            style={{ flexDirection: 'row', gap: space[2], alignItems: 'center' }}
+          >
             <Text aria-hidden style={{ color: colors.primary, width: 16, fontWeight: '700' }}>
               ▶
             </Text>
-            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700' }}>{stepLabel(job.progress.next, job.kind)}</Text>
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700' }}>
+              {stepLabel(job.progress.next, job.kind)}
+            </Text>
             <Text style={{ color: colors.subtle, fontSize: 12 }}>
               {job.attempts > 0 ? `attempt ${job.attempts + 1}` : 'in progress'}
             </Text>
@@ -138,7 +160,13 @@ export function JobPanel({
         </Banner>
       ) : null}
 
-      {error ? <ErrorState error={error} title="Lost touch with the job" {...(onResume ? { onRetry: onResume } : {})} /> : null}
+      {error ? (
+        <ErrorState
+          error={error}
+          title="Lost touch with the job"
+          {...(onResume ? { onRetry: onResume } : {})}
+        />
+      ) : null}
 
       {job.status === 'cancelled' ? (
         <Banner tone="info" title="This job was cancelled">
@@ -149,9 +177,14 @@ export function JobPanel({
       {!terminal ? (
         <View style={{ flexDirection: 'row', gap: space[3], flexWrap: 'wrap' }}>
           {!driving && onResume ? <Button label="Resume job" onPress={onResume} /> : null}
-          {onCancel && canCancel ? <Button label="Cancel job" variant="secondary" onPress={onCancel} /> : null}
+          {onCancel && canCancel ? (
+            <Button label="Cancel job" variant="secondary" onPress={onCancel} />
+          ) : null}
           {!driving && onResume ? (
-            <Small>This page is not driving the job right now. The job keeps its place; press Resume to continue.</Small>
+            <Small>
+              This page is not driving the job right now. The job keeps its place; press Resume to
+              continue.
+            </Small>
           ) : null}
         </View>
       ) : null}

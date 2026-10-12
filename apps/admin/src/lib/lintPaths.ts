@@ -73,7 +73,9 @@ export function jumpTarget(path: string | undefined, unit: unknown): JumpTarget 
       const index = sections.findIndex(
         (section) =>
           Array.isArray(section.blocks) &&
-          section.blocks.some((block) => isRec(block) && block.type === 'question' && block.question_id === id),
+          section.blocks.some(
+            (block) => isRec(block) && block.type === 'question' && block.question_id === id,
+          ),
       );
       const section = sections[index];
       if (section) return sectionTarget(section, index);
@@ -87,16 +89,24 @@ export function jumpTarget(path: string | undefined, unit: unknown): JumpTarget 
     const list = isRec(unit) && isRec(unit.teacher_manual) ? unit.teacher_manual : null;
     const key = segments[1];
     const at = segments[2];
-    if (head === 'teacher_manual' && (key === 'script' || key === 'helper_script') && typeof at === 'number') {
+    if (
+      head === 'teacher_manual' &&
+      (key === 'script' || key === 'helper_script') &&
+      typeof at === 'number'
+    ) {
       const entry = list && Array.isArray(list[key]) ? (list[key] as unknown[])[at] : undefined;
-      const sectionId = isRec(entry) && typeof entry.section_id === 'string' ? entry.section_id : undefined;
+      const sectionId =
+        isRec(entry) && typeof entry.section_id === 'string' ? entry.section_id : undefined;
       return {
         tab: 'manual',
         ...(sectionId ? { sectionId } : {}),
         label: "Teacher's manual",
       };
     }
-    return { tab: 'manual', label: head === 'session_plan' ? "Teacher's manual (session plan)" : "Teacher's manual" };
+    return {
+      tab: 'manual',
+      label: head === 'session_plan' ? "Teacher's manual (session plan)" : "Teacher's manual",
+    };
   }
 
   if (head === 'header') return { tab: 'textbook', label: 'Unit header' };

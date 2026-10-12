@@ -7,7 +7,9 @@
     "start": "expo start",
     "web": "expo start --web",
     "build:web": "expo export --platform web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "serve:dist": "node scripts/serve-dist.mjs dist 8126",
+    "e2e": "node scripts/e2e-demo.mjs"
   },
   "dependencies": {
     "@custar/authoring-core": "*",
@@ -28,7 +30,8 @@
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-web": "~0.21.0"
+    "react-native-web": "~0.21.0",
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",

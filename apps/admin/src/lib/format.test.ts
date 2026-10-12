@@ -17,7 +17,9 @@ const utc = { timeZone: 'UTC' };
 describe('dates', () => {
   it('formats a date and time in the given zone', () => {
     expect(formatDateTime('2026-10-12T14:05:00Z', utc)).toBe('12 Oct 2026, 14:05');
-    expect(formatDateTime('2026-10-12T14:05:00Z', { timeZone: 'Africa/Lagos' })).toBe('12 Oct 2026, 15:05');
+    expect(formatDateTime('2026-10-12T14:05:00Z', { timeZone: 'Africa/Lagos' })).toBe(
+      '12 Oct 2026, 15:05',
+    );
     expect(formatDate('2026-01-03T23:30:00Z', utc)).toBe('3 Jan 2026');
   });
 

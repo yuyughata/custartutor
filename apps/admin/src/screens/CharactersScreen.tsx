@@ -7,7 +7,14 @@ import { useAction } from '../hooks/useAction';
 import { useLoad } from '../hooks/useLoad';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { formatDateTime } from '../lib/format';
-import { formsEqual, fromForm, statedFacts, toForm, validateForm, type CharacterForm } from '../lib/characterForm';
+import {
+  formsEqual,
+  fromForm,
+  statedFacts,
+  toForm,
+  validateForm,
+  type CharacterForm,
+} from '../lib/characterForm';
 import { whyNot } from '../lib/roles';
 import { useApi, useRuntime, useSession } from '../runtime/RuntimeProvider';
 import { useUnsavedChanges } from '../runtime/UnsavedGuard';
@@ -52,11 +59,17 @@ function CharacterCard({ character }: { character: CharacterRecord }): ReactNode
     <Card testID={`character-${character.slug}`}>
       <Row>
         <H2>{baseline.name}</H2>
-        <Badge label={baseline.active ? 'Active' : 'Inactive'} glyph={baseline.active ? '✓' : '■'} tone={baseline.active ? 'success' : 'neutral'} />
+        <Badge
+          label={baseline.active ? 'Active' : 'Inactive'}
+          glyph={baseline.active ? '✓' : '■'}
+          tone={baseline.active ? 'success' : 'neutral'}
+        />
         <Small>slug: {baseline.slug}</Small>
       </Row>
       <Small>
-        {facts.length > 0 ? `Stated so far: ${facts.join(', ')}.` : 'No facts have been stated yet. The generator will not guess any.'}
+        {facts.length > 0
+          ? `Stated so far: ${facts.join(', ')}.`
+          : 'No facts have been stated yet. The generator will not guess any.'}
       </Small>
 
       <View style={{ gap: space[3] }}>
@@ -101,7 +114,9 @@ function CharacterCard({ character }: { character: CharacterRecord }): ReactNode
                 { value: 'female', label: 'Female' },
                 { value: 'male', label: 'Male' },
               ]}
-              onChange={(gender) => set({ gender: gender === 'female' || gender === 'male' ? gender : '' })}
+              onChange={(gender) =>
+                set({ gender: gender === 'female' || gender === 'male' ? gender : '' })
+              }
               disabled={Boolean(denied)}
             />
           </View>
@@ -200,8 +215,8 @@ export default function CharactersScreen(): ReactNode {
       />
       <Banner tone="info" title="Only facts entered here are treated as facts" testID="facts-note">
         <P>
-          Whatever you leave blank stays unknown, and the generator will not invent it. Guidance derived from a
-          character’s age is labelled as derived and you can edit or clear it.
+          Whatever you leave blank stays unknown, and the generator will not invent it. Guidance
+          derived from a character’s age is labelled as derived and you can edit or clear it.
         </P>
       </Banner>
       <Async state={characters} onSignInAgain={() => void recheckAuth()}>

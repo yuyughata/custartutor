@@ -7,7 +7,13 @@ import { P, Small } from '../ui/Text';
 import { colors, radii, space, tones } from '../ui/theme';
 
 /** One advisory note: severity (glyph and word), where it is about, and the message. */
-export function FlagItem({ flag, onJump }: { flag: Flag; onJump?: (() => void) | undefined }): ReactNode {
+export function FlagItem({
+  flag,
+  onJump,
+}: {
+  flag: Flag;
+  onJump?: (() => void) | undefined;
+}): ReactNode {
   const concern = flag.severity === 'concern';
   const palette = tones[concern ? 'warning' : 'info'];
   return (
@@ -23,8 +29,14 @@ export function FlagItem({ flag, onJump }: { flag: Flag; onJump?: (() => void) |
       }}
     >
       <View style={{ flexDirection: 'row', gap: space[2], alignItems: 'center', flexWrap: 'wrap' }}>
-        <Badge label={severityLabel(flag.severity)} glyph={concern ? '⚠' : 'ℹ'} tone={concern ? 'warning' : 'info'} />
-        <Text style={{ fontWeight: '700', fontSize: 13, color: palette.text }}>{flagCodeLabel(flag.code)}</Text>
+        <Badge
+          label={severityLabel(flag.severity)}
+          glyph={concern ? '⚠' : 'ℹ'}
+          tone={concern ? 'warning' : 'info'}
+        />
+        <Text style={{ fontWeight: '700', fontSize: 13, color: palette.text }}>
+          {flagCodeLabel(flag.code)}
+        </Text>
         {flag.week_no !== undefined ? <Small>Week {flag.week_no}</Small> : null}
         {flag.path ? <Small>{flag.path}</Small> : null}
       </View>
@@ -33,7 +45,12 @@ export function FlagItem({ flag, onJump }: { flag: Flag; onJump?: (() => void) |
         <Text
           accessibilityRole="button"
           onPress={onJump}
-          style={{ color: colors.primary, fontWeight: '700', fontSize: 13, textDecorationLine: 'underline' }}
+          style={{
+            color: colors.primary,
+            fontWeight: '700',
+            fontSize: 13,
+            textDecorationLine: 'underline',
+          }}
         >
           Show in preview
         </Text>
@@ -59,7 +76,9 @@ export function FlagList({
   if (flags.length === 0) return emptyText ? <Small>{emptyText}</Small> : null;
   const { concerns, notes } = countFlags(flags);
   const sorted = sortFlags(flags);
-  const visible = all ? sorted : sorted.filter((flag, index) => flag.severity === 'concern' || index < limit);
+  const visible = all
+    ? sorted
+    : sorted.filter((flag, index) => flag.severity === 'concern' || index < limit);
   const hidden = sorted.length - visible.length;
   return (
     <View style={{ gap: space[2] }}>
@@ -77,7 +96,12 @@ export function FlagList({
         <Text
           accessibilityRole="button"
           onPress={() => setAll(!all)}
-          style={{ color: colors.primary, fontWeight: '700', textDecorationLine: 'underline', fontSize: 13 }}
+          style={{
+            color: colors.primary,
+            fontWeight: '700',
+            textDecorationLine: 'underline',
+            fontSize: 13,
+          }}
         >
           {all ? 'Show fewer' : `Show ${hidden} more`}
         </Text>

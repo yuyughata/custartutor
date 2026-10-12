@@ -39,19 +39,32 @@ function IssueRow({
       }}
     >
       <View style={{ flexDirection: 'row', gap: space[2], alignItems: 'center', flexWrap: 'wrap' }}>
-        <Badge label={tone === 'danger' ? 'Error' : 'Warning'} glyph={tone === 'danger' ? '✕' : '⚠'} tone={tone} />
-        <Text style={{ fontWeight: '700', fontSize: 13, color: palette.text }}>{flagCodeLabel(issue.code)}</Text>
+        <Badge
+          label={tone === 'danger' ? 'Error' : 'Warning'}
+          glyph={tone === 'danger' ? '✕' : '⚠'}
+          tone={tone}
+        />
+        <Text style={{ fontWeight: '700', fontSize: 13, color: palette.text }}>
+          {flagCodeLabel(issue.code)}
+        </Text>
       </View>
       <P style={{ color: colors.text }}>{issue.message}</P>
       {issue.path ? (
-        <View style={{ flexDirection: 'row', gap: space[3], alignItems: 'center', flexWrap: 'wrap' }}>
+        <View
+          style={{ flexDirection: 'row', gap: space[3], alignItems: 'center', flexWrap: 'wrap' }}
+        >
           <Small>{issue.path}</Small>
           {target ? (
             <Text
               accessibilityRole="button"
               accessibilityLabel={`Jump to ${target.label}`}
               onPress={() => onJump(target)}
-              style={{ color: colors.primary, fontWeight: '700', fontSize: 13, textDecorationLine: 'underline' }}
+              style={{
+                color: colors.primary,
+                fontWeight: '700',
+                fontSize: 13,
+                textDecorationLine: 'underline',
+              }}
             >
               Jump to {target.label}
             </Text>
@@ -84,7 +97,11 @@ export function LintPanel({
         testID="lint-panel"
         action={
           <Badge
-            label={lint.blocking ? `${lint.errors.length} error${lint.errors.length === 1 ? '' : 's'} block publishing` : 'No errors'}
+            label={
+              lint.blocking
+                ? `${lint.errors.length} error${lint.errors.length === 1 ? '' : 's'} block publishing`
+                : 'No errors'
+            }
             glyph={lint.blocking ? '✕' : '✓'}
             tone={lint.blocking ? 'danger' : 'success'}
           />
@@ -92,23 +109,45 @@ export function LintPanel({
       >
         <Small>
           Rules the unit must pass before it can be submitted, approved or published.
-          {lint.hasStoredReport ? ' Combines the report saved with this draft and a fresh check in your browser.' : ' Checked in your browser.'}
+          {lint.hasStoredReport
+            ? ' Combines the report saved with this draft and a fresh check in your browser.'
+            : ' Checked in your browser.'}
         </Small>
         {lint.errors.length === 0 && lint.warnings.length === 0 ? (
           <Banner tone="success" title="No errors or warnings" />
         ) : null}
         {lint.errors.map((issue, index) => (
-          <IssueRow key={`e-${issue.code}-${issue.path ?? index}-${index}`} issue={issue} tone="danger" unit={unit} onJump={onJump} />
+          <IssueRow
+            key={`e-${issue.code}-${issue.path ?? index}-${index}`}
+            issue={issue}
+            tone="danger"
+            unit={unit}
+            onJump={onJump}
+          />
         ))}
-        {lint.warnings.length > 0 ? <Small>{lint.warnings.length} warning{lint.warnings.length === 1 ? '' : 's'} (advisory, they do not block)</Small> : null}
+        {lint.warnings.length > 0 ? (
+          <Small>
+            {lint.warnings.length} warning{lint.warnings.length === 1 ? '' : 's'} (advisory, they do
+            not block)
+          </Small>
+        ) : null}
         {lint.warnings.map((issue, index) => (
-          <IssueRow key={`w-${issue.code}-${issue.path ?? index}-${index}`} issue={issue} tone="warning" unit={unit} onJump={onJump} />
+          <IssueRow
+            key={`w-${issue.code}-${issue.path ?? index}-${index}`}
+            issue={issue}
+            tone="warning"
+            unit={unit}
+            onJump={onJump}
+          />
         ))}
       </Section>
 
       <Section title="AI review (advisory)" testID="review-panel" tone="muted">
         <Banner tone="info" title="Claude’s review is advice, not approval">
-          <P>These notes never block anything and never approve anything. A person reads them and decides.</P>
+          <P>
+            These notes never block anything and never approve anything. A person reads them and
+            decides.
+          </P>
         </Banner>
         {lint.summary ? (
           <View style={{ gap: space[1] }}>

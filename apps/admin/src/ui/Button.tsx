@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, Text, View, type PressableStateCallbackType } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  View,
+  type PressableStateCallbackType,
+} from 'react-native';
 import { MIN_TARGET, colors, radii, space } from './theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -31,9 +37,15 @@ export function Button({
 }: ButtonProps): ReactNode {
   const inactive = disabled || busy;
   const filled = variant === 'primary' || variant === 'danger';
-  const background = variant === 'primary' ? colors.primary : variant === 'danger' ? colors.danger : colors.white;
-  const color = filled ? colors.white : variant === 'ghost' ? colors.primaryDark : colors.primaryDark;
-  const border = variant === 'secondary' ? colors.primary : variant === 'ghost' ? 'transparent' : background;
+  const background =
+    variant === 'primary' ? colors.primary : variant === 'danger' ? colors.danger : colors.white;
+  const color = filled
+    ? colors.white
+    : variant === 'ghost'
+      ? colors.primaryDark
+      : colors.primaryDark;
+  const border =
+    variant === 'secondary' ? colors.primary : variant === 'ghost' ? 'transparent' : background;
   return (
     <View style={{ alignItems: 'flex-start', gap: space[1] }}>
       <Pressable
@@ -50,17 +62,17 @@ export function Button({
             hovered?: boolean;
           };
           return {
-          minHeight: small ? 32 : MIN_TARGET,
-          paddingHorizontal: small ? space[3] : space[4],
-          borderRadius: radii.md,
-          backgroundColor: background,
-          borderWidth: 2,
-          borderColor: focused ? colors.amber : border,
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'row',
-          gap: space[2],
-          opacity: inactive ? 0.55 : hovered ? 0.92 : 1,
+            minHeight: small ? 32 : MIN_TARGET,
+            paddingHorizontal: small ? space[3] : space[4],
+            borderRadius: radii.md,
+            backgroundColor: background,
+            borderWidth: 2,
+            borderColor: focused ? colors.amber : border,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'row',
+            gap: space[2],
+            opacity: inactive ? 0.55 : hovered ? 0.92 : 1,
           };
         }}
       >
@@ -68,7 +80,9 @@ export function Button({
         <Text style={{ color, fontSize: small ? 13 : 15, fontWeight: '700' }}>{label}</Text>
       </Pressable>
       {disabled && reason ? (
-        <Text style={{ color: colors.subtle, fontSize: 12, lineHeight: 16, maxWidth: 260 }}>{reason}</Text>
+        <Text style={{ color: colors.subtle, fontSize: 12, lineHeight: 16, maxWidth: 260 }}>
+          {reason}
+        </Text>
       ) : null}
     </View>
   );

@@ -3,8 +3,10 @@ import { Switch, Text, TextInput, View, type TextInputProps } from 'react-native
 import { Label, Small } from './Text';
 import { MIN_TARGET, colors, radii, space } from './theme';
 
-export interface TextFieldProps
-  extends Omit<TextInputProps, 'style' | 'accessibilityLabel' | 'onChangeText'> {
+export interface TextFieldProps extends Omit<
+  TextInputProps,
+  'style' | 'accessibilityLabel' | 'onChangeText'
+> {
   label: string;
   value: string;
   onChangeText: (text: string) => void;
@@ -14,6 +16,8 @@ export interface TextFieldProps
   lines?: number;
   /** Hide the visible label (the accessible label stays), for fields inside table cells. */
   hideLabel?: boolean;
+  /** A shorter text to show above the field; the accessible name stays `label`. */
+  visibleLabel?: string;
   mono?: boolean;
 }
 
@@ -26,6 +30,7 @@ export function TextField({
   error,
   lines,
   hideLabel = false,
+  visibleLabel,
   mono = false,
   multiline,
   ...input
@@ -33,7 +38,7 @@ export function TextField({
   const isMultiline = multiline ?? (lines !== undefined && lines > 1);
   return (
     <View style={{ gap: space[1], flexShrink: 1 }}>
-      {hideLabel ? null : <Label>{label}</Label>}
+      {hideLabel ? null : <Label>{visibleLabel ?? label}</Label>}
       <TextInput
         accessibilityLabel={label}
         placeholderTextColor={colors.subtle}
@@ -58,7 +63,10 @@ export function TextField({
         }}
       />
       {error ? (
-        <Text accessibilityRole="alert" style={{ color: colors.danger, fontSize: 13, lineHeight: 18 }}>
+        <Text
+          accessibilityRole="alert"
+          style={{ color: colors.danger, fontSize: 13, lineHeight: 18 }}
+        >
           {error}
         </Text>
       ) : hint ? (

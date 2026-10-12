@@ -67,7 +67,8 @@ function Account(): ReactNode {
         {session.email}
       </Text>
       <Text style={{ color: colors.sidebarText, fontSize: 12, opacity: 0.85 }}>
-        {roleLabel(session.role)} · {runtime.mode === 'demo' ? 'demo data' : (runtime.host ?? 'live')}
+        {roleLabel(session.role)} ·{' '}
+        {runtime.mode === 'demo' ? 'demo data' : (runtime.host ?? 'live')}
       </Text>
       <Button label="Sign out" variant="secondary" small onPress={() => void signOut()} />
     </View>
@@ -89,7 +90,9 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
   const entries: NavEntry[] = [
     { id: 'home', label: 'Home', href: '/' },
     ...visibleNav(role).map((item) => ({ id: item.id, label: item.label, href: item.href })),
-    ...(runtime.mode === 'demo' ? [{ id: 'dev', label: 'Dev: fixture preview', href: '/preview' }] : []),
+    ...(runtime.mode === 'demo'
+      ? [{ id: 'dev', label: 'Dev: fixture preview', href: '/preview' }]
+      : []),
   ];
 
   const content = (
@@ -134,7 +137,9 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ backgroundColor: colors.sidebar, padding: space[3], gap: space[3] }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        >
           <Brand />
           <Pressable
             accessibilityRole="button"
@@ -150,7 +155,9 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
               borderColor: colors.sidebarText,
             }}
           >
-            <Text style={{ color: colors.sidebarText, fontWeight: '700' }}>{open ? 'Close' : 'Menu'}</Text>
+            <Text style={{ color: colors.sidebarText, fontWeight: '700' }}>
+              {open ? 'Close' : 'Menu'}
+            </Text>
           </Pressable>
         </View>
         {open ? (
@@ -169,7 +176,9 @@ function Brand(): ReactNode {
   return (
     <View style={{ gap: 2 }}>
       <Text style={{ color: colors.white, fontSize: 17, fontWeight: '800' }}>CUSTAR Tutor</Text>
-      <Text style={{ color: colors.sidebarText, fontSize: 12, letterSpacing: 1 }}>ADMIN · CONTENT ENGINE</Text>
+      <Text style={{ color: colors.sidebarText, fontSize: 12, letterSpacing: 1 }}>
+        ADMIN · CONTENT ENGINE
+      </Text>
     </View>
   );
 }

@@ -18,7 +18,11 @@ export function Select({
   return (
     <View style={{ gap: space[1] }}>
       {hideLabel ? null : <Label>{label}</Label>}
-      <View accessibilityRole="radiogroup" accessibilityLabel={label} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel={label}
+        style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}
+      >
         {options.map((option) => {
           const selected = option.value === value;
           return (
@@ -38,7 +42,9 @@ export function Select({
                 backgroundColor: selected ? colors.primaryTint : colors.white,
               }}
             >
-              <Text style={{ color: colors.text, fontWeight: selected ? '700' : '400' }}>{option.label}</Text>
+              <Text style={{ color: colors.text, fontWeight: selected ? '700' : '400' }}>
+                {option.label}
+              </Text>
             </Pressable>
           );
         })}

@@ -144,7 +144,13 @@ export interface ApplyPlanResult {
 export interface UnitContext {
   unit: Omit<UnitRow, 'version_count' | 'latest_version' | 'latest_version_status'>;
   chapter: { id: string; number: number; title: string; scheme_id: string };
-  scheme: { id: string; level_code: LevelCode; term: TermNumber; status: SchemeStatus; subject_id: string };
+  scheme: {
+    id: string;
+    level_code: LevelCode;
+    term: TermNumber;
+    status: SchemeStatus;
+    subject_id: string;
+  };
   subject: { id: string; slug: string; name: string };
 }
 

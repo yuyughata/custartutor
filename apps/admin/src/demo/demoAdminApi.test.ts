@@ -16,7 +16,12 @@ import type { AdminRole } from '../lib/roles';
 import { createDemoAdminApi, type DemoAdminApi } from './demoAdminApi';
 import { DEMO_EMAIL_CODE, DEMO_TOTP_CODE } from './demoAuth';
 import { DEMO_MODEL_ID } from './modelName';
-import { DEMO_SCHEME_P1_T1, DEMO_SUBJECT_BASIC_SCIENCE, DEMO_UNIT_2, DEMO_VERSION_GOLDEN } from './state';
+import {
+  DEMO_SCHEME_P1_T1,
+  DEMO_SUBJECT_BASIC_SCIENCE,
+  DEMO_UNIT_2,
+  DEMO_VERSION_GOLDEN,
+} from './state';
 
 const instant = async () => undefined;
 
@@ -59,7 +64,10 @@ describe('sign-in', () => {
     const afterCode = await api.auth.verifyCode('a@b.c', DEMO_EMAIL_CODE);
     expect(afterCode).toMatchObject({ step: 'mfa_challenge', email: 'a@b.c' });
     expect((await caught(api.auth.verifyTotp('demo-factor', '000000'))).code).toBe('wrong_totp');
-    expect(await api.auth.verifyTotp('demo-factor', DEMO_TOTP_CODE)).toMatchObject({ step: 'ready', role: 'super_admin' });
+    expect(await api.auth.verifyTotp('demo-factor', DEMO_TOTP_CODE)).toMatchObject({
+      step: 'ready',
+      role: 'super_admin',
+    });
     await api.auth.signOut();
     expect((await api.auth.state()).step).toBe('signed_out');
   });
@@ -87,10 +95,24 @@ describe('the seed', () => {
   it('has the subjects, the approved Basic Science P1 Term 1 scheme and the golden unit as an approved version', async () => {
     const api = await signedIn();
     expect((await api.catalog.subjects()).map((s) => s.slug)).toContain('basic-science');
-    expect((await api.catalog.levels()).map((l) => l.code)).toEqual(['P1', 'P2', 'P3', 'P4', 'P5', 'P6']);
+    expect((await api.catalog.levels()).map((l) => l.code)).toEqual([
+      'P1',
+      'P2',
+      'P3',
+      'P4',
+      'P5',
+      'P6',
+    ]);
     const schemes = await api.schemes.list();
     expect(schemes).toHaveLength(1);
-    expect(schemes[0]).toMatchObject({ id: DEMO_SCHEME_P1_T1, status: 'approved', level_code: 'P1', term: 1, teaching_week_count: 8, week_count: 13 });
+    expect(schemes[0]).toMatchObject({
+      id: DEMO_SCHEME_P1_T1,
+      status: 'approved',
+      level_code: 'P1',
+      term: 1,
+      teaching_week_count: 8,
+      week_count: 13,
+    });
 
     const chapters = await api.chapters.list(DEMO_SCHEME_P1_T1);
     expect(chapters.map((c) => [c.number, c.title, c.units.length])).toEqual([
@@ -98,10 +120,20 @@ describe('the seed', () => {
       [2, 'Shapes and Living Things', 4],
     ]);
     const unit2 = chapters[0]?.units.find((u) => u.unit_no === 2);
-    expect(unit2).toMatchObject({ id: DEMO_UNIT_2, version_count: 1, latest_version: 1, latest_version_status: 'approved' });
+    expect(unit2).toMatchObject({
+      id: DEMO_UNIT_2,
+      version_count: 1,
+      latest_version: 1,
+      latest_version_status: 'approved',
+    });
 
     const versions = await api.units.versions(DEMO_UNIT_2);
-    expect(versions[0]).toMatchObject({ id: DEMO_VERSION_GOLDEN, generated_by: 'human', model: null, status: 'approved' });
+    expect(versions[0]).toMatchObject({
+      id: DEMO_VERSION_GOLDEN,
+      generated_by: 'human',
+      model: null,
+      status: 'approved',
+    });
     const full = await api.units.version(DEMO_VERSION_GOLDEN);
     expect(parseUnit(full.content).header.title).toBe('Exploring Our Environment (Part 2)');
   });
@@ -132,12 +164,17 @@ describe('roles', () => {
       sourceNote: '',
     });
     expect(await caught(save)).toMatchObject({ kind: 'forbidden', code: 'admin_role_required' });
-    expect((await caught(reviewer.jobs.create('chapter_plan', { scheme_id: DEMO_SCHEME_P1_T1 }))).kind).toBe('forbidden');
+    expect(
+      (await caught(reviewer.jobs.create('chapter_plan', { scheme_id: DEMO_SCHEME_P1_T1 }))).kind,
+    ).toBe('forbidden');
     expect((await caught(reviewer.settings.set('ai.kill_switch', true))).kind).toBe('forbidden');
 
     const analyst = await signedIn('analyst');
     expect((await caught(analyst.schemes.list())).kind).toBe('forbidden');
-    expect((await analyst.usage.summary({ from: '2026-01-01T00:00:00Z', to: '2027-01-01T00:00:00Z' })).totals.calls).toBe(0);
+    expect(
+      (await analyst.usage.summary({ from: '2026-01-01T00:00:00Z', to: '2027-01-01T00:00:00Z' }))
+        .totals.calls,
+    ).toBe(0);
     expect((await caught(analyst.settings.get())).kind).toBe('forbidden');
   });
 });
@@ -157,7 +194,11 @@ describe('scheme -> chapters -> unit: the whole flow with the stand-in model', (
     const done = await finish(editor, created);
     expect(done.status).toBe('succeeded');
     const draft = SchemeIngestResult.parse(done.result);
-    expect(draft.scheme).toMatchObject({ subject_slug: 'basic-science', level_code: 'P1', term: 2 });
+    expect(draft.scheme).toMatchObject({
+      subject_slug: 'basic-science',
+      level_code: 'P1',
+      term: 2,
+    });
     expect(draft.scheme.weeks.length).toBeGreaterThan(5);
     expect((await editor.schemes.list()).filter((s) => s.term === 2)).toHaveLength(0);
 
@@ -178,12 +219,21 @@ describe('scheme -> chapters -> unit: the whole flow with the stand-in model', (
     editor.auth.setDemoRole?.('content_editor');
     expect(
       await caught(
-        editor.schemes.saveDraft({ subjectId: DEMO_SUBJECT_BASIC_SCIENCE, levelCode: 'P1', term: 2, weeks: draft.scheme.weeks, sourceNote: '' }),
+        editor.schemes.saveDraft({
+          subjectId: DEMO_SUBJECT_BASIC_SCIENCE,
+          levelCode: 'P1',
+          term: 2,
+          weeks: draft.scheme.weeks,
+          sourceNote: '',
+        }),
       ),
     ).toMatchObject({ code: 'scheme_not_draft' });
 
     // 3. chapter plan (a job), then apply
-    const planJob = await finish(editor, await editor.jobs.create('chapter_plan', { scheme_id: schemeId }));
+    const planJob = await finish(
+      editor,
+      await editor.jobs.create('chapter_plan', { scheme_id: schemeId }),
+    );
     expect(planJob.status).toBe('succeeded');
     const plan = ChapterPlanResult.parse(planJob.result);
     expect(plan.plan.chapters.every((c) => c.units.length >= 3 && c.units.length <= 5)).toBe(true);
@@ -191,7 +241,11 @@ describe('scheme -> chapters -> unit: the whole flow with the stand-in model', (
     expect(applied.chapters).toBe(plan.plan.chapters.length);
     const chapters = await editor.chapters.list(schemeId);
     expect(chapters.reduce((total, c) => total + c.units.length, 0)).toBe(applied.units);
-    expect(chapters[0]?.units[0]).toMatchObject({ status: 'draft', version_count: 0, latest_version_status: null });
+    expect(chapters[0]?.units[0]).toMatchObject({
+      status: 'draft',
+      version_count: 0,
+      latest_version_status: null,
+    });
   });
 
   it('refuses to plan chapters for a scheme that is not approved', async () => {
@@ -203,16 +257,23 @@ describe('scheme -> chapters -> unit: the whole flow with the stand-in model', (
       weeks: [{ week_no: 1, kind: 'teaching', topic: 'Topic', subtopics: ['a'] }],
       sourceNote: '',
     });
-    expect(await caught(editor.jobs.create('chapter_plan', { scheme_id: schemeId }))).toMatchObject({ code: 'scheme_not_approved' });
+    expect(await caught(editor.jobs.create('chapter_plan', { scheme_id: schemeId }))).toMatchObject(
+      { code: 'scheme_not_approved' },
+    );
   });
 
   it('drafts a unit as a DRAFT version made by the stand-in model, then revises it into a new version', async () => {
     const admin = await signedIn('super_admin');
-    const unit = (await admin.chapters.list(DEMO_SCHEME_P1_T1))[0]?.units.find((u) => u.unit_no === 3);
+    const unit = (await admin.chapters.list(DEMO_SCHEME_P1_T1))[0]?.units.find(
+      (u) => u.unit_no === 3,
+    );
     expect(unit).toBeDefined();
     const unitId = unit?.id as string;
 
-    const generated = await finish(admin, await admin.jobs.create('unit_generate', { unit_id: unitId, notes: 'Use cassava' }));
+    const generated = await finish(
+      admin,
+      await admin.jobs.create('unit_generate', { unit_id: unitId, notes: 'Use cassava' }),
+    );
     expect(generated.status).toBe('succeeded');
     const result = UnitDraftResult.parse(generated.result);
     expect(result.version).toBe(1);
@@ -252,7 +313,12 @@ describe('scheme -> chapters -> unit: the whole flow with the stand-in model', (
 
     // the first version is no longer the latest, so it cannot be revised
     expect(
-      await caught(admin.jobs.create('unit_revise', { unit_version_id: result.unit_version_id, instruction: 'Again' })),
+      await caught(
+        admin.jobs.create('unit_revise', {
+          unit_version_id: result.unit_version_id,
+          instruction: 'Again',
+        }),
+      ),
     ).toMatchObject({ code: expect.any(String) });
   });
 
@@ -260,29 +326,50 @@ describe('scheme -> chapters -> unit: the whole flow with the stand-in model', (
     const admin = await signedIn('super_admin');
     const unit = (await admin.chapters.list(DEMO_SCHEME_P1_T1))[1]?.units[0];
     const unitId = unit?.id as string;
-    const generated = await finish(admin, await admin.jobs.create('unit_generate', { unit_id: unitId }));
+    const generated = await finish(
+      admin,
+      await admin.jobs.create('unit_generate', { unit_id: unitId }),
+    );
     const versionId = UnitDraftResult.parse(generated.result).unit_version_id;
 
     // a draft cannot be approved or published directly
-    expect(await caught(admin.units.setVersionStatus(versionId, 'approved'))).toMatchObject({ code: 'illegal_status_move' });
-    expect(await caught(admin.units.publishVersion(versionId))).toMatchObject({ code: 'unit_version_not_approved' });
+    expect(await caught(admin.units.setVersionStatus(versionId, 'approved'))).toMatchObject({
+      code: 'illegal_status_move',
+    });
+    expect(await caught(admin.units.publishVersion(versionId))).toMatchObject({
+      code: 'unit_version_not_approved',
+    });
 
     await admin.units.setVersionStatus(versionId, 'in_review');
-    expect(await caught(admin.units.publishVersion(versionId))).toMatchObject({ code: 'unit_version_not_approved' });
+    expect(await caught(admin.units.publishVersion(versionId))).toMatchObject({
+      code: 'unit_version_not_approved',
+    });
 
     // only a reviewer or super admin approves
     admin.auth.setDemoRole?.('content_editor');
-    expect(await caught(admin.units.setVersionStatus(versionId, 'approved'))).toMatchObject({ code: 'reviewer_required' });
+    expect(await caught(admin.units.setVersionStatus(versionId, 'approved'))).toMatchObject({
+      code: 'reviewer_required',
+    });
     admin.auth.setDemoRole?.('reviewer');
     await admin.units.setVersionStatus(versionId, 'approved');
 
     const { publishedUnitId } = await admin.units.publishVersion(versionId);
     expect((await admin.units.versions(unitId))[0]?.status).toBe('published');
-    expect(await admin.units.publication(versionId)).toMatchObject({ id: publishedUnitId, is_current: true, content_hash: null });
+    expect(await admin.units.publication(versionId)).toMatchObject({
+      id: publishedUnitId,
+      is_current: true,
+      content_hash: null,
+    });
     // the demo records the publish and says plainly that it built nothing
-    expect(await admin.units.buildPack(publishedUnitId)).toMatchObject({ demo: true, published_unit_id: publishedUnitId });
+    expect(await admin.units.buildPack(publishedUnitId)).toMatchObject({
+      demo: true,
+      published_unit_id: publishedUnitId,
+    });
     const chapters = await admin.chapters.list(DEMO_SCHEME_P1_T1);
-    expect(chapters[1]?.units[0]).toMatchObject({ status: 'published', latest_version_status: 'published' });
+    expect(chapters[1]?.units[0]).toMatchObject({
+      status: 'published',
+      latest_version_status: 'published',
+    });
   });
 
   it('can publish the seeded golden unit and supersedes it with a later approved version', async () => {
@@ -290,7 +377,10 @@ describe('scheme -> chapters -> unit: the whole flow with the stand-in model', (
     const first = await admin.units.publishVersion(DEMO_VERSION_GOLDEN);
     expect(first.publishedUnitId).toBeTruthy();
 
-    const generated = await finish(admin, await admin.jobs.create('unit_generate', { unit_id: DEMO_UNIT_2 }));
+    const generated = await finish(
+      admin,
+      await admin.jobs.create('unit_generate', { unit_id: DEMO_UNIT_2 }),
+    );
     const id = UnitDraftResult.parse(generated.result).unit_version_id;
     await admin.units.setVersionStatus(id, 'in_review');
     await admin.units.setVersionStatus(id, 'approved');
@@ -310,7 +400,9 @@ describe('jobs', () => {
     await finish(admin, one);
     const two = await admin.jobs.create('unit_generate', { unit_id: DEMO_UNIT_2 });
     const all = await admin.jobs.list();
-    expect(all.map((j) => j.id)).toEqual([two.id, one.id].sort((a, b) => (all[0]?.id === a ? -1 : all[0]?.id === b ? 1 : 0)));
+    expect(all.map((j) => j.id)).toEqual(
+      [two.id, one.id].sort((a, b) => (all[0]?.id === a ? -1 : all[0]?.id === b ? 1 : 0)),
+    );
     expect(all[0]).not.toHaveProperty('result');
     expect((await admin.jobs.list({ kind: 'chapter_plan' })).map((j) => j.id)).toEqual([one.id]);
     expect((await admin.jobs.list({ status: ['succeeded'] })).map((j) => j.id)).toEqual([one.id]);
@@ -319,8 +411,16 @@ describe('jobs', () => {
 
   it('returns the same job for the same idempotency key', async () => {
     const admin = await signedIn();
-    const a = await admin.jobs.create('chapter_plan', { scheme_id: DEMO_SCHEME_P1_T1 }, 'key-12345678');
-    const b = await admin.jobs.create('chapter_plan', { scheme_id: DEMO_SCHEME_P1_T1 }, 'key-12345678');
+    const a = await admin.jobs.create(
+      'chapter_plan',
+      { scheme_id: DEMO_SCHEME_P1_T1 },
+      'key-12345678',
+    );
+    const b = await admin.jobs.create(
+      'chapter_plan',
+      { scheme_id: DEMO_SCHEME_P1_T1 },
+      'key-12345678',
+    );
     expect(b.id).toBe(a.id);
     expect(await admin.jobs.list()).toHaveLength(1);
   });
@@ -335,8 +435,14 @@ describe('jobs', () => {
 
   it('validates params before running anything', async () => {
     const admin = await signedIn();
-    expect(await caught(admin.jobs.create('unit_generate', { unit_id: 'nope' }))).toMatchObject({ code: 'invalid_request' });
-    expect(await caught(admin.jobs.create('unit_generate', { unit_id: '11111111-1111-4111-8111-111111111111' }))).toMatchObject({
+    expect(await caught(admin.jobs.create('unit_generate', { unit_id: 'nope' }))).toMatchObject({
+      code: 'invalid_request',
+    });
+    expect(
+      await caught(
+        admin.jobs.create('unit_generate', { unit_id: '11111111-1111-4111-8111-111111111111' }),
+      ),
+    ).toMatchObject({
       kind: 'not_found',
     });
   });
@@ -367,7 +473,12 @@ describe('usage and settings', () => {
     expect(summary.totals.jobs_by_status).toEqual({ succeeded: 1 });
 
     await admin.settings.set('ai.prices', {
-      [DEMO_MODEL_ID]: { input_per_mtok: 1, output_per_mtok: 2, cache_read_per_mtok: 0.1, cache_write_per_mtok: 1.25 },
+      [DEMO_MODEL_ID]: {
+        input_per_mtok: 1,
+        output_per_mtok: 2,
+        cache_read_per_mtok: 0.1,
+        cache_write_per_mtok: 1.25,
+      },
     });
     const priced = await admin.usage.summary(range);
     expect(priced.totals.est_cost_usd).not.toBeNull();
@@ -386,7 +497,9 @@ describe('usage and settings', () => {
       ['ai.budget', { max_usd_per_job: -1, daily_usd_cap: null }],
       ['ai.models', { authoring: '' }],
     ] as [AppSettingKey, never][]) {
-      expect(await caught(admin.settings.set(key, value))).toMatchObject({ code: 'invalid_request' });
+      expect(await caught(admin.settings.set(key, value))).toMatchObject({
+        code: 'invalid_request',
+      });
     }
   });
 });
@@ -398,14 +511,21 @@ describe('characters', () => {
     expect(zari).toBeDefined();
     const saved = await admin.characters.save({
       ...(zari as NonNullable<typeof zari>),
-      traits: { ...(zari as NonNullable<typeof zari>).traits, relationship_note: 'Zuri’s big sister' },
+      traits: {
+        ...(zari as NonNullable<typeof zari>).traits,
+        relationship_note: 'Zuri’s big sister',
+      },
     });
     expect(saved.traits.relationship_note).toBe('Zuri’s big sister');
-    expect((await admin.characters.list()).find((c) => c.id === saved.id)?.traits.relationship_note).toBe('Zuri’s big sister');
+    expect(
+      (await admin.characters.list()).find((c) => c.id === saved.id)?.traits.relationship_note,
+    ).toBe('Zuri’s big sister');
     expect(
       await caught(admin.characters.save({ ...saved, traits: { ...saved.traits, age_years: 99 } })),
     ).toMatchObject({ code: 'invalid_traits' });
-    expect(await caught(admin.characters.save({ ...saved, name: ' ' }))).toMatchObject({ code: 'invalid_name' });
+    expect(await caught(admin.characters.save({ ...saved, name: ' ' }))).toMatchObject({
+      code: 'invalid_name',
+    });
   });
 });
 
@@ -413,7 +533,13 @@ describe('home', () => {
   it('lists what needs attention', async () => {
     const admin = await signedIn();
     const first = await admin.home.summary();
-    expect(first.counts).toMatchObject({ schemes: 1, schemesApproved: 1, units: 8, versionsInReview: 0, versionsReadyToPublish: 1 });
+    expect(first.counts).toMatchObject({
+      schemes: 1,
+      schemesApproved: 1,
+      units: 8,
+      versionsInReview: 0,
+      versionsReadyToPublish: 1,
+    });
     expect(first.versionsReadyToPublish[0]).toMatchObject({ unit_no: 2, status: 'approved' });
     await admin.jobs.create('unit_generate', { unit_id: DEMO_UNIT_2 });
     const second = await admin.home.summary();

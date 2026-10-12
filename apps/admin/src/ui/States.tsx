@@ -51,11 +51,15 @@ export function ErrorState({
   title?: string;
 }): ReactNode {
   const known: AdminApiError | null = isAdminApiError(error) ? error : null;
-  const message = known ? known.message : error instanceof Error ? error.message : 'Something went wrong.';
+  const message = known
+    ? known.message
+    : error instanceof Error
+      ? error.message
+      : 'Something went wrong.';
   if (known?.kind === 'mfa_required') {
     return (
       <Banner tone="warning" title="Authenticator code required" testID="error-mfa">
-        <P>{message}</P>
+        <P>Every admin action needs your authenticator code. Enter it again to continue.</P>
         {onSignInAgain ? <Button label="Enter authenticator code" onPress={onSignInAgain} /> : null}
       </Banner>
     );
@@ -73,7 +77,11 @@ export function ErrorState({
       tone={known?.kind === 'forbidden' ? 'warning' : 'danger'}
       title={title ?? (known?.kind === 'forbidden' ? 'Not allowed' : 'Something went wrong')}
       testID="error-state"
-      action={onRetry && (!known || known.retryable || known.kind === 'unknown') ? <Button label="Try again" variant="secondary" onPress={onRetry} small /> : undefined}
+      action={
+        onRetry && (!known || known.retryable || known.kind === 'unknown') ? (
+          <Button label="Try again" variant="secondary" onPress={onRetry} small />
+        ) : undefined
+      }
     >
       <P>{message}</P>
     </Banner>
@@ -95,6 +103,7 @@ export function Async<T>({
   if (state.error) {
     return <ErrorState error={state.error} onRetry={state.reload} onSignInAgain={onSignInAgain} />;
   }
-  if (state.data === undefined) return <Loading {...(loadingLabel ? { label: loadingLabel } : {})} />;
+  if (state.data === undefined)
+    return <Loading {...(loadingLabel ? { label: loadingLabel } : {})} />;
   return <>{children(state.data)}</>;
 }

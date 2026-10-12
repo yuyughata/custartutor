@@ -3,7 +3,13 @@
 // reads without colour.
 import { useState, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
-import { wordDiff, type ChangeKind, type DiffItem, type FieldChange, type UnitDiff } from '../lib/diff';
+import {
+  wordDiff,
+  type ChangeKind,
+  type DiffItem,
+  type FieldChange,
+  type UnitDiff,
+} from '../lib/diff';
 import type { StatusTone } from '../lib/workflow';
 import { Badge } from '../ui/Badge';
 import { Card } from '../ui/Card';
@@ -31,11 +37,23 @@ const AREA_LABEL: Record<DiffItem['area'], string> = {
 
 const FIELDS_SHOWN = 8;
 
-function Marked({ before, after, side }: { before: string | null; after: string | null; side: 'before' | 'after' }): ReactNode {
+function Marked({
+  before,
+  after,
+  side,
+}: {
+  before: string | null;
+  after: string | null;
+  side: 'before' | 'after';
+}): ReactNode {
   const text = side === 'before' ? before : after;
   if (text === null) return <Small>(nothing)</Small>;
   if (before === null || after === null) {
-    return <Text selectable style={{ fontSize: 14, lineHeight: 20, color: colors.text }}>{text}</Text>;
+    return (
+      <Text selectable style={{ fontSize: 14, lineHeight: 20, color: colors.text }}>
+        {text}
+      </Text>
+    );
   }
   const segments = wordDiff(before, after).filter((segment) =>
     side === 'before' ? segment.kind !== 'added' : segment.kind !== 'removed',
@@ -50,8 +68,16 @@ function Marked({ before, after, side }: { before: string | null; after: string 
             key={index}
             style={
               segment.kind === 'removed'
-                ? { backgroundColor: colors.dangerTint, color: '#8f1d17', textDecorationLine: 'line-through' }
-                : { backgroundColor: colors.successTint, color: '#14633a', textDecorationLine: 'underline' }
+                ? {
+                    backgroundColor: colors.dangerTint,
+                    color: '#8f1d17',
+                    textDecorationLine: 'line-through',
+                  }
+                : {
+                    backgroundColor: colors.successTint,
+                    color: '#14633a',
+                    textDecorationLine: 'underline',
+                  }
             }
           >
             {segment.text}
@@ -64,7 +90,14 @@ function Marked({ before, after, side }: { before: string | null; after: string 
 
 function FieldRow({ field }: { field: FieldChange }): ReactNode {
   return (
-    <View style={{ gap: space[1], paddingVertical: space[2], borderTopWidth: 1, borderTopColor: colors.border }}>
+    <View
+      style={{
+        gap: space[1],
+        paddingVertical: space[2],
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+      }}
+    >
       <Text style={{ fontSize: 12, fontWeight: '700', color: colors.subtle }}>{field.label}</Text>
       <View style={{ flexDirection: 'row', gap: space[3], flexWrap: 'wrap' }}>
         <View style={{ flex: 1, minWidth: 220, gap: 2 }}>
@@ -97,7 +130,9 @@ function Item({ item }: { item: DiffItem }): ReactNode {
     >
       <View style={{ flexDirection: 'row', gap: space[2], alignItems: 'center', flexWrap: 'wrap' }}>
         <Badge label={style.label} glyph={style.glyph} tone={style.tone} />
-        <Text style={{ fontWeight: '700', fontSize: 15, color: colors.text, flexShrink: 1 }}>{item.title}</Text>
+        <Text style={{ fontWeight: '700', fontSize: 15, color: colors.text, flexShrink: 1 }}>
+          {item.title}
+        </Text>
         <Small>{AREA_LABEL[item.area]}</Small>
         {item.movedFrom !== undefined && item.movedTo !== undefined ? (
           <Small>
@@ -112,7 +147,12 @@ function Item({ item }: { item: DiffItem }): ReactNode {
         <Text
           accessibilityRole="button"
           onPress={() => setAll(!all)}
-          style={{ color: colors.primary, fontWeight: '700', textDecorationLine: 'underline', fontSize: 13 }}
+          style={{
+            color: colors.primary,
+            fontWeight: '700',
+            textDecorationLine: 'underline',
+            fontSize: 13,
+          }}
         >
           {all ? 'Show fewer' : `Show all ${item.fields.length} changes`}
         </Text>
@@ -121,7 +161,15 @@ function Item({ item }: { item: DiffItem }): ReactNode {
   );
 }
 
-export function DiffView({ diff, fromLabel, toLabel }: { diff: UnitDiff; fromLabel: string; toLabel: string }): ReactNode {
+export function DiffView({
+  diff,
+  fromLabel,
+  toLabel,
+}: {
+  diff: UnitDiff;
+  fromLabel: string;
+  toLabel: string;
+}): ReactNode {
   if (diff.same) {
     return (
       <EmptyState title="No differences">
@@ -135,8 +183,8 @@ export function DiffView({ diff, fromLabel, toLabel }: { diff: UnitDiff; fromLab
     <View style={{ gap: space[3] }} testID="diff-view">
       <Card tone="muted">
         <P>
-          {fromLabel} → {toLabel}: {diff.counts.changed} changed, {diff.counts.added} added, {diff.counts.removed} removed,{' '}
-          {diff.counts.moved} moved
+          {fromLabel} → {toLabel}: {diff.counts.changed} changed, {diff.counts.added} added,{' '}
+          {diff.counts.removed} removed, {diff.counts.moved} moved
         </P>
       </Card>
       {diff.items.map((item) => (

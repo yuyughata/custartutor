@@ -31,5 +31,5 @@ export function scrollToText(text: string, within = '[data-preview-frame]'): voi
 export function scrollToTestId(testId: string): void {
   if (typeof document === 'undefined') return;
   const target = document.querySelector(`[data-testid="${testId}"]`);
-  if (target) target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  if (target) target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }

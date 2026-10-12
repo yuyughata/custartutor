@@ -28,7 +28,12 @@ const SchemeStatusSchema = z.enum(['draft', 'approved', 'archived']);
 const VersionStatusSchema = z.enum(['draft', 'in_review', 'approved', 'published', 'superseded']);
 const ContentStatusSchema = z.enum(['draft', 'published', 'archived']);
 
-export const SubjectRow = z.object({ id: Id, slug: z.string(), name: z.string(), sort: z.number() });
+export const SubjectRow = z.object({
+  id: Id,
+  slug: z.string(),
+  name: z.string(),
+  sort: z.number(),
+});
 export const LevelRow = z.object({ code: LevelCode, name: z.string(), sort: z.number() });
 
 export const SchemeListRow = z.object({
@@ -63,7 +68,11 @@ export const SchemeDetailRow = SchemeListRow.extend({
 });
 export type SchemeDetailRow = z.infer<typeof SchemeDetailRow>;
 
-const UnitVersionStub = z.object({ id: Id, version: z.number().int(), status: VersionStatusSchema });
+const UnitVersionStub = z.object({
+  id: Id,
+  version: z.number().int(),
+  status: VersionStatusSchema,
+});
 
 export const UnitRowSchema = z.object({
   id: Id,
@@ -154,7 +163,10 @@ export const CharacterRow = z.object({
   slug: z.string(),
   name: z.string(),
   traits: z.record(z.string(), z.unknown()).pipe(CastTraits),
-  voice: z.record(z.string(), z.custom<Json>((value) => value !== undefined)),
+  voice: z.record(
+    z.string(),
+    z.custom<Json>((value) => value !== undefined),
+  ),
   active: z.boolean(),
 });
 
@@ -175,7 +187,9 @@ export const JobSummaryRow = JobRowLoose.omit({ result: true });
 
 export const AiJobResponseSchema = z.object({ job: JobRowLoose, busy: z.boolean().optional() });
 
-export const AdminUserRow = z.object({ role: z.enum(['super_admin', 'content_editor', 'reviewer', 'support', 'analyst']) });
+export const AdminUserRow = z.object({
+  role: z.enum(['super_admin', 'content_editor', 'reviewer', 'support', 'analyst']),
+});
 
 export const ApplyPlanSchema = z.object({ chapters: numeric, units: numeric });
 

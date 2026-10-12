@@ -8,14 +8,7 @@
 
 export type ChangeKind = 'added' | 'removed' | 'changed' | 'moved';
 export type DiffArea =
-  | 'meta'
-  | 'header'
-  | 'section'
-  | 'question'
-  | 'workbook'
-  | 'manual'
-  | 'session_plan'
-  | 'other';
+  'meta' | 'header' | 'section' | 'question' | 'workbook' | 'manual' | 'session_plan' | 'other';
 
 export interface FieldChange {
   /** For example `blocks[2].text`. Indexes are positions in the NEWER version (older, for removals). */
@@ -101,7 +94,8 @@ export function summarize(value: unknown): string {
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (Array.isArray(value)) {
-    if (value.every((item) => typeof item === 'string')) return clip((value as string[]).join(' · '));
+    if (value.every((item) => typeof item === 'string'))
+      return clip((value as string[]).join(' · '));
     return clip(value.map((item) => summarize(item)).join(' | '));
   }
   if (isRec(value)) {
@@ -278,7 +272,9 @@ function sectionItems(beforeList: unknown[], afterList: unknown[]): DiffItem[] {
     if (id) beforeById.set(id, { value, index });
   });
   const afterIds = new Set(afterList.map(idOf));
-  const common = afterList.map(idOf).filter((id): id is string => id !== null && beforeById.has(id));
+  const common = afterList
+    .map(idOf)
+    .filter((id): id is string => id !== null && beforeById.has(id));
   const commonBefore = beforeList
     .map(idOf)
     .filter((id): id is string => id !== null && afterIds.has(id));
@@ -358,7 +354,13 @@ function questionItems(before: Rec, after: Rec): DiffItem[] {
     }
     const fields = diffFields(before[id], after[id]);
     if (fields.length > 0) {
-      items.push({ area: 'question', id, title: titleOf(after[id], id), change: 'changed', fields });
+      items.push({
+        area: 'question',
+        id,
+        title: titleOf(after[id], id),
+        change: 'changed',
+        fields,
+      });
     }
   }
   for (const id of Object.keys(before)) {
@@ -405,7 +407,13 @@ export function diffUnits(before: unknown, after: unknown): UnitDiff {
   }
   const header = diffFields(a.header, b.header);
   if (header.length > 0) {
-    items.push({ area: 'header', id: 'header', title: 'Unit header', change: 'changed', fields: header });
+    items.push({
+      area: 'header',
+      id: 'header',
+      title: 'Unit header',
+      change: 'changed',
+      fields: header,
+    });
   }
   items.push(
     ...sectionItems(
@@ -413,14 +421,18 @@ export function diffUnits(before: unknown, after: unknown): UnitDiff {
       Array.isArray(b.sections) ? b.sections : [],
     ),
   );
-  items.push(...questionItems(isRec(a.questions) ? a.questions : {}, isRec(b.questions) ? b.questions : {}));
+  items.push(
+    ...questionItems(isRec(a.questions) ? a.questions : {}, isRec(b.questions) ? b.questions : {}),
+  );
   for (const { key, area, title } of TOP_LEVEL_AREAS) {
     const fields = diffFields(a[key], b[key]);
     if (fields.length > 0) {
       items.push({ area, id: key, title, change: 'changed', fields });
     }
   }
-  const otherKeys = new Set([...Object.keys(a), ...Object.keys(b)].filter((key) => !HANDLED_KEYS.has(key)));
+  const otherKeys = new Set(
+    [...Object.keys(a), ...Object.keys(b)].filter((key) => !HANDLED_KEYS.has(key)),
+  );
   for (const key of otherKeys) {
     const fields = diffFields(a[key], b[key], key);
     if (fields.length > 0) {

@@ -113,9 +113,11 @@ function Planner({
     await job.start('chapter_plan', { scheme_id: scheme.id }, idempotencyKey);
   });
 
-  const parsedResult = job.job?.status === 'succeeded' ? ChapterPlanResult.safeParse(job.job.result) : null;
+  const parsedResult =
+    job.job?.status === 'succeeded' ? ChapterPlanResult.safeParse(job.job.result) : null;
   const parsedScheme = Scheme.safeParse({
-    subject_slug: catalog.subjects.find((subject) => subject.id === scheme.subject_id)?.slug ?? 'unknown',
+    subject_slug:
+      catalog.subjects.find((subject) => subject.id === scheme.subject_id)?.slug ?? 'unknown',
     level_code: scheme.level_code,
     term: scheme.term,
     weeks: scheme.weeks,
@@ -147,8 +149,9 @@ function Planner({
 
       <Section title={hasChapters ? 'Plan again' : 'Propose chapters'}>
         <P>
-          The weeks are grouped into chapters of 3 to 5 units. Claude names the chapters and units and proposes themes,
-          you edit the plan, and nothing is created until you press “Apply plan”.
+          The weeks are grouped into chapters of 3 to 5 units. Claude names the chapters and units
+          and proposes themes, you edit the plan, and nothing is created until you press “Apply
+          plan”.
           {hasChapters
             ? ' Applying again updates the titles, objectives and stage of units that have no draft yet; a unit that already has a draft is left alone and the server will say so.'
             : ''}
@@ -206,7 +209,10 @@ function Planner({
         </Section>
       ) : null}
 
-      {job.job && (job.job.status === 'failed' || job.job.status === 'cancelled' || job.job.status === 'succeeded') ? (
+      {job.job &&
+      (job.job.status === 'failed' ||
+        job.job.status === 'cancelled' ||
+        job.job.status === 'succeeded') ? (
         <Row>
           <Button label="Start again" variant="secondary" small onPress={startOver} />
         </Row>
@@ -225,7 +231,11 @@ export default function ChapterPlannerScreen(): ReactNode {
   const chapters = useLoad(() => api.chapters.list(schemeId), [api, schemeId]);
 
   return (
-    <Async state={scheme} loadingLabel="Loading the scheme…" onSignInAgain={() => void recheckAuth()}>
+    <Async
+      state={scheme}
+      loadingLabel="Loading the scheme…"
+      onSignInAgain={() => void recheckAuth()}
+    >
       {(data) => (
         <Async state={catalog}>
           {(names) => {
@@ -237,15 +247,24 @@ export default function ChapterPlannerScreen(): ReactNode {
                   subtitle={title}
                   crumbs={[
                     { label: 'Schemes', href: '/schemes' },
-                    { label: title, href: { pathname: '/schemes/[schemeId]', params: { schemeId: data.id } } },
+                    {
+                      label: title,
+                      href: { pathname: '/schemes/[schemeId]', params: { schemeId: data.id } },
+                    },
                     { label: 'Chapters' },
                   ]}
                 />
                 {data.status !== 'approved' ? (
-                  <Banner tone="warning" title="Approve the scheme first" testID="planner-not-approved">
+                  <Banner
+                    tone="warning"
+                    title="Approve the scheme first"
+                    testID="planner-not-approved"
+                  >
                     <P>
                       Chapters can only be planned from an approved scheme.{' '}
-                      <AppLink href={{ pathname: '/schemes/[schemeId]', params: { schemeId: data.id } }}>
+                      <AppLink
+                        href={{ pathname: '/schemes/[schemeId]', params: { schemeId: data.id } }}
+                      >
                         Go to the scheme
                       </AppLink>
                     </P>

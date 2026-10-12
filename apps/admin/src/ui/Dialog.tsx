@@ -57,8 +57,15 @@ export function ConfirmDialog({
           <ScrollView contentContainerStyle={{ padding: space[5], gap: space[3] }}>
             <H2>{title}</H2>
             {typeof children === 'string' ? <P>{children}</P> : children}
-            <View style={{ flexDirection: 'row', gap: space[3], flexWrap: 'wrap', marginTop: space[2] }}>
-              <Button label={confirmLabel} onPress={onConfirm} variant={confirmVariant} busy={busy} />
+            <View
+              style={{ flexDirection: 'row', gap: space[3], flexWrap: 'wrap', marginTop: space[2] }}
+            >
+              <Button
+                label={confirmLabel}
+                onPress={onConfirm}
+                variant={confirmVariant}
+                busy={busy}
+              />
               <Button label={cancelLabel} onPress={onCancel} variant="secondary" disabled={busy} />
             </View>
           </ScrollView>

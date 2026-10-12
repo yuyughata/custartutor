@@ -12,7 +12,12 @@ interface TextProps {
 
 export function H1({ children, style, testID }: TextProps): ReactNode {
   return (
-    <RNText accessibilityRole="header" aria-level={1} style={[type.h1, style]} {...(testID ? { testID } : {})}>
+    <RNText
+      accessibilityRole="header"
+      aria-level={1}
+      style={[type.h1, style]}
+      {...(testID ? { testID } : {})}
+    >
       {children}
     </RNText>
   );
@@ -20,7 +25,12 @@ export function H1({ children, style, testID }: TextProps): ReactNode {
 
 export function H2({ children, style, testID }: TextProps): ReactNode {
   return (
-    <RNText accessibilityRole="header" aria-level={2} style={[type.h2, style]} {...(testID ? { testID } : {})}>
+    <RNText
+      accessibilityRole="header"
+      aria-level={2}
+      style={[type.h2, style]}
+      {...(testID ? { testID } : {})}
+    >
       {children}
     </RNText>
   );
@@ -28,13 +38,24 @@ export function H2({ children, style, testID }: TextProps): ReactNode {
 
 export function H3({ children, style, testID }: TextProps): ReactNode {
   return (
-    <RNText accessibilityRole="header" aria-level={3} style={[type.h3, style]} {...(testID ? { testID } : {})}>
+    <RNText
+      accessibilityRole="header"
+      aria-level={3}
+      style={[type.h3, style]}
+      {...(testID ? { testID } : {})}
+    >
       {children}
     </RNText>
   );
 }
 
-export function P({ children, style, selectable = true, numberOfLines, testID }: TextProps): ReactNode {
+export function P({
+  children,
+  style,
+  selectable = true,
+  numberOfLines,
+  testID,
+}: TextProps): ReactNode {
   return (
     <RNText
       selectable={selectable}
@@ -47,7 +68,13 @@ export function P({ children, style, selectable = true, numberOfLines, testID }:
   );
 }
 
-export function Small({ children, style, selectable = true, numberOfLines, testID }: TextProps): ReactNode {
+export function Small({
+  children,
+  style,
+  selectable = true,
+  numberOfLines,
+  testID,
+}: TextProps): ReactNode {
   return (
     <RNText
       selectable={selectable}

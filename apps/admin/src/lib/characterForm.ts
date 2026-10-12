@@ -97,6 +97,9 @@ export function statedFacts(character: CharacterRecord): string[] {
   if (traits.gender) facts.push(traits.gender);
   if (traits.pronouns) facts.push(traits.pronouns);
   if (traits.relationship_note) facts.push('relationship noted');
-  if (traits.personality.length > 0) facts.push(`${traits.personality.length} personality trait${traits.personality.length === 1 ? '' : 's'}`);
+  if (traits.personality.length > 0)
+    facts.push(
+      `${traits.personality.length} personality trait${traits.personality.length === 1 ? '' : 's'}`,
+    );
   return facts;
 }

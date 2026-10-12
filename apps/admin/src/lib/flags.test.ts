@@ -12,7 +12,13 @@ const flags: Flag[] = [
 
 describe('flags', () => {
   it('sorts concerns first, then by week, keeping input order for ties', () => {
-    expect(sortFlags(flags).map((f) => f.message)).toEqual(['c2', 'c5', 'c-no-week', 'n3', 'n-no-week']);
+    expect(sortFlags(flags).map((f) => f.message)).toEqual([
+      'c2',
+      'c5',
+      'c-no-week',
+      'n3',
+      'n-no-week',
+    ]);
   });
 
   it('counts by severity', () => {

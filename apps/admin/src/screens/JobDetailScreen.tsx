@@ -3,7 +3,12 @@
 import { useEffect, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { SchemeIngestResult, ChapterPlanResult, UnitDraftResult, type JobRow } from '@custar/authoring-core';
+import {
+  SchemeIngestResult,
+  ChapterPlanResult,
+  UnitDraftResult,
+  type JobRow,
+} from '@custar/authoring-core';
 import { JobPanel } from '../components/JobPanel';
 import { useJob } from '../hooks/useJob';
 import { useLoad } from '../hooks/useLoad';
@@ -30,10 +35,14 @@ function ResultSummary({ job }: { job: JobRow }): ReactNode {
         {parsed.success ? (
           <>
             <P>
-              A draft with {parsed.data.scheme.weeks.length} weeks and {parsed.data.flags.length} note
-              {parsed.data.flags.length === 1 ? '' : 's'}. It is saved nowhere until a person saves it.
+              A draft with {parsed.data.scheme.weeks.length} weeks and {parsed.data.flags.length}{' '}
+              note
+              {parsed.data.flags.length === 1 ? '' : 's'}. It is saved nowhere until a person saves
+              it.
             </P>
-            <AppLink href={{ pathname: '/schemes/new', params: { job: job.id } }}>Open the draft</AppLink>
+            <AppLink href={{ pathname: '/schemes/new', params: { job: job.id } }}>
+              Open the draft
+            </AppLink>
           </>
         ) : (
           <P>The result could not be read.</P>
@@ -48,11 +57,17 @@ function ResultSummary({ job }: { job: JobRow }): ReactNode {
         {parsed.success ? (
           <>
             <P>
-              A plan with {parsed.data.plan.chapters.length} chapters and {parsed.data.flags.length} note
+              A plan with {parsed.data.plan.chapters.length} chapters and {parsed.data.flags.length}{' '}
+              note
               {parsed.data.flags.length === 1 ? '' : 's'}.
             </P>
             {job.scheme_id ? (
-              <AppLink href={{ pathname: '/schemes/[schemeId]/chapters', params: { schemeId: job.scheme_id, job: job.id } }}>
+              <AppLink
+                href={{
+                  pathname: '/schemes/[schemeId]/chapters',
+                  params: { schemeId: job.scheme_id, job: job.id },
+                }}
+              >
                 Open the plan
               </AppLink>
             ) : null}
@@ -72,11 +87,14 @@ function ResultSummary({ job }: { job: JobRow }): ReactNode {
             Version {parsed.data.version} was saved as a draft. {parsed.data.summary}
           </P>
           <Small>
-            Lint: {parsed.data.lint.errors} errors, {parsed.data.lint.warnings} warnings · {parsed.data.review.length} review note
+            Lint: {parsed.data.lint.errors} errors, {parsed.data.lint.warnings} warnings ·{' '}
+            {parsed.data.review.length} review note
             {parsed.data.review.length === 1 ? '' : 's'}.
           </Small>
           {job.unit_id ? (
-            <AppLink href={{ pathname: '/units/[unitId]', params: { unitId: job.unit_id } }}>Open the unit</AppLink>
+            <AppLink href={{ pathname: '/units/[unitId]', params: { unitId: job.unit_id } }}>
+              Open the unit
+            </AppLink>
           ) : null}
         </>
       ) : (
@@ -115,7 +133,10 @@ export default function JobDetailScreen(): ReactNode {
               crumbs={[{ label: 'Jobs', href: '/jobs' }, { label: jobKindLabel(row.kind) }]}
             />
             {runtime.mode === 'demo' ? (
-              <Banner tone="warning" title={`Demo: the stand-in model (${DEMO_MODEL_NAME}) ran this job`} />
+              <Banner
+                tone="warning"
+                title={`Demo: the stand-in model (${DEMO_MODEL_NAME}) ran this job`}
+              />
             ) : null}
             <JobPanel
               job={row}

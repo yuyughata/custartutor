@@ -19,7 +19,8 @@ export function Card({
       {...(testID ? { testID } : {})}
       style={[
         {
-          backgroundColor: tone === 'muted' ? colors.page : tone === 'core' ? colors.primaryTint : colors.surface,
+          backgroundColor:
+            tone === 'muted' ? colors.page : tone === 'core' ? colors.primaryTint : colors.surface,
           borderWidth: 1,
           borderColor: tone === 'core' ? colors.primary : colors.border,
           borderRadius: radii.lg,
@@ -51,7 +52,13 @@ export function Section({
   return (
     <Card {...(tone ? { tone } : {})} {...(testID ? { testID } : {})}>
       <View
-        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3], flexWrap: 'wrap' }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: space[3],
+          flexWrap: 'wrap',
+        }}
       >
         <H2>{title}</H2>
         {action}
@@ -75,7 +82,12 @@ export function Row({
   style?: StyleProp<ViewStyle>;
 }): ReactNode {
   return (
-    <View style={[{ flexDirection: 'row', alignItems: align, gap, flexWrap: wrap ? 'wrap' : 'nowrap' }, style]}>
+    <View
+      style={[
+        { flexDirection: 'row', alignItems: align, gap, flexWrap: wrap ? 'wrap' : 'nowrap' },
+        style,
+      ]}
+    >
       {children}
     </View>
   );

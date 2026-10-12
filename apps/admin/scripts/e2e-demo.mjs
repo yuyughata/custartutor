@@ -50,10 +50,49 @@ const check = (label, ok) => {
   if (!ok) process.exitCode = 1;
 };
 const btn = (name, exact = true) => page.getByRole('button', { name, exact });
-const lbl = (name) => (typeof name === 'string' ? page.getByLabel(name, { exact: true }) : page.getByLabel(name));
+const lbl = (name) =>
+  typeof name === 'string' ? page.getByLabel(name, { exact: true }) : page.getByLabel(name);
 const nav = (id) => page.getByTestId(`nav-${id}`);
 const text = (value, exact = false) => page.getByText(value, { exact });
 const heading = (name) => page.getByRole('heading', { name, exact: false }).first();
+
+// A cheap accessibility check: every form control, button and link on the page has an accessible name, and
+// there is exactly one h1. (Not a substitute for a screen-reader pass.)
+const auditNames = async (where) => {
+  const problems = await page.evaluate(() => {
+    const doc = globalThis.document;
+    const out = [];
+    const nameOf = (el) =>
+      (el.getAttribute('aria-label') || '').trim() ||
+      (el.getAttribute('aria-labelledby') ? 'labelled' : '') ||
+      (el.id && doc.querySelector(`label[for="${el.id}"]`) ? 'label' : '') ||
+      (el.textContent || '').trim() ||
+      (el.getAttribute('title') || '').trim() ||
+      (el.getAttribute('alt') || '').trim();
+    for (const el of doc.querySelectorAll('input, textarea, select')) {
+      if (el.type === 'hidden') continue;
+      if (!nameOf(el)) out.push(`unnamed ${el.tagName.toLowerCase()}`);
+    }
+    for (const el of doc.querySelectorAll(
+      'button, [role="button"], a[href], [role="link"], [role="tab"]',
+    )) {
+      if (!nameOf(el)) out.push(`unnamed ${el.getAttribute('role') || el.tagName.toLowerCase()}`);
+    }
+    for (const el of doc.querySelectorAll('img')) {
+      if (!el.hasAttribute('alt')) out.push('img without alt');
+    }
+    // The lesson renderer in the preview frame has its own headings; count only the page's.
+    const h1 = [...doc.querySelectorAll('h1, [role="heading"][aria-level="1"]')].filter(
+      (el) => !el.closest('[data-preview-frame]'),
+    ).length;
+    if (h1 !== 1) out.push(`${h1} level-1 headings`);
+    return out;
+  });
+  check(
+    `accessible names on ${where}${problems.length ? ` (${[...new Set(problems)].join('; ')})` : ''}`,
+    problems.length === 0,
+  );
+};
 const setRole = async (role) => {
   await lbl('Demo role').selectOption(role);
   await page.waitForTimeout(300);
@@ -62,7 +101,12 @@ const setRole = async (role) => {
 // ---- 1. sign-in -------------------------------------------------------------------------------------------
 await page.goto(`${BASE}/`);
 await text('Content engine').waitFor();
-check('DEMO banner is on the sign-in screen', (await page.getByTestId('demo-banner').innerText()).includes('DEMO: sample data and a stand-in model, not Claude'));
+check(
+  'DEMO banner is on the sign-in screen',
+  (await page.getByTestId('demo-banner').innerText()).includes(
+    'DEMO: sample data and a stand-in model, not Claude',
+  ),
+);
 await shot('sign-in');
 await lbl('Email address').fill('barry@example.com');
 await btn('Send me a code').click();
@@ -85,13 +129,18 @@ await btn('Verify').click();
 // ---- 2. home ---------------------------------------------------------------------------------------------
 await heading('Home').waitFor();
 await page.getByTestId('home-counts').waitFor();
-check('DEMO banner stays after sign-in', (await page.getByTestId('demo-banner').innerText()).includes('DEMO'));
+check(
+  'DEMO banner stays after sign-in',
+  (await page.getByTestId('demo-banner').innerText()).includes('DEMO'),
+);
+await auditNames('Home');
 await shot('home');
 
 // ---- 3. schemes list and upload (paste) ---------------------------------------------------------------------
 await nav('schemes').click();
 await heading('Schemes of work').waitFor();
 await page.getByRole('link', { name: 'Basic Science' }).first().waitFor();
+await auditNames('Schemes');
 await shot('schemes-list');
 await btn('New scheme from a document').click();
 await heading('New scheme from a document').waitFor();
@@ -104,16 +153,33 @@ await lbl('Level').selectOption('P1');
 await lbl('Term').selectOption('2');
 await page
   .getByLabel('Scheme of work text')
-  .fill('BASIC SCIENCE PRIMARY 1 SECOND TERM\nWeek 1: Non-living things\nWeek 2: ...\n(pasted for the demo)');
+  .fill(
+    'BASIC SCIENCE PRIMARY 1 SECOND TERM\nWeek 1: Non-living things\nWeek 2: ...\n(pasted for the demo)',
+  );
 await shot('new-scheme-filled');
 await btn('Read the document').click();
-await page.getByRole('progressbar', { name: /steps done/ }).first().waitFor();
+await page
+  .getByRole('progressbar', { name: /steps done/ })
+  .first()
+  .waitFor();
 await shot('scheme-ingest-running');
 await page.getByTestId('scheme-draft-banner').waitFor({ timeout: 60000 });
 await shot('scheme-draft-review');
-check('the draft says nothing is saved yet', await text('Nothing has been saved yet').first().isVisible());
-check('model flags are listed', await page.getByTestId('scheme-flags').isVisible().catch(() => false));
-await page.getByTestId('scheme-flags').scrollIntoViewIfNeeded().catch(() => undefined);
+check(
+  'the draft says nothing is saved yet',
+  await text('Nothing has been saved yet').first().isVisible(),
+);
+check(
+  'model flags are listed',
+  await page
+    .getByTestId('scheme-flags')
+    .isVisible()
+    .catch(() => false),
+);
+await page
+  .getByTestId('scheme-flags')
+  .scrollIntoViewIfNeeded()
+  .catch(() => undefined);
 await shot('scheme-draft-flags');
 
 // ---- 4. edit, unsaved-changes guard, save, approve -----------------------------------------------------------
@@ -121,17 +187,24 @@ await lbl('Topic, row 1').fill('Non-living things (edited by a person)');
 await btn('Add week').click();
 const rows = await lbl(/^Topic, row \d+$/).count();
 await lbl(`Topic, row ${rows}`).fill('A new week added in the demo');
+await auditNames('the scheme draft editor');
 await shot('scheme-draft-edited');
 await nav('home').click();
 await text('Leave without saving?').waitFor();
 await shot('unsaved-changes-guard');
 await btn('Stay and keep editing').click();
 await page.getByTestId('scheme-save-status').waitFor();
-check('before saving the page says it is not saved', (await page.getByTestId('scheme-save-status').innerText()).includes('Not saved yet'));
+check(
+  'before saving the page says it is not saved',
+  (await page.getByTestId('scheme-save-status').innerText()).includes('Not saved yet'),
+);
 await btn('Save as draft').click();
 await text('Saved as a draft at').waitFor();
 await shot('scheme-draft-saved');
-check('saved only after the RPC resolved', (await page.getByTestId('scheme-save-status').innerText()).includes('Saved as a draft at'));
+check(
+  'saved only after the RPC resolved',
+  (await page.getByTestId('scheme-save-status').innerText()).includes('Saved as a draft at'),
+);
 await btn('Approve scheme').click();
 await text('Approve this scheme?').waitFor();
 await shot('scheme-approve-confirm');
@@ -146,8 +219,12 @@ await shot('planner-empty');
 await btn('Propose chapters').click();
 await page.getByTestId('plan-section').waitFor({ timeout: 60000 });
 await shot('planner-plan');
-check('plan summary is shown', (await page.getByTestId('plan-summary').innerText()).includes('chapters'));
+check(
+  'plan summary is shown',
+  (await page.getByTestId('plan-summary').innerText()).includes('chapters'),
+);
 await lbl('Title, chapter 1').fill('Our changing world');
+await auditNames('the chapter plan editor');
 await shot('planner-plan-edited');
 // make chapter 1 invalid on purpose: move its last unit forward while chapter 2 is full, then see the message
 const moveButtons = page.getByRole('button', { name: /Move unit \d+ to next chapter/ });
@@ -174,7 +251,10 @@ await text('No draft yet').first().waitFor();
 await shot('unit-empty');
 await lbl('Notes for Claude (optional)').fill('Keep the market story. Use cassava as the example.');
 await btn('Draft with Claude').click();
-await page.getByRole('progressbar', { name: /steps done/ }).first().waitFor();
+await page
+  .getByRole('progressbar', { name: /steps done/ })
+  .first()
+  .waitFor();
 await page.waitForTimeout(1200);
 await shot('unit-draft-running');
 await page.getByTestId('draft-outcome').waitFor({ timeout: 120000 });
@@ -197,7 +277,10 @@ await preview.getByRole('tab', { name: 'Textbook' }).click();
 // lint and review panels
 await page.getByTestId('lint-panel').scrollIntoViewIfNeeded();
 await shot('unit-lint-panel');
-check('review is labelled advisory', await text('Claude’s review is advice, not approval').first().isVisible());
+check(
+  'review is labelled advisory',
+  await text('Claude’s review is advice, not approval').first().isVisible(),
+);
 const jumpButtons = page.getByRole('button', { name: /^Jump to / });
 if ((await jumpButtons.count()) > 0) {
   await jumpButtons.first().click();
@@ -207,18 +290,36 @@ if ((await jumpButtons.count()) > 0) {
 
 // revise
 await page.getByTestId('revise-box').scrollIntoViewIfNeeded();
-await lbl('What should change?').fill('Make the practice questions shorter and use cassava in the examples.');
+await lbl('What should change?').fill(
+  'Make the practice questions shorter and use cassava in the examples.',
+);
 await shot('unit-revise-form');
 await btn('Revise with Claude').click();
-await page.getByRole('progressbar', { name: /steps done/ }).first().waitFor();
-await page.getByTestId('draft-outcome').filter({ hasText: 'Version 2' }).waitFor({ timeout: 120000 });
+await page
+  .getByRole('progressbar', { name: /steps done/ })
+  .first()
+  .waitFor();
+await page
+  .getByTestId('draft-outcome')
+  .filter({ hasText: 'Version 2' })
+  .waitFor({ timeout: 120000 });
 await shot('unit-revised');
 
 // history and diff
 await page.getByTestId('version-history').scrollIntoViewIfNeeded();
-await page.getByTestId('diff-view').waitFor({ timeout: 20000 }).catch(() => undefined);
+await page
+  .getByTestId('diff-view')
+  .waitFor({ timeout: 20000 })
+  .catch(() => undefined);
+await auditNames('the unit workspace');
 await shot('unit-history-diff');
-check('history lists two versions', (await page.getByTestId('version-history').getByText(/^v[12]/).count()) >= 2);
+check(
+  'history lists two versions',
+  (await page
+    .getByTestId('version-history')
+    .getByText(/^v[12]/)
+    .count()) >= 2,
+);
 
 // ---- 7. workflow: submit, approve (reviewer), publish -------------------------------------------------------
 await page.getByTestId('workflow-bar').scrollIntoViewIfNeeded();
@@ -228,7 +329,10 @@ await page.getByTestId('workflow-bar').getByText('In review').first().waitFor();
 await shot('unit-in-review');
 await setRole('content_editor');
 await page.getByTestId('workflow-bar').scrollIntoViewIfNeeded();
-check('a content editor cannot approve (button disabled with a reason)', await btn('Approve').isDisabled());
+check(
+  'a content editor cannot approve (button disabled with a reason)',
+  await btn('Approve').isDisabled(),
+);
 await shot('unit-in-review-editor-cannot-approve');
 await setRole('reviewer');
 await page.getByTestId('workflow-bar').scrollIntoViewIfNeeded();
@@ -241,7 +345,10 @@ await shot('unit-publish-confirm');
 await btn('Publish version 2').click();
 await page.getByTestId('pack-demo').waitFor();
 await shot('unit-published');
-check('demo publish says nothing was built', await text('No lesson pack was built').first().isVisible());
+check(
+  'demo publish says nothing was built',
+  await text('No lesson pack was built').first().isVisible(),
+);
 await setRole('super_admin');
 
 // ---- 8. characters -------------------------------------------------------------------------------------------
@@ -253,6 +360,7 @@ await lbl('Relationship note, Zuri').fill('Zari is Zuri’s big sister.');
 await shot('characters-edited');
 await btn('Save Zuri').click();
 await text('Saved at').first().waitFor();
+await auditNames('Characters');
 await shot('characters-saved');
 
 // ---- 9. usage and settings ------------------------------------------------------------------------------------
@@ -260,7 +368,10 @@ await nav('usage').click();
 await heading('Usage & settings').waitFor();
 await page.getByTestId('usage-totals').waitFor();
 await shot('usage');
-check('cost is unknown, not zero, where no price is entered', (await page.getByTestId('usage-totals').innerText()).includes('unknown'));
+check(
+  'cost is unknown, not zero, where no price is entered',
+  (await page.getByTestId('usage-totals').innerText()).includes('unknown'),
+);
 await page.getByTestId('kill-switch').scrollIntoViewIfNeeded();
 await lbl('Stop all AI jobs').click();
 await text('The kill switch is ON').waitFor();
@@ -276,12 +387,14 @@ for (const label of ['Input', 'Output', 'Cache read', 'Cache write']) {
 await shot('settings-prices-edited');
 await btn('Save prices').click();
 await text('Saved at').first().waitFor();
+await auditNames('Usage & settings');
 await shot('settings-prices-saved');
 
 // ---- 10. jobs -----------------------------------------------------------------------------------------------
 await nav('jobs').click();
 await heading('Jobs').first().waitFor();
 await page.getByRole('table', { name: 'Jobs' }).waitFor();
+await auditNames('Jobs');
 await shot('jobs-list');
 await page.getByRole('link', { name: 'Draft a unit' }).first().click();
 await text('Started').first().waitFor();
@@ -291,23 +404,85 @@ await shot('job-detail');
 await nav('schemes').click();
 await setRole('reviewer');
 await heading('Schemes of work').waitFor();
-check('a reviewer cannot start a scheme upload', await btn('New scheme from a document').isDisabled());
+check(
+  'a reviewer cannot start a scheme upload',
+  await btn('New scheme from a document').isDisabled(),
+);
 await shot('role-reviewer-schemes');
 await setRole('analyst');
-await page.getByTestId('nav-usage').waitFor();
-check('an analyst only sees Usage', (await nav('schemes').count()) === 0);
-await shot('role-analyst');
+await page.getByTestId('no-access').waitFor();
+check(
+  'switching to an analyst on Schemes says why, instead of showing stale data',
+  await text('Your role cannot open this page').isVisible(),
+);
+check(
+  'an analyst only sees Usage in the sidebar',
+  (await nav('schemes').count()) === 0 && (await nav('usage').count()) === 1,
+);
+await shot('role-analyst-no-access');
+await nav('usage').click();
+await page.getByTestId('usage-totals').waitFor();
+await shot('role-analyst-usage');
 await setRole('support');
-await text('Your role has no content screens').first().waitFor().catch(async () => {
-  await page.goto(`${BASE}/`); // fall back (a reload would reset the demo, so this is only a safety net)
-});
-await shot('role-support');
+await page.getByTestId('no-access').waitFor();
+check('support has no usage link', (await nav('usage').count()) === 0);
+await nav('home').click();
+await text('Your role has no content screens').first().waitFor();
+await shot('role-support-home');
 await setRole('super_admin');
 
 // ---- 12. dev preview -------------------------------------------------------------------------------------
 await nav('dev').click();
 await heading('Fixture preview').waitFor();
 await shot('dev-fixture-preview');
+await page.getByRole('link', { name: /UI states/ }).click();
+await heading('UI states').waitFor();
+check(
+  'the authenticator-code-required state is not a blank page',
+  await text('Authenticator code required').first().isVisible(),
+);
+await shot('ui-states-top', { fullPage: false });
+await text('Errors').scrollIntoViewIfNeeded();
+await shot('ui-states-errors');
+
+// ---- 12b. file sources: a Word file (converted in the browser) and a PDF (uploaded) ----------------------------
+const fixture = (name) => new URL(`./fixtures/${name}`, import.meta.url).pathname;
+await nav('schemes').click();
+await btn('New scheme from a document').click();
+await heading('New scheme from a document').waitFor();
+await lbl('Subject').selectOption({ label: 'Basic Science' });
+await lbl('Term').selectOption('3');
+await lbl('Source').selectOption('file');
+const [docxChooser] = await Promise.all([
+  page.waitForEvent('filechooser'),
+  btn('Choose a file').click(),
+]);
+await docxChooser.setFiles(fixture('scheme-sample.docx'));
+await text('Converted to text in your browser').waitFor();
+check(
+  'the Word file was converted to text in the browser',
+  await text('Week 1: Our five senses').first().isVisible(),
+);
+await shot('upload-docx-converted');
+await btn('Read the document').click();
+await page.getByTestId('scheme-draft-banner').waitFor({ timeout: 60000 });
+await shot('upload-docx-draft');
+await btn('Discard this draft and start again').click();
+await text('Leave without saving?').waitFor();
+await btn('Leave without saving').click();
+await lbl('Source').selectOption('file');
+const [pdfChooser] = await Promise.all([
+  page.waitForEvent('filechooser'),
+  page.getByRole('button', { name: /^Choose a (different )?file$/ }).click(),
+]);
+await pdfChooser.setFiles(fixture('scheme-sample.pdf'));
+await text('This PDF will be stored in the private upload bucket').waitFor();
+await shot('upload-pdf-chosen');
+await btn('Read the document').click();
+await page.getByTestId('scheme-draft-banner').waitFor({ timeout: 60000 });
+await shot('upload-pdf-draft');
+await btn('Discard this draft and start again').click();
+await btn('Leave without saving').click();
 
 // ---- 13. narrow and tablet widths -------------------------------------------------------------------------
 await nav('home').click();
@@ -317,7 +492,9 @@ await shot('tablet-home');
 await page.setViewportSize({ width: 390, height: 844 });
 await page.waitForTimeout(500);
 await shot('narrow-home');
-const horizontalScroll = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+const horizontalScroll = await page.evaluate(
+  () => globalThis.document.documentElement.scrollWidth > globalThis.window.innerWidth + 2,
+);
 check('no horizontal page scroll at 390px', !horizontalScroll);
 await btn('Open menu').click();
 await shot('narrow-menu');
@@ -327,6 +504,28 @@ await shot('narrow-schemes');
 await page.getByRole('link', { name: 'Basic Science' }).first().click();
 await page.waitForTimeout(600);
 await shot('narrow-scheme-detail');
+// the unit workspace at tablet and phone widths (the golden unit: an approved version, ready to publish)
+await page.setViewportSize({ width: 820, height: 1100 });
+await btn('Open menu').click();
+await nav('home').click();
+await page
+  .getByRole('link', { name: /^Unit 2: Exploring Our Environment/ })
+  .first()
+  .click();
+await btn('Draft with Claude').waitFor();
+await shot('tablet-unit');
+await page.getByTestId('unit-preview').scrollIntoViewIfNeeded();
+await shot('tablet-unit-preview');
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(500);
+await page.getByTestId('unit-preview').scrollIntoViewIfNeeded();
+await shot('narrow-unit-preview');
+check(
+  'no horizontal page scroll on the unit page at 390px',
+  !(await page.evaluate(
+    () => globalThis.document.documentElement.scrollWidth > globalThis.window.innerWidth + 2,
+  )),
+);
 await page.setViewportSize({ width: 1280, height: 900 });
 
 // ---- 14. sign out; not an admin; authenticator enrolment ---------------------------------------------------
@@ -340,15 +539,33 @@ await lbl('Authenticator code').fill('654321');
 await btn('Verify').click();
 await page.getByTestId('not-admin').waitFor();
 await shot('not-an-admin');
-check('the not-an-admin message is shown', await text('This account is not an admin account').first().isVisible());
+check(
+  'the not-an-admin message is shown',
+  await text('This account is not an admin account').first().isVisible(),
+);
 await btn('Sign out').click();
 await lbl('Email address').fill('new-user@example.com');
 await btn('Send me a code').click();
 await lbl('6-digit email code').fill('123456');
 await btn('Check code').click();
 await heading('Set up your authenticator app').waitFor();
-await lbl('QR code for your authenticator app').waitFor();
+await page.getByRole('img', { name: 'QR code for your authenticator app' }).waitFor();
 await shot('authenticator-enrolment');
+
+// ---- 15. a deep link survives sign-in, and a role without access is told why ----------------------------------
+await page.goto(`${BASE}/schemes?demoRole=analyst`);
+await lbl('Email address').fill('analyst@example.com');
+await btn('Send me a code').click();
+await lbl('6-digit email code').fill('123456');
+await btn('Check code').click();
+await lbl('Authenticator code').fill('654321');
+await btn('Verify').click();
+await page.getByTestId('no-access').waitFor();
+check(
+  'an analyst on a deep link to Schemes sees why',
+  await text('Your role cannot open this page').isVisible(),
+);
+await shot('role-analyst-no-access');
 
 console.log('--- console issues ---');
 console.log(logs.slice(0, 20).join('\n') || '(none)');

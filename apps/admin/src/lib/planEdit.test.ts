@@ -33,7 +33,9 @@ function chapter(no: number, unitNos: number[]) {
 }
 
 /** 4 + 4: the plan groupIntoChapters gives for the 8 teaching weeks of Term 1. */
-const plan = (): ChapterPlan => ({ chapters: [chapter(1, [1, 2, 3, 4]), chapter(2, [5, 6, 7, 8])] });
+const plan = (): ChapterPlan => ({
+  chapters: [chapter(1, [1, 2, 3, 4]), chapter(2, [5, 6, 7, 8])],
+});
 
 describe('moving units between chapters', () => {
   it('moves the last unit of a chapter to the start of the next', () => {
@@ -86,8 +88,14 @@ describe('moving units between chapters', () => {
   });
 
   it('has no neighbour beyond the first and last chapter', () => {
-    expect(canMoveUnit(plan(), 0, 0, 'previous')).toMatchObject({ ok: false, reason: 'This is the first chapter.' });
-    expect(canMoveUnit(plan(), 1, 3, 'next')).toMatchObject({ ok: false, reason: 'This is the last chapter.' });
+    expect(canMoveUnit(plan(), 0, 0, 'previous')).toMatchObject({
+      ok: false,
+      reason: 'This is the first chapter.',
+    });
+    expect(canMoveUnit(plan(), 1, 3, 'next')).toMatchObject({
+      ok: false,
+      reason: 'This is the last chapter.',
+    });
   });
 });
 
@@ -97,7 +105,11 @@ describe('editing', () => {
     const renamed = renameChapter(original, 1, 'Shapes and living things');
     expect(renamed.chapters[1]?.title).toBe('Shapes and living things');
     expect(original.chapters[1]?.title).toBe('Chapter 2');
-    const edited = updateUnit(renamed, 0, 1, { title: 'New title', objective: 'New objective', stage: 'connect' });
+    const edited = updateUnit(renamed, 0, 1, {
+      title: 'New title',
+      objective: 'New objective',
+      stage: 'connect',
+    });
     expect(edited.chapters[0]?.units[1]).toMatchObject({ title: 'New title', stage: 'connect' });
   });
 
@@ -108,7 +120,11 @@ describe('editing', () => {
 
   it('adds and removes a theme', () => {
     const withTheme = setTheme(plan(), 0, { title: 'Market Day', lens: 'Value' });
-    expect(withTheme.chapters[0]?.theme).toEqual({ slug: 'market-day', title: 'Market Day', lens: 'Value' });
+    expect(withTheme.chapters[0]?.theme).toEqual({
+      slug: 'market-day',
+      title: 'Market Day',
+      lens: 'Value',
+    });
     const without = setTheme(withTheme, 0, null);
     expect(without.chapters[0]).not.toHaveProperty('theme');
   });
@@ -133,7 +149,9 @@ describe('editing', () => {
 
 describe('validatePlan', () => {
   it('accepts the 4 + 4 plan against the Term 1 scheme', () => {
-    const weeks = p1BasicScienceTerm1.weeks.filter((w) => w.kind === 'teaching').map((w) => w.week_no);
+    const weeks = p1BasicScienceTerm1.weeks
+      .filter((w) => w.kind === 'teaching')
+      .map((w) => w.week_no);
     const real: ChapterPlan = {
       chapters: [chapter(1, [1, 2, 3, 4]), chapter(2, [5, 6, 7, 8])].map((c) => ({
         ...c,

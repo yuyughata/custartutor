@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import type { SchemeSummary } from '../api/types';
 import { useCatalog, type Catalog } from '../hooks/useCatalog';
 import { useLoad } from '../hooks/useLoad';
@@ -14,12 +14,18 @@ import { Row } from '../ui/Card';
 import { DataTable, type Column } from '../ui/DataTable';
 import { Select } from '../ui/Select';
 import { Async, EmptyState } from '../ui/States';
-import { P } from '../ui/Text';
+import { P, Small } from '../ui/Text';
 import { PageHeader } from '../ui/PageHeader';
 import { useGuardedRouter } from '../runtime/UnsavedGuard';
 import { space } from '../ui/theme';
 
-function SchemeTable({ schemes, catalog }: { schemes: SchemeSummary[]; catalog: Catalog }): ReactNode {
+function SchemeTable({
+  schemes,
+  catalog,
+}: {
+  schemes: SchemeSummary[];
+  catalog: Catalog;
+}): ReactNode {
   const columns: Column<SchemeSummary>[] = [
     {
       key: 'subject',
@@ -31,9 +37,19 @@ function SchemeTable({ schemes, catalog }: { schemes: SchemeSummary[]; catalog: 
         </AppLink>
       ),
     },
-    { key: 'level', header: 'Level', width: 120, render: (scheme) => <P>{catalog.levelName(scheme.level_code)}</P> },
+    {
+      key: 'level',
+      header: 'Level',
+      width: 120,
+      render: (scheme) => <P>{catalog.levelName(scheme.level_code)}</P>,
+    },
     { key: 'term', header: 'Term', width: 80, render: (scheme) => <P>Term {scheme.term}</P> },
-    { key: 'status', header: 'Status', width: 130, render: (scheme) => <SchemeStatusBadge status={scheme.status} /> },
+    {
+      key: 'status',
+      header: 'Status',
+      width: 130,
+      render: (scheme) => <SchemeStatusBadge status={scheme.status} />,
+    },
     {
       key: 'weeks',
       header: 'Weeks',
@@ -44,18 +60,27 @@ function SchemeTable({ schemes, catalog }: { schemes: SchemeSummary[]; catalog: 
         </P>
       ),
     },
-    { key: 'created', header: 'Created', width: 120, render: (scheme) => <P>{formatDate(scheme.created_at)}</P> },
+    {
+      key: 'created',
+      header: 'Created',
+      width: 120,
+      render: (scheme) => <P>{formatDate(scheme.created_at)}</P>,
+    },
     {
       key: 'open',
       header: 'Open',
       width: 150,
       render: (scheme) =>
         scheme.status === 'approved' ? (
-          <AppLink href={{ pathname: '/schemes/[schemeId]/chapters', params: { schemeId: scheme.id } }}>
+          <AppLink
+            href={{ pathname: '/schemes/[schemeId]/chapters', params: { schemeId: scheme.id } }}
+          >
             Chapters
           </AppLink>
         ) : (
-          <AppLink href={{ pathname: '/schemes/[schemeId]', params: { schemeId: scheme.id } }}>Review draft</AppLink>
+          <AppLink href={{ pathname: '/schemes/[schemeId]', params: { schemeId: scheme.id } }}>
+            Review draft
+          </AppLink>
         ),
     },
   ];
@@ -111,13 +136,19 @@ export default function SchemesScreen(): ReactNode {
                     title="No schemes yet"
                     action={
                       denied ? undefined : (
-                        <Button label="New scheme from a document" onPress={() => router.push('/schemes/new')} />
+                        <Button
+                          label="New scheme from a document"
+                          onPress={() => router.push('/schemes/new')}
+                        />
                       )
                     }
                   >
                     <P>
-                      Upload a scheme of work (PDF, Word or pasted text) and Claude will draft the weeks for you to check.
-                      {runtime.mode === 'demo' ? ' In this demo the stand-in model returns sample content.' : ''}
+                      Upload a scheme of work (PDF, Word or pasted text) and Claude will draft the
+                      weeks for you to check.
+                      {runtime.mode === 'demo'
+                        ? ' In this demo the stand-in model returns sample content.'
+                        : ''}
                     </P>
                   </EmptyState>
                 );
@@ -127,7 +158,9 @@ export default function SchemesScreen(): ReactNode {
                 .filter((scheme) => status === '' || scheme.status === status)
                 .sort(
                   (a, b) =>
-                    loaded.subjectName(a.subject_id).localeCompare(loaded.subjectName(b.subject_id)) ||
+                    loaded
+                      .subjectName(a.subject_id)
+                      .localeCompare(loaded.subjectName(b.subject_id)) ||
                     a.level_code.localeCompare(b.level_code) ||
                     a.term - b.term,
                 );
@@ -159,9 +192,9 @@ export default function SchemesScreen(): ReactNode {
                         onChange={setStatus}
                       />
                     </View>
-                    <Text accessibilityLiveRegion="polite" style={{ fontSize: 13 }}>
+                    <Small testID="scheme-count">
                       {shown.length} of {all.length} scheme{all.length === 1 ? '' : 's'}
-                    </Text>
+                    </Small>
                   </Row>
                   <SchemeTable schemes={shown} catalog={loaded} />
                 </View>

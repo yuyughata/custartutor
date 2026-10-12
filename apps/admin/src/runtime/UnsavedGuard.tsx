@@ -52,7 +52,10 @@ export function UnsavedGuardProvider({ children }: { children: ReactNode }): Rea
     return () => window.removeEventListener('beforeunload', warn);
   }, []);
 
-  const value = useMemo(() => ({ setDirty, isDirty, confirmLeave }), [setDirty, isDirty, confirmLeave]);
+  const value = useMemo(
+    () => ({ setDirty, isDirty, confirmLeave }),
+    [setDirty, isDirty, confirmLeave],
+  );
 
   return (
     <GuardContext.Provider value={value}>

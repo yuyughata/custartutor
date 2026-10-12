@@ -34,7 +34,9 @@ function mapChapter(
   fn: (chapter: PlannedChapter) => PlannedChapter,
 ): ChapterPlan {
   return {
-    chapters: plan.chapters.map((chapter, position) => (position === index ? fn(chapter) : chapter)),
+    chapters: plan.chapters.map((chapter, position) =>
+      position === index ? fn(chapter) : chapter,
+    ),
   };
 }
 
@@ -312,6 +314,7 @@ export function issuesForChapter(
 ): PlanIssue[] {
   return issues.filter(
     (issue) =>
-      issue.chapter === chapter && (unit === undefined ? issue.unit === undefined : issue.unit === unit),
+      issue.chapter === chapter &&
+      (unit === undefined ? issue.unit === undefined : issue.unit === unit),
   );
 }

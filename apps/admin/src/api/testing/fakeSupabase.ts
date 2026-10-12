@@ -103,7 +103,10 @@ class FakeQuery implements PromiseLike<unknown> {
       if (this.spec.mode === 'single' && rows.length !== 1) {
         return {
           data: null,
-          error: { message: 'JSON object requested, multiple (or no) rows returned', code: 'PGRST116' },
+          error: {
+            message: 'JSON object requested, multiple (or no) rows returned',
+            code: 'PGRST116',
+          },
           count: null,
         };
       }
@@ -235,7 +238,11 @@ export class FakeSupabase {
         return {
           data: {
             id: 'factor-new',
-            totp: { qr_code: 'data:image/svg+xml;utf-8,<svg/>', secret: 'JBSWY3DPEHPK3PXP', uri: 'otpauth://totp/x' },
+            totp: {
+              qr_code: 'data:image/svg+xml;utf-8,<svg/>',
+              secret: 'JBSWY3DPEHPK3PXP',
+              uri: 'otpauth://totp/x',
+            },
           },
           error: this.authError('mfa.enroll'),
         };
@@ -256,7 +263,12 @@ export class FakeSupabase {
 
 /** A fetch stand-in that records requests and answers from a queue of responses. */
 export class FakeFetch {
-  readonly requests: { url: string; method: string; headers: Record<string, string>; body: unknown }[] = [];
+  readonly requests: {
+    url: string;
+    method: string;
+    headers: Record<string, string>;
+    body: unknown;
+  }[] = [];
   private readonly queue: (Response | Error)[] = [];
 
   reply(status: number, body: unknown): this {

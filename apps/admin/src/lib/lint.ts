@@ -110,7 +110,10 @@ export function buildLintView(stored: unknown, parsed: ParsedVersion): LintView 
     storedReport.errors.map(issue),
     (fresh?.errors ?? []).map(issue),
   );
-  const warnings = mergeIssues(storedReport.warnings.map(issue), (fresh?.warnings ?? []).map(issue));
+  const warnings = mergeIssues(
+    storedReport.warnings.map(issue),
+    (fresh?.warnings ?? []).map(issue),
+  );
   const review: ReviewNote[] = storedReport.review.map((entry) => ({
     code: entry.code,
     message: entry.message,

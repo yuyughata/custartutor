@@ -14,7 +14,9 @@ describe('diffUnits', () => {
   });
 
   it('reports a changed paragraph inside a section, with before and after text', () => {
-    const next = clone(goldenUnit2) as unknown as { sections: { blocks: { type: string; text?: string }[] }[] };
+    const next = clone(goldenUnit2) as unknown as {
+      sections: { blocks: { type: string; text?: string }[] }[];
+    };
     const section = next.sections[0]!;
     const index = section.blocks.findIndex((b) => b.type === 'paragraph');
     const before = section.blocks[index]!.text!;
@@ -22,9 +24,17 @@ describe('diffUnits', () => {
     const result = diffUnits(goldenUnit2, next);
     expect(result.items).toHaveLength(1);
     const item = result.items[0]!;
-    expect(item).toMatchObject({ area: 'section', change: 'changed', id: goldenUnit2.sections[0]!.id });
+    expect(item).toMatchObject({
+      area: 'section',
+      change: 'changed',
+      id: goldenUnit2.sections[0]!.id,
+    });
     expect(item.fields).toHaveLength(1);
-    expect(item.fields[0]).toMatchObject({ path: `blocks[${index}].text`, before, after: `${before} Zuri laughs.` });
+    expect(item.fields[0]).toMatchObject({
+      path: `blocks[${index}].text`,
+      before,
+      after: `${before} Zuri laughs.`,
+    });
     expect(item.fields[0]?.label).toBe(`Block ${index + 1} › text`);
   });
 
@@ -33,7 +43,9 @@ describe('diffUnits', () => {
     const removed = next.sections.splice(1, 1)[0]!;
     next.sections.push({ ...clone(next.sections[0]!), id: 'extra_one', heading: 'Extra One' });
     const result = diffUnits(goldenUnit2, next);
-    const byChange = Object.fromEntries(result.items.filter((i) => i.area === 'section').map((i) => [i.change, i]));
+    const byChange = Object.fromEntries(
+      result.items.filter((i) => i.area === 'section').map((i) => [i.change, i]),
+    );
     expect(byChange.removed).toMatchObject({ id: removed.id, title: removed.heading });
     expect(byChange.added).toMatchObject({ id: 'extra_one', title: 'Extra One' });
     expect(result.counts.added).toBeGreaterThanOrEqual(1);
@@ -47,7 +59,11 @@ describe('diffUnits', () => {
     const result = diffUnits(goldenUnit2, next);
     const moved = result.items.filter((i) => i.change === 'moved');
     expect(moved).toHaveLength(1);
-    expect(moved[0]).toMatchObject({ id: goldenUnit2.sections[0]!.id, movedFrom: 1, movedTo: goldenUnit2.sections.length });
+    expect(moved[0]).toMatchObject({
+      id: goldenUnit2.sections[0]!.id,
+      movedFrom: 1,
+      movedTo: goldenUnit2.sections.length,
+    });
     expect(moved[0]?.fields).toEqual([]);
   });
 
@@ -70,19 +86,38 @@ describe('diffUnits', () => {
     next.header.title = 'Exploring Our Environment (Part Two)';
     const result = diffUnits(goldenUnit2, next);
     expect(result.items[0]).toMatchObject({ area: 'header' });
-    expect(result.items[0]?.fields[0]).toMatchObject({ path: 'title', after: 'Exploring Our Environment (Part Two)' });
+    expect(result.items[0]?.fields[0]).toMatchObject({
+      path: 'title',
+      after: 'Exploring Our Environment (Part Two)',
+    });
   });
 
   it('tolerates content that is not a unit', () => {
-    expect(diffUnits(null, { kind: 'lesson' }).items[0]).toMatchObject({ area: 'meta', change: 'changed' });
+    expect(diffUnits(null, { kind: 'lesson' }).items[0]).toMatchObject({
+      area: 'meta',
+      change: 'changed',
+    });
     expect(diffUnits(undefined, undefined).same).toBe(true);
   });
 });
 
 describe('diffFields', () => {
   it('aligns arrays so an inserted element does not shift the rest', () => {
-    const before = { blocks: [{ type: 'paragraph', text: 'a' }, { type: 'paragraph', text: 'b' }, { type: 'paragraph', text: 'c' }] };
-    const after = { blocks: [{ type: 'paragraph', text: 'a' }, { type: 'paragraph', text: 'NEW' }, { type: 'paragraph', text: 'b' }, { type: 'paragraph', text: 'c' }] };
+    const before = {
+      blocks: [
+        { type: 'paragraph', text: 'a' },
+        { type: 'paragraph', text: 'b' },
+        { type: 'paragraph', text: 'c' },
+      ],
+    };
+    const after = {
+      blocks: [
+        { type: 'paragraph', text: 'a' },
+        { type: 'paragraph', text: 'NEW' },
+        { type: 'paragraph', text: 'b' },
+        { type: 'paragraph', text: 'c' },
+      ],
+    };
     const changes = diffFields(before, after);
     expect(changes).toHaveLength(1);
     expect(changes[0]).toMatchObject({ path: 'blocks[1]', before: null, after: '[paragraph] NEW' });
@@ -90,12 +125,24 @@ describe('diffFields', () => {
 
   it('pairs a replaced element with its old version as a change', () => {
     const changes = diffFields({ items: [{ text: 'one' }] }, { items: [{ text: 'uno' }] });
-    expect(changes).toEqual([{ path: 'items[0].text', label: 'Item 1 › text', before: 'one', after: 'uno' }]);
+    expect(changes).toEqual([
+      { path: 'items[0].text', label: 'Item 1 › text', before: 'one', after: 'uno' },
+    ]);
   });
 
   it('matches elements with an id by id', () => {
-    const before = { nodes: [{ id: 'a', say: 'hi' }, { id: 'b', say: 'bye' }] };
-    const after = { nodes: [{ id: 'b', say: 'bye!' }, { id: 'a', say: 'hi' }] };
+    const before = {
+      nodes: [
+        { id: 'a', say: 'hi' },
+        { id: 'b', say: 'bye' },
+      ],
+    };
+    const after = {
+      nodes: [
+        { id: 'b', say: 'bye!' },
+        { id: 'a', say: 'hi' },
+      ],
+    };
     expect(diffFields(before, after)).toEqual([
       { path: 'nodes[0].say', label: 'Tutor node 1 › say', before: 'bye', after: 'bye!' },
     ]);
@@ -151,11 +198,18 @@ describe('agreement with the engine package diff', () => {
     const core = coreDiffUnits(goldenUnit2, next as never);
     const mine = diffUnits(goldenUnit2, next);
     const ids = (area: string, change: string) =>
-      mine.items.filter((i) => i.area === area && i.change === change).map((i) => i.id).sort();
+      mine.items
+        .filter((i) => i.area === area && i.change === change)
+        .map((i) => i.id)
+        .sort();
 
-    expect([...ids('section', 'changed'), ...ids('section', 'added')].sort()).toEqual([...core.section_ids].sort());
+    expect([...ids('section', 'changed'), ...ids('section', 'added')].sort()).toEqual(
+      [...core.section_ids].sort(),
+    );
     expect(ids('section', 'removed')).toEqual(core.removed_section_ids);
     expect(core.removed_section_ids).toEqual([removed.id]);
-    expect([...ids('question', 'changed'), ...ids('question', 'added')].sort()).toEqual([...core.question_ids].sort());
+    expect([...ids('question', 'changed'), ...ids('question', 'added')].sort()).toEqual(
+      [...core.question_ids].sort(),
+    );
   });
 });

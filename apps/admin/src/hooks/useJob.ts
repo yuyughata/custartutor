@@ -45,7 +45,10 @@ export function useJob(
     };
   }, [controller]);
 
-  const start = useCallback<JobHandle['start']>((kind, params, key) => controller.start(kind, params, key), [controller]);
+  const start = useCallback<JobHandle['start']>(
+    (kind, params, key) => controller.start(kind, params, key),
+    [controller],
+  );
   const resume = useCallback((jobId: string) => controller.resume(jobId), [controller]);
   const cancel = useCallback(() => controller.cancel(), [controller]);
   const reset = useCallback(() => controller.reset(), [controller]);

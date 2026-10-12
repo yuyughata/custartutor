@@ -42,10 +42,23 @@ describe('buildLintView', () => {
 
   it('merges the stored report with a fresh run and removes duplicates', () => {
     const stored = {
-      errors: [{ code: 'missing_section', severity: 'concern', message: 'Required section "practice" is missing.' }],
+      errors: [
+        {
+          code: 'missing_section',
+          severity: 'concern',
+          message: 'Required section "practice" is missing.',
+        },
+      ],
       warnings: [{ code: 'no_global_window', severity: 'note', message: 'stored copy' }],
       ok: false,
-      review: [{ code: 'reading_level', severity: 'concern', message: 'Sentences are long.', path: 'sections[1]' }],
+      review: [
+        {
+          code: 'reading_level',
+          severity: 'concern',
+          message: 'Sentences are long.',
+          path: 'sections[1]',
+        },
+      ],
       summary: 'Drafted all sections.',
     };
     const view = buildLintView(stored, good);
@@ -53,7 +66,12 @@ describe('buildLintView', () => {
     expect(view.errors).toHaveLength(1);
     expect(view.blocking).toBe(true);
     expect(view.review).toEqual([
-      { code: 'reading_level', severity: 'concern', message: 'Sentences are long.', path: 'sections[1]' },
+      {
+        code: 'reading_level',
+        severity: 'concern',
+        message: 'Sentences are long.',
+        path: 'sections[1]',
+      },
     ]);
     expect(view.summary).toBe('Drafted all sections.');
     const codes = view.warnings.map((w) => w.code);
@@ -61,14 +79,20 @@ describe('buildLintView', () => {
   });
 
   it('blocks when the content does not parse, whatever the stored report says', () => {
-    const view = buildLintView({ errors: [], warnings: [], ok: true, review: [] }, parseVersionContent({}));
+    const view = buildLintView(
+      { errors: [], warnings: [], ok: true, review: [] },
+      parseVersionContent({}),
+    );
     expect(view.parseFailed).toBe(true);
     expect(view.blocking).toBe(true);
     expect(view.errors[0]?.code).toBe('does_not_parse');
   });
 
   it('defaults review severity to note and survives a malformed stored report', () => {
-    const view = buildLintView({ review: [{ code: 'facts', message: 'Check the capital.' }] }, good);
+    const view = buildLintView(
+      { review: [{ code: 'facts', message: 'Check the capital.' }] },
+      good,
+    );
     expect(view.review[0]?.severity).toBe('note');
     const odd = buildLintView('not a report', good);
     expect(odd.hasStoredReport).toBe(false);
