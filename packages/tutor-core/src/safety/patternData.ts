@@ -93,6 +93,13 @@ export const SAFETY_PATTERN_DEFS: readonly SafetyPatternDef[] = [
     examples: ['I want to disappear'],
   },
   {
+    id: 'sh_go_away_forever',
+    category: 'self_harm',
+    severity: 'medium',
+    template: 'i (want|wish|wanna) to (go away|leave|be gone) (forever|for good)',
+    examples: ['i want to go away forever', 'I wish to be gone for good'],
+  },
+  {
     id: 'sh_thinking',
     category: 'self_harm',
     severity: 'medium',
