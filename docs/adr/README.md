@@ -8,5 +8,6 @@
 | [0004](0004-lesson-packs.md)                           | Immutable lesson packs, stable IDs, atomic swap                     |
 | [0005](0005-ai-jobs-and-tutor-safety.md)               | `pgmq` job engine, tutor safety and safeguarding                    |
 | [0006](0006-template-enrichment-count.md)              | The unit template wins: 2 to 5 enrichment sections, not 2 to 3      |
+| [0007](0007-client-driven-job-stepping.md)             | Client-driven job stepping for interactive authoring (amends 0005)  |
 
 The overall build plan is in [../plan.md](../plan.md).

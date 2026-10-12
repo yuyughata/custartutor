@@ -1,0 +1,25 @@
+{
+  "name": "@custar/authoring-core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The CUSTAR content engine: the model port, the Anthropic adapter, prompts and the resumable step engine that drafts schemes, chapter plans and units with Claude. Pure TypeScript (no React, Expo or Supabase); it runs in Deno edge functions, in Node and in the admin app's demo mode.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./fakes": "./src/fakes/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@custar/content-schema": "*",
+    "zod": "^4.6.6"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
+    "@types/node": "^22.0.0"
+  },
+  "sideEffects": false
+}
