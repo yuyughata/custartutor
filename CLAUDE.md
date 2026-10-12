@@ -26,7 +26,8 @@ Master Development Brief (`docs/brief/master-development-brief.md`). The build p
 ## Rules that must not be broken
 
 1. **NERDC is the backbone.** The scheme objective is always fully covered and visibly dominant. Enrichment adds
-   depth and never replaces or dilutes an objective (brief section 3).
+   depth and never replaces or dilutes an objective (brief section 3). A lesson uses 2 to 5 enrichment sections:
+   the unit template wins over the brief's "2 to 3" (ADR 0006).
 2. **AI never auto-publishes.** Claude drafts; a human reviews and approves. The review UI must render every
    field the tutor will consume (tutor_script, alt text, helper script).
 3. **Children's data is minimal.** No child accounts or emails. The child's real name/photo never goes to

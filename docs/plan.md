@@ -134,7 +134,7 @@ Tables are created **just-in-time** in the milestone that uses them. M0 ships on
 
 **Publish gate (lint, Brief §17):**
 
-- **Errors:** required sections present; 2–3 enrichment sections; objective present; workbook tiered with answers; teacher manual present; IDs preserved.
+- **Errors:** required sections present; 2–5 enrichment sections (the template wins over the brief's 2–3, ADR 0006); objective present; workbook tiered with answers; teacher manual present; IDs preserved.
 - **Warnings:** Think Deeper rung matches the stage; enrichment rotation varies; Nigerian anchor and global window; timing fits 60 minutes.
 - **Claude-judged:** religious neutrality, reading level, factual sanity. Advisory for the human reviewer; **a human always approves**. The review UI renders every field the tutor will consume (tutor_script, alt text, helper script), so hidden text in a source PDF cannot reach children unseen.
 

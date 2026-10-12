@@ -7,5 +7,6 @@
 | [0003](0003-sync-protocol.md)                          | Local-first sync: `sync_seq`, tombstones, append-only events        |
 | [0004](0004-lesson-packs.md)                           | Immutable lesson packs, stable IDs, atomic swap                     |
 | [0005](0005-ai-jobs-and-tutor-safety.md)               | `pgmq` job engine, tutor safety and safeguarding                    |
+| [0006](0006-template-enrichment-count.md)              | The unit template wins: 2 to 5 enrichment sections, not 2 to 3      |
 
 The overall build plan is in [../plan.md](../plan.md).

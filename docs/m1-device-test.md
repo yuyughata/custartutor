@@ -18,10 +18,17 @@ Everything marked **you** needs your accounts or your phone. I cannot do these f
    `insert into public.admin_users (user_id, role) values ('<your auth user id>', 'super_admin');`
 3. **Deploy the edge functions from the repo with the CLI** (the copies deployed so far use a trimmed bundle):
    `supabase login`, `supabase link --project-ref kjmjyxherydvefwtzmez`, `supabase functions deploy get-pack-download publish-pack`.
-4. **Build the golden pack.** Signed in as that admin at `aal2`, call
-   `POST https://kjmjyxherydvefwtzmez.supabase.co/functions/v1/publish-pack` with body
-   `{"published_unit_id": "31f5546d-79dd-475e-bd8b-402d3f38a835"}` and your session token. A successful call
-   returns the manifest hash; the unit then appears in `sync_pull`.
+4. **Publish Unit 2 and build its pack.** Unit 2 now has two versions in the database: version 1 (an earlier
+   transcription, already published, no pack) and **version 2** (the template-faithful unit with all five
+   enrichment sections, approved but **not yet published**; see ADR 0006). Publish version 2, then build its
+   pack. Both calls need an admin session at `aal2` (your access token after signing in with the
+   authenticator code), and the `apikey` header set to the publishable key:
+   1. `POST https://kjmjyxherydvefwtzmez.supabase.co/rest/v1/rpc/publish_unit_version` with body
+      `{"p_unit_version_id": "0b5c0004-0000-4000-8000-000000000003"}`. It returns the new published unit id.
+   2. `POST https://kjmjyxherydvefwtzmez.supabase.co/functions/v1/publish-pack` with body
+      `{"published_unit_id": "<the id returned by step 1>"}`. A successful call returns the manifest hash; the
+      unit then appears in `sync_pull`. Do not build a pack for the old version 1 snapshot
+      (`31f5546d-79dd-475e-bd8b-402d3f38a835`).
 5. Tell me when 1 to 4 are done and I will run the server-side checks (`sync_pull` showing the pack, and a
    `get-pack-download` call), or send me any error text you see.
 

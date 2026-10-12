@@ -39,8 +39,12 @@ export interface LintContext {
   previousEnrichment?: readonly SectionType[];
 }
 
+/**
+ * A lesson uses 2 to 5 sections from the enrichment menu. The brief says 2-3, but the owner decided on
+ * 2026-10-12 that the unit TEMPLATE wins: it carries five (docs/adr/0006-template-enrichment-count.md).
+ */
 export const ENRICHMENT_MIN = 2;
-export const ENRICHMENT_MAX = 3;
+export const ENRICHMENT_MAX = 5;
 export const SESSION_MINUTES_MIN = 50;
 export const SESSION_MINUTES_MAX = 70;
 /** Early-years text should average no more than this many words per sentence. */

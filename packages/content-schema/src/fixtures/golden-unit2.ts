@@ -7,17 +7,11 @@ import { ask, bullets, callout, example, illustration, node, para, steps } from 
  * "Exploring Our Environment (Part 2)". Transcribed from
  * docs/reference/P1_BasicScience_T1_Unit2_Template.pdf (pages 1-3 textbook, 4-5 workbook).
  *
- * DECISION: enrichment count. The template shows FIVE enrichment-tagged sections (Come and Explore!,
- * Remember?, Do & Discover, Keeping Our Environment Clean, Tell It Back & My Notebook), but the brief
- * (section 3.7 and 7) and the plan (section 4 lint: "2-3 enrichment sections", an ERROR) allow two or three.
- * To keep the content faithful AND pass lint, this fixture keeps three enrichment sections
- * (story_opener, remember, do_and_discover) and:
- *   - folds "Keeping Our Environment Clean" into the CORE concept section "Staying Safe in Our
- *     Environment" (it is the NERDC subtopic "taking care of our environment (keeping it clean)", so it is
- *     core content, not enrichment);
- *   - folds "Tell It Back & My Notebook" into the workbook: its "Tell a friend" and "In my notebook"
- *     prompts become the application task (`wb_application`), beside `take_it_home`.
- * The real template therefore exceeds the brief's own 2-3 rule; this should be raised with the author.
+ * DECISION (owner, 2026-10-12): THE TEMPLATE'S STRUCTURE WINS over the brief's "2-3 enrichment sections".
+ * The template tags FIVE sections as enrichment (Come and Explore!, Remember?, Do & Discover, Keeping Our
+ * Environment Clean, Tell It Back & My Notebook), and this fixture keeps all five exactly as printed. The lint
+ * rule is therefore 2 to 5 enrichment sections (see docs/adr/0006-template-enrichment-count.md). "Keeping Our
+ * Environment Clean" is typed `character_values` and "Tell It Back & My Notebook" is typed `tell_it_back`.
  *
  * Other deliberate additions the PDF does not contain (marked here so reviewers can find them):
  *   - a `practice` section ("Practice Time"): the lint requires one, and in the template the practice IS the
@@ -28,7 +22,8 @@ import { ask, bullets, callout, example, illustration, node, para, steps } from 
  * Where the template uses a deterministic answer ("Name one person in your family") the fixture uses
  * `free_text` (graded online); everything else is graded offline.
  *
- * Allowed lint WARNING for this fixture: `no_global_window` (the template has no Window to the World).
+ * Allowed lint WARNINGS for this fixture: `no_global_window` (the template has no Window to the World) and
+ * `reading_level` (the template's own "Tell It Back" prompt is one long sentence).
  */
 
 const questions: Record<string, Question> = {
@@ -117,18 +112,18 @@ const questions: Record<string, Question> = {
       exemplar: 'I put rubbish in the bin.',
     },
   },
-  // ---- Application task (from Tell It Back & My Notebook) ----
+  // ---- Application task (the template's "Take It Home": use the idea in everyday life) ----
   wb_application: {
     id: 'wb_application',
     kind: 'draw',
     tier: 3,
     prompt:
-      'Tell a friend: “In my home there is a ____ and a ____.” (Name two rooms.) Then, in my notebook: I draw my favourite place in my school or home, and I write its name under it.',
+      'Take It Home. This evening, walk through your home with a grown-up. Name every room, and help to tidy one of them.',
     skill_tag: 'places_and_uses',
     self_check: [
-      'I told a friend two rooms in my home.',
-      'I drew my favourite place.',
-      'I wrote its name under my drawing.',
+      'I walked through my home with a grown-up.',
+      'I named every room.',
+      'I helped to tidy one room.',
     ],
   },
   // ---- Quick-Answer Drill (60 seconds) ----
@@ -522,16 +517,6 @@ export const goldenUnit2: LessonUnit = {
           "Hold a grown-up's hand near the road.",
           'Tell a grown-up at once if something is not safe.',
         ),
-        // Folded in from the template's ENRICH-tagged "Keeping Our Environment Clean" (see file header).
-        para('**Keeping Our Environment Clean**'),
-        para('A good child keeps their environment clean and safe:'),
-        bullets(
-          'Put rubbish in the bin, not on the ground.',
-          'Keep your classroom and your bedroom tidy.',
-          'Do not draw on the walls.',
-          'Wash your hands after using the toilet.',
-        ),
-        para('When we keep our environment clean, everyone stays **healthy and happy.**'),
       ],
       tutor_script: {
         nodes: [
@@ -582,6 +567,44 @@ export const goldenUnit2: LessonUnit = {
         illustration(
           'Children on a walk around the school, naming the playground and toilets, greeting a teacher.',
           'A group of children walk with their teacher past the playground and the toilets. One child waves hello to the teacher.',
+        ),
+      ],
+    },
+    {
+      id: 'keeping_clean',
+      type: 'character_values',
+      layer: 'ENRICH',
+      heading: 'Keeping Our Environment Clean',
+      blocks: [
+        para('A good child keeps their environment clean and safe:'),
+        bullets(
+          'Put rubbish in the bin, not on the ground.',
+          'Keep your classroom and your bedroom tidy.',
+          'Do not draw on the walls.',
+          'Wash your hands after using the toilet.',
+        ),
+        para('When we keep our environment clean, everyone stays **healthy and happy.**'),
+      ],
+      tutor_script: {
+        nodes: [
+          node('n_clean', 'A good child keeps their environment clean. Where does rubbish go?', {
+            expect: { question_id: 'dr_rubbish' },
+            on_correct: ['Yes! Rubbish goes in the bin.'],
+            on_incorrect: ['Rubbish goes in the bin, not on the ground. Say it with me: bin.'],
+            hint: ['It is the container we use to keep the place tidy.'],
+          }),
+        ],
+      },
+    },
+    {
+      id: 'tell_it_back',
+      type: 'tell_it_back',
+      layer: 'ENRICH',
+      heading: 'Tell It Back & My Notebook',
+      blocks: [
+        para('**Tell a friend:** "In my home there is a ____ and a ____." (name two rooms.)'),
+        para(
+          '**In my notebook:** I draw my favourite place in my school or home, and I write its name under it.',
         ),
       ],
     },
@@ -674,7 +697,9 @@ export const goldenUnit2: LessonUnit = {
         'people_in_environment',
         'staying_safe',
         'lets_look_together',
+        'keeping_clean',
         'practice_time',
+        'tell_it_back',
         'think_deeper',
         'have_i_got_it',
       ],
@@ -779,6 +804,19 @@ export const goldenUnit2: LessonUnit = {
         watch_for: 'Quiet children. Give each child one place to name.',
       },
       {
+        section_id: 'keeping_clean',
+        say: 'Read the habits slowly and act each one (drop paper in the bin, wipe the desk, wash your hands). Keep it cheerful.',
+        ask: 'Where does rubbish go? Why do we wash our hands after the toilet?',
+        watch_for: 'Children who list only one habit. Ask for another from the list.',
+      },
+      {
+        section_id: 'tell_it_back',
+        say: 'Let each child tell a friend two rooms from their home, then draw their favourite place in the notebook and write its name under it.',
+        ask: 'In my home there is a ... and a ...',
+        watch_for:
+          'Children who cannot yet write the name. Let them say it aloud and copy it from a word card.',
+      },
+      {
         section_id: 'practice_time',
         say: 'Hand out the workbook. Tier 1 together, Tier 2 in pairs, Tier 3 alone.',
         ask: 'How did you know which place goes with which job?',
@@ -836,7 +874,7 @@ export const goldenUnit2: LessonUnit = {
         'Today we looked at our school and our home as scientists who observe, as speakers who name things, and as helpers who keep our places clean and safe.',
     },
     timing:
-      'Two 60-minute periods. Period 1: story and recall (10), places in school and home (15), Our Places Walk (15), oral practice (10), Quick-Fire (10). Period 2: recap (10), people and safety (20), examples (10), workbook practice (10), Think Deeper and the mastery check (10).',
+      'Two 60-minute periods. Period 1: story and recall (10), places in school and home (15), Our Places Walk (15), oral practice (10), Quick-Fire (10). Period 2: recap (10), people and safety (20), examples and keeping clean (10), workbook practice and Tell It Back (10), Think Deeper and the mastery check (10).',
     materials: [
       'Chalk or marker and a board, to list places and people.',
       "Crayons or coloured pencils and each child's notebook, for the My Notebook drawing.",
@@ -875,6 +913,22 @@ export const goldenUnit2: LessonUnit = {
           'Walk slowly with the child through the school or the home.',
           'At each place, ask: What is this place? What do we do here?',
           'Help the child greet one person politely.',
+        ],
+      },
+      {
+        section_id: 'keeping_clean',
+        steps: [
+          'Read each habit aloud and act it out with the child (drop a paper in the bin).',
+          'Ask: Where does rubbish go? Let the child answer in their own words.',
+          'Praise every try and say the habit once more together.',
+        ],
+      },
+      {
+        section_id: 'tell_it_back',
+        steps: [
+          'Ask the child to say: In my home there is a ... and a ... Wait for them to name two rooms.',
+          'Help the child draw their favourite place and say its name aloud.',
+          'Write the name under the drawing if the child cannot yet write it, and let them copy it.',
         ],
       },
       {

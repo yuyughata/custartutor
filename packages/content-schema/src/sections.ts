@@ -37,7 +37,10 @@ export const ALWAYS_PRESENT_TYPES = [
   'mastery_check',
 ] as const satisfies readonly SectionType[];
 
-/** The rotating enrichment menu: a lesson uses two or three of these (brief section 7). */
+/**
+ * The enrichment menu (brief section 7). A lesson uses two to five of these, each type at most once: the brief
+ * says two or three, the unit template carries five, and the template wins (ADR 0006).
+ */
 export const ENRICHMENT_MENU = [
   'story_opener',
   'across_subjects',

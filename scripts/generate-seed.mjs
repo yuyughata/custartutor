@@ -12,7 +12,7 @@
 //   * Chapter 1 "Our World Around Us" with units 1-4 (weeks 1-4 of the NERDC scheme; a chapter needs 3-5
 //     units to be published, units 1, 3 and 4 are drafts without a version),
 //   * an APPROVED unit_versions row for Unit 2 whose content is `goldenUnit2`.
-// It does NOT publish. Publishing is an admin action (private.publish_unit_version needs an admin at aal2):
+// The golden version is number 2 (see IDS). It does NOT publish. Publishing is an admin action (private.publish_unit_version needs an admin at aal2):
 // run `select public.publish_unit_version('<version id>')` as an admin, then `publish-pack` builds the pack.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -28,7 +28,12 @@ export const IDS = {
   scheme: '0b5c0001-0000-4000-8000-000000000001',
   chapter: '0b5c0002-0000-4000-8000-000000000001',
   unit: (n) => `0b5c0003-0000-4000-8000-00000000000${n}`,
-  goldenVersion: '0b5c0004-0000-4000-8000-000000000002',
+  // Version 2: version 1 was an earlier transcription (two template sections folded into the core
+  // content) that was published to the dev database before the owner decided the template wins
+  // (docs/adr/0006-template-enrichment-count.md). Published snapshots are immutable, so the template-faithful
+  // unit is a new version; a fresh database simply starts at version 2.
+  goldenVersion: '0b5c0004-0000-4000-8000-000000000003',
+  goldenVersionNo: 2,
 };
 
 const bundle = await build({
@@ -114,7 +119,7 @@ lines.push(
   '',
   '-- the golden unit as an approved version (a reviewer approval is simulated by the owner here)',
   'insert into public.unit_versions (id, unit_id, version, schema_version, content, status, generated_by)',
-  `select ${sql(IDS.goldenVersion)}::uuid, u.id, 1, ${goldenUnit2.schema_version},`,
+  `select ${sql(IDS.goldenVersion)}::uuid, u.id, ${IDS.goldenVersionNo}, ${goldenUnit2.schema_version},`,
   `       ${dollar(JSON.stringify(goldenUnit2))}::jsonb,`,
   `       'approved', 'human'`,
   `  from public.units u where u.id = ${sql(IDS.unit(header.unit_no))}::uuid`,

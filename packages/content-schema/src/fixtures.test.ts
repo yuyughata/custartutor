@@ -18,7 +18,9 @@ import { gradeQuestion } from './grade';
  *  - golden Unit 2: the template has no Window to the World section.
  */
 const ALLOWED_WARNINGS: Record<string, string[]> = {
-  golden: ['no_global_window'],
+  // no_global_window: the template has no Window to the World. reading_level: the template's own
+  // "Tell It Back" prompt is one long sentence; the template wins (docs/adr/0006).
+  golden: ['no_global_window', 'reading_level'],
   maths: [],
 };
 
@@ -68,13 +70,21 @@ describe('golden Unit 2 transcription', () => {
     expect(goldenUnit2.header.week_no).toBe(2);
   });
 
-  it('keeps exactly three enrichment sections and four concept sections', () => {
+  it('keeps the five enrichment sections and four concept sections the template prints', () => {
     const types = goldenUnit2.sections.map((s) => s.type);
     expect(types.filter((t) => t === 'concept')).toHaveLength(4);
     expect(
-      types.filter((t) => ['story_opener', 'remember', 'do_and_discover'].includes(t)),
-    ).toHaveLength(3);
-    expect(goldenUnit2.sections.filter((s) => s.layer === 'ENRICH')).toHaveLength(3);
+      types.filter((t) =>
+        [
+          'story_opener',
+          'remember',
+          'do_and_discover',
+          'character_values',
+          'tell_it_back',
+        ].includes(t),
+      ),
+    ).toHaveLength(5);
+    expect(goldenUnit2.sections.filter((s) => s.layer === 'ENRICH')).toHaveLength(5);
   });
 
   it('has Zari and Zuri in the story opener, five quick-fire items and four Think Deeper prompts', () => {

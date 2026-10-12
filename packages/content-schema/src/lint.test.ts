@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { goldenUnit2, marketDayMathsUnit } from './fixtures';
 import { averageSentenceLength, lintUnit, lintVersionIds, reasoningRungOf } from './lint';
 import type { LintReport } from './lint';
-import { ALWAYS_PRESENT_TYPES, ENRICHMENT_MENU, LAYER_FOR_TYPE } from './sections';
+import {
+  ALWAYS_PRESENT_TYPES,
+  ENRICHMENT_MENU,
+  LAYER_FOR_TYPE,
+  isEnrichmentType,
+} from './sections';
 import type { Section } from './sections';
 import { clone } from './test-utils';
 import type { LessonUnit } from './unit';
@@ -84,15 +89,21 @@ describe('lintUnit errors', () => {
   it('fails with fewer than two enrichment sections', () => {
     const unit = clone(goldenUnit2);
     unit.sections = unit.sections.filter(
-      (s) => s.type !== 'remember' && s.type !== 'do_and_discover',
+      (s) => !isEnrichmentType(s.type) || s.type === 'story_opener',
     );
     expect(codes(lintUnit(unit))).toContain('enrichment_count');
   });
 
-  it('fails with more than three enrichment sections', () => {
+  it('fails with more than five enrichment sections', () => {
     const unit = clone(goldenUnit2);
     unit.sections.push(extraSection('across_x', 'across_subjects'));
     expect(codes(lintUnit(unit))).toContain('enrichment_count');
+  });
+
+  it("accepts the template's five enrichment sections (the template wins over the brief)", () => {
+    const enrichment = goldenUnit2.sections.filter((s) => isEnrichmentType(s.type));
+    expect(enrichment).toHaveLength(5);
+    expect(codes(lintUnit(clone(goldenUnit2)))).not.toContain('enrichment_count');
   });
 
   it('fails when an enrichment type is used twice', () => {
@@ -101,10 +112,12 @@ describe('lintUnit errors', () => {
     expect(codes(lintUnit(unit))).toContain('enrichment_duplicate');
   });
 
-  it('accepts exactly two or three enrichment sections', () => {
+  it('accepts anything from two to five enrichment sections', () => {
     const two = clone(goldenUnit2);
-    two.sections = two.sections.filter((s) => s.type !== 'remember');
-    // the session plan and manual still reference remember_senses, so only look at the count rule
+    two.sections = two.sections.filter(
+      (s) => !isEnrichmentType(s.type) || ['story_opener', 'remember'].includes(s.type),
+    );
+    // the session plan and manual still reference the removed sections, so only look at the count rule
     expect(codes(lintUnit(two))).not.toContain('enrichment_count');
   });
 
@@ -294,7 +307,13 @@ describe('lintUnit warnings', () => {
   });
 
   it('flags a repeated enrichment trio', () => {
-    const previous = ['do_and_discover', 'story_opener', 'remember'] as const;
+    const previous = [
+      'do_and_discover',
+      'story_opener',
+      'remember',
+      'tell_it_back',
+      'character_values',
+    ] as const;
     expect(warningCodes(lintUnit(goldenUnit2, { previousEnrichment: previous }))).toContain(
       'enrichment_not_rotated',
     );
@@ -339,15 +358,18 @@ describe('lintUnit warnings', () => {
     const long =
       'When the children walked all the way across the very large school playground they saw many different places and people who were working and playing together happily.';
     const unit = clone(goldenUnit2);
+    // The template's own "Tell It Back" prompt is a long sentence, so the golden unit carries one baseline
+    // reading_level warning; look at the concept section only.
+    const readingPaths = (u: typeof unit) =>
+      lintUnit(u)
+        .warnings.filter((w) => w.code === 'reading_level')
+        .map((w) => w.path);
+    const section = unit.sections.findIndex((s) => s.type === 'concept');
     // the rule looks at the AVERAGE over a section, so one long sentence among short ones is fine
     sectionOfType(unit, 'concept').blocks.push({ type: 'paragraph', text: long });
-    expect(warningCodes(lintUnit(unit))).not.toContain('reading_level');
+    expect(readingPaths(unit)).not.toContain(`sections[${section}]`);
     sectionOfType(unit, 'concept').blocks = [{ type: 'paragraph', text: `${long} ${long}` }];
-    const section = unit.sections.findIndex((s) => s.type === 'concept');
-    const report = lintUnit(unit);
-    expect(report.warnings.find((w) => w.code === 'reading_level')?.path).toBe(
-      `sections[${section}]`,
-    );
+    expect(readingPaths(unit)).toContain(`sections[${section}]`);
 
     const express = clone(unit);
     express.header.stage = 'express';

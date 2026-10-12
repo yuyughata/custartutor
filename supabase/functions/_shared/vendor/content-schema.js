@@ -20882,7 +20882,7 @@ function questionsOf(unit) {
 
 // packages/content-schema/src/lint.ts
 var ENRICHMENT_MIN = 2;
-var ENRICHMENT_MAX = 3;
+var ENRICHMENT_MAX = 5;
 var SESSION_MINUTES_MIN = 50;
 var SESSION_MINUTES_MAX = 70;
 var MAX_AVERAGE_SENTENCE_WORDS = 12;

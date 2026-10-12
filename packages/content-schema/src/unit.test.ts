@@ -183,8 +183,8 @@ describe('UnitContent: lesson', () => {
         'workbook.application_task_id',
         'workbook.practice_variants.0.question_ids.3',
         'session_plan.0.sections.6',
-        'teacher_manual.script.12.section_id',
-        'teacher_manual.helper_script.4.section_id',
+        `teacher_manual.script.${goldenUnit2.teacher_manual.script.length}.section_id`,
+        `teacher_manual.helper_script.${goldenUnit2.teacher_manual.helper_script.length}.section_id`,
         'sections.0.tutor_script.nodes.1.expect.question_id',
       ]),
     );
