@@ -1,0 +1,116 @@
+{
+  "pull": {
+    "epoch": 105,
+    "units": [
+      {
+        "id": "0b5c0003-0000-4000-8000-000000000002",
+        "kind": "lesson",
+        "term": 1,
+        "stage": "absorb",
+        "title": "Exploring Our Environment (Part 2)",
+        "unit_no": 2,
+        "week_no": 2,
+        "sync_seq": 443,
+        "objective": "Explore the school environment (classroom, playground, toilet, staff room) and the home environment (bedroom, kitchen, living room, bathroom, compound); identify the people in our environment; understand safety; take care of our environment by keeping it clean.",
+        "deleted_at": null,
+        "level_code": "P1",
+        "subject_id": "71270e2a-fabf-4edd-a76a-74d81522f3ec",
+        "chapter_title": "Our World Around Us",
+        "chapter_number": 1
+      }
+    ],
+    "children": [
+      {
+        "id": "c9000000-0000-4000-8000-0000000000c1",
+        "avatar": "owl",
+        "sync_seq": 441,
+        "deleted_at": null,
+        "level_code": "P1",
+        "household_id": "12424485-bb95-43f9-8e16-db2b91dab91a",
+        "reading_mode": "reader",
+        "display_alias": "Tess",
+        "daily_limit_min": null
+      }
+    ],
+    "has_more": false,
+    "next_seq": 444,
+    "subjects": [
+      {
+        "id": "184ef2b8-ccb1-4ff8-b4c8-3ebaea6b2993",
+        "icon": "book-open",
+        "kind": "core",
+        "name": "English Studies",
+        "slug": "english-studies",
+        "sort": 10,
+        "colour": "#2563EB",
+        "sync_seq": 7,
+        "deleted_at": null,
+        "curriculum_source": "nerdc"
+      },
+      {
+        "id": "71270e2a-fabf-4edd-a76a-74d81522f3ec",
+        "icon": "flask-conical",
+        "kind": "core",
+        "name": "Basic Science",
+        "slug": "basic-science",
+        "sort": 30,
+        "colour": "#0D9488",
+        "sync_seq": 9,
+        "deleted_at": null,
+        "curriculum_source": "nerdc"
+      },
+      {
+        "id": "8b672a79-f1f2-448c-8e5c-f1ea0cf68866",
+        "icon": "sparkles",
+        "kind": "elective",
+        "name": "Religion Studies",
+        "slug": "religion-studies",
+        "sort": 110,
+        "colour": "#4F46E5",
+        "sync_seq": 15,
+        "deleted_at": null,
+        "curriculum_source": "nerdc"
+      }
+    ],
+    "household": { "id": "12424485-bb95-43f9-8e16-db2b91dab91a", "name": "Contract family" },
+    "published": [
+      {
+        "unit_id": "0b5c0003-0000-4000-8000-000000000002",
+        "sync_seq": 442,
+        "deleted_at": null,
+        "version_no": 1,
+        "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "schema_version": 1,
+        "min_app_version": "1.0.0",
+        "pack_manifest_path": "units/0b5c0003-0000-4000-8000-000000000002/1/manifest.json"
+      }
+    ],
+    "server_time": "2026-10-12T05:20:24.559Z",
+    "unit_progress": [
+      {
+        "status": "mastered",
+        "unit_id": "0b5c0003-0000-4000-8000-000000000002",
+        "attempts": 1,
+        "child_id": "c9000000-0000-4000-8000-0000000000c1",
+        "sync_seq": 444,
+        "deleted_at": null,
+        "updated_at": "2026-10-12T05:03:01.000Z",
+        "last_section": "s_story",
+        "mastery_score": 1.0
+      }
+    ]
+  },
+  "ingest": [
+    { "status": "accepted", "client_event_id": "e0000000-0000-4000-8000-000000000001" },
+    { "status": "accepted", "client_event_id": "e0000000-0000-4000-8000-000000000002" },
+    { "status": "accepted", "client_event_id": "e0000000-0000-4000-8000-000000000003" },
+    { "status": "accepted", "client_event_id": "e0000000-0000-4000-8000-000000000004" },
+    { "status": "accepted", "client_event_id": "e0000000-0000-4000-8000-000000000005" },
+    {
+      "reason": "inconsistent_mastery",
+      "status": "rejected",
+      "client_event_id": "e0000000-0000-4000-8000-000000000006"
+    },
+    { "status": "duplicate", "client_event_id": "e0000000-0000-4000-8000-000000000001" }
+  ]
+}

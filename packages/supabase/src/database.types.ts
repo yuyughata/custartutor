@@ -414,18 +414,21 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           id: string;
+          membership_epoch: number;
           name: string;
         };
         Insert: {
           created_at?: string;
           created_by?: string | null;
           id?: string;
+          membership_epoch?: number;
           name: string;
         };
         Update: {
           created_at?: string;
           created_by?: string | null;
           id?: string;
+          membership_epoch?: number;
           name?: string;
         };
         Relationships: [];
@@ -522,12 +525,70 @@ export type Database = {
         };
         Relationships: [];
       };
+      progress_events: {
+        Row: {
+          child_id: string;
+          client_event_id: string;
+          device_id: string;
+          device_seq: number;
+          event_type: string;
+          household_id: string;
+          occurred_at: string;
+          payload: Json;
+          received_at: string;
+          unit_id: string;
+        };
+        Insert: {
+          child_id: string;
+          client_event_id: string;
+          device_id: string;
+          device_seq: number;
+          event_type: string;
+          household_id: string;
+          occurred_at: string;
+          payload?: Json;
+          received_at?: string;
+          unit_id: string;
+        };
+        Update: {
+          child_id?: string;
+          client_event_id?: string;
+          device_id?: string;
+          device_seq?: number;
+          event_type?: string;
+          household_id?: string;
+          occurred_at?: string;
+          payload?: Json;
+          received_at?: string;
+          unit_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'progress_events_child_household_fk';
+            columns: ['child_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'children';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'progress_events_unit_id_fkey';
+            columns: ['unit_id'];
+            isOneToOne: false;
+            referencedRelation: 'units';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       published_units: {
         Row: {
           content: Json;
+          content_hash: string | null;
           deleted_at: string | null;
           id: string;
           is_current: boolean;
+          min_app_version: string;
+          pack_built_at: string | null;
+          pack_manifest_path: string | null;
           published_at: string;
           published_by: string | null;
           schema_version: number;
@@ -538,9 +599,13 @@ export type Database = {
         };
         Insert: {
           content: Json;
+          content_hash?: string | null;
           deleted_at?: string | null;
           id?: string;
           is_current?: boolean;
+          min_app_version?: string;
+          pack_built_at?: string | null;
+          pack_manifest_path?: string | null;
           published_at?: string;
           published_by?: string | null;
           schema_version: number;
@@ -551,9 +616,13 @@ export type Database = {
         };
         Update: {
           content?: Json;
+          content_hash?: string | null;
           deleted_at?: string | null;
           id?: string;
           is_current?: boolean;
+          min_app_version?: string;
+          pack_built_at?: string | null;
+          pack_manifest_path?: string | null;
           published_at?: string;
           published_by?: string | null;
           schema_version?: number;
@@ -761,6 +830,60 @@ export type Database = {
         };
         Relationships: [];
       };
+      unit_progress: {
+        Row: {
+          attempts: number;
+          child_id: string;
+          deleted_at: string | null;
+          household_id: string;
+          last_section: string | null;
+          mastery_score: number | null;
+          status: string;
+          sync_seq: number;
+          unit_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          attempts?: number;
+          child_id: string;
+          deleted_at?: string | null;
+          household_id: string;
+          last_section?: string | null;
+          mastery_score?: number | null;
+          status: string;
+          sync_seq?: number;
+          unit_id: string;
+          updated_at: string;
+        };
+        Update: {
+          attempts?: number;
+          child_id?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          last_section?: string | null;
+          mastery_score?: number | null;
+          status?: string;
+          sync_seq?: number;
+          unit_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'unit_progress_child_household_fk';
+            columns: ['child_id', 'household_id'];
+            isOneToOne: false;
+            referencedRelation: 'children';
+            referencedColumns: ['id', 'household_id'];
+          },
+          {
+            foreignKeyName: 'unit_progress_unit_id_fkey';
+            columns: ['unit_id'];
+            isOneToOne: false;
+            referencedRelation: 'units';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       unit_versions: {
         Row: {
           base_version_id: string | null;
@@ -920,6 +1043,10 @@ export type Database = {
           role: string;
         }[];
       };
+      authorize_pack_download: {
+        Args: { p_unit_id: string; p_version_no: number };
+        Returns: Json;
+      };
       create_household: { Args: { p_name: string }; Returns: string };
       create_invite: {
         Args: {
@@ -947,10 +1074,12 @@ export type Database = {
           locked_until: string;
         }[];
       };
+      get_pack_source: { Args: { p_published_unit_id: string }; Returns: Json };
       grant_child_access: {
         Args: { p_child_id: string; p_tutor_user_id: string };
         Returns: string;
       };
+      ingest_progress_events: { Args: { p_events: Json }; Returns: Json };
       publish_unit_version: {
         Args: { p_unit_version_id: string };
         Returns: string;
@@ -964,6 +1093,18 @@ export type Database = {
         Returns: number;
       };
       set_grownup_pin: { Args: { p_pin: string }; Returns: undefined };
+      set_pack_info: {
+        Args: {
+          p_content_hash: string;
+          p_manifest_path: string;
+          p_published_unit_id: string;
+        };
+        Returns: Json;
+      };
+      sync_pull: {
+        Args: { p_limit: number; p_since_seq: number };
+        Returns: Json;
+      };
     };
     Enums: {
       [_ in never]: never;

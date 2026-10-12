@@ -27,3 +27,29 @@ major_version = 17
 [studio]
 enabled = true
 port = 54323
+
+# Private bucket for lesson packs (ADR 0004). NO policy on storage.objects: only the service role used by the
+# edge functions reads or writes it; learners get signed URLs from `get-pack-download`. On the hosted project
+# the bucket is created by the pack_publishing migration; this block creates it for `supabase start`.
+[storage.buckets.packs]
+public = false
+file_size_limit = "50MiB"
+allowed_mime_types = [
+  "application/json",
+  "image/webp",
+  "image/png",
+  "image/jpeg",
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/aac",
+  "audio/ogg",
+  "audio/webm",
+  "audio/wav",
+]
+
+# Edge functions. The platform verifies the JWT; each function also asks the database who the caller is.
+[functions.get-pack-download]
+verify_jwt = true
+
+[functions.publish-pack]
+verify_jwt = true

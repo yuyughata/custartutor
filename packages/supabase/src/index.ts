@@ -48,6 +48,8 @@ export type Chapter = Tables<'chapters'>;
 export type Unit = Tables<'units'>;
 export type UnitVersion = Tables<'unit_versions'>;
 export type PublishedUnit = Tables<'published_units'>;
+export type ProgressEvent = Tables<'progress_events'>;
+export type UnitProgress = Tables<'unit_progress'>;
 
 // Column domains (mirror the CHECK constraints) --------------------------------------------------
 export type AdminRole = 'super_admin' | 'content_editor' | 'reviewer' | 'support' | 'analyst';
@@ -67,6 +69,23 @@ export type UnitKind = 'lesson' | 'mini_project' | 'term_project' | 'revision' |
 export type UnitVersionStatus = 'draft' | 'in_review' | 'approved' | 'published' | 'superseded';
 export type GeneratedBy = 'ai' | 'human';
 export type ConsentAction = 'grant' | 'withdraw';
+export type ProgressEventType =
+  | 'unit_started'
+  | 'section_completed'
+  | 'question_answered'
+  | 'mastery_check_completed'
+  | 'unit_completed';
+/** What the server stores in `unit_progress.status` (the device also computes `locked` / `available`). */
+export type StoredUnitProgressStatus = 'in_progress' | 'mastered';
+/** `reason` of a rejected row in the result of `ingest_progress_events` (a stable machine code). */
+export type IngestRejectReason =
+  | 'invalid_payload'
+  | 'no_access_to_child'
+  | 'child_deleted'
+  | 'unknown_unit'
+  | 'inconsistent_mastery'
+  | 'rate_limited'
+  | 'internal_error';
 
 // Stable error messages raised by RPCs, triggers and guards (PostgREST `error.message`) -------------
 export type DbErrorMessage =
@@ -113,4 +132,15 @@ export type DbErrorMessage =
   | 'approved_version_is_frozen'
   | 'reviewer_required'
   | 'use_publish_unit_version'
-  | 'published_units_are_immutable';
+  | 'published_units_are_immutable'
+  // sync, progress and packs
+  | 'invalid_events'
+  | 'batch_too_large'
+  | 'invalid_cursor'
+  | 'invalid_pack_request'
+  | 'not_a_household_member'
+  | 'pack_not_found'
+  | 'published_unit_not_found'
+  | 'invalid_pack_path'
+  | 'invalid_content_hash'
+  | 'pack_info_already_set';
