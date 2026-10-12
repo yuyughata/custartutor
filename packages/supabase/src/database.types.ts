@@ -26,6 +26,167 @@ export type Database = {
         };
         Relationships: [];
       };
+      ai_jobs: {
+        Row: {
+          attempts: number;
+          created_at: string;
+          created_by: string | null;
+          error: Json | null;
+          finished_at: string | null;
+          id: string;
+          idempotency_key: string | null;
+          input: Json;
+          kind: string;
+          lease_token: string | null;
+          lease_until: string | null;
+          params: Json;
+          progress: Json;
+          result: Json | null;
+          scheme_id: string | null;
+          state: Json;
+          status: string;
+          unit_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          attempts?: number;
+          created_at?: string;
+          created_by?: string | null;
+          error?: Json | null;
+          finished_at?: string | null;
+          id?: string;
+          idempotency_key?: string | null;
+          input: Json;
+          kind: string;
+          lease_token?: string | null;
+          lease_until?: string | null;
+          params?: Json;
+          progress?: Json;
+          result?: Json | null;
+          scheme_id?: string | null;
+          state?: Json;
+          status?: string;
+          unit_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          attempts?: number;
+          created_at?: string;
+          created_by?: string | null;
+          error?: Json | null;
+          finished_at?: string | null;
+          id?: string;
+          idempotency_key?: string | null;
+          input?: Json;
+          kind?: string;
+          lease_token?: string | null;
+          lease_until?: string | null;
+          params?: Json;
+          progress?: Json;
+          result?: Json | null;
+          scheme_id?: string | null;
+          state?: Json;
+          status?: string;
+          unit_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_jobs_scheme_id_fkey';
+            columns: ['scheme_id'];
+            isOneToOne: false;
+            referencedRelation: 'schemes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ai_jobs_unit_id_fkey';
+            columns: ['unit_id'];
+            isOneToOne: false;
+            referencedRelation: 'units';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ai_usage: {
+        Row: {
+          cache_creation_tokens: number;
+          cache_read_tokens: number;
+          created_at: string;
+          created_by: string | null;
+          duration_ms: number;
+          est_cost_usd: number | null;
+          id: number;
+          input_tokens: number;
+          job_id: string | null;
+          label: string;
+          model: string;
+          output_tokens: number;
+          stop_reason: string | null;
+          task: string;
+        };
+        Insert: {
+          cache_creation_tokens?: number;
+          cache_read_tokens?: number;
+          created_at?: string;
+          created_by?: string | null;
+          duration_ms?: number;
+          est_cost_usd?: number | null;
+          id?: never;
+          input_tokens?: number;
+          job_id?: string | null;
+          label: string;
+          model: string;
+          output_tokens?: number;
+          stop_reason?: string | null;
+          task: string;
+        };
+        Update: {
+          cache_creation_tokens?: number;
+          cache_read_tokens?: number;
+          created_at?: string;
+          created_by?: string | null;
+          duration_ms?: number;
+          est_cost_usd?: number | null;
+          id?: never;
+          input_tokens?: number;
+          job_id?: string | null;
+          label?: string;
+          model?: string;
+          output_tokens?: number;
+          stop_reason?: string | null;
+          task?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_usage_job_id_fkey';
+            columns: ['job_id'];
+            isOneToOne: false;
+            referencedRelation: 'ai_jobs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      app_settings: {
+        Row: {
+          key: string;
+          updated_at: string;
+          updated_by: string | null;
+          value: Json;
+        };
+        Insert: {
+          key: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          value: Json;
+        };
+        Update: {
+          key?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          value?: Json;
+        };
+        Relationships: [];
+      };
       audit_log: {
         Row: {
           action: string;
@@ -1043,8 +1204,63 @@ export type Database = {
           role: string;
         }[];
       };
+      ai_job_acquire_lease: {
+        Args: { p_job_id: string; p_lease_seconds: number };
+        Returns: Json;
+      };
+      ai_job_budget_check: { Args: { p_job_id: string }; Returns: Json };
+      ai_job_complete_step: {
+        Args: {
+          p_job_id: string;
+          p_lease_token: string;
+          p_output: Json;
+          p_progress: Json;
+          p_result: Json;
+          p_step: string;
+          p_usage: Json;
+        };
+        Returns: boolean;
+      };
+      ai_job_fail_step: {
+        Args: {
+          p_error: Json;
+          p_job_id: string;
+          p_lease_token: string;
+          p_retryable: boolean;
+          p_step: string;
+          p_usage?: Json;
+        };
+        Returns: boolean;
+      };
+      ai_job_fail_step_deprecated: {
+        Args: {
+          p_error: Json;
+          p_job_id: string;
+          p_lease_token: string;
+          p_retryable: boolean;
+          p_step: string;
+        };
+        Returns: boolean;
+      };
+      apply_chapter_plan: {
+        Args: { p_plan: Json; p_scheme_id: string };
+        Returns: Json;
+      };
+      approve_scheme: { Args: { p_scheme_id: string }; Returns: undefined };
       authorize_pack_download: {
         Args: { p_unit_id: string; p_version_no: number };
+        Returns: Json;
+      };
+      cancel_ai_job: { Args: { p_job_id: string }; Returns: Json };
+      create_ai_job: {
+        Args: {
+          p_idempotency_key: string;
+          p_input: Json;
+          p_kind: string;
+          p_params: Json;
+          p_scheme_id: string;
+          p_unit_id: string;
+        };
         Returns: Json;
       };
       create_household: { Args: { p_name: string }; Returns: string };
@@ -1061,11 +1277,28 @@ export type Database = {
           token: string;
         }[];
       };
+      create_unit_version_draft: {
+        Args: {
+          p_base_version_id: string;
+          p_content: Json;
+          p_generated_by: string;
+          p_lint_report: Json;
+          p_model: string;
+          p_prompt_version: string;
+          p_unit_id: string;
+        };
+        Returns: Json;
+      };
       elevate_grownup: {
         Args: { p_device_id: string; p_pin: string };
         Returns: string;
       };
       end_grownup_elevation: { Args: never; Returns: undefined };
+      get_ai_settings: { Args: never; Returns: Json };
+      get_ai_usage_summary: {
+        Args: { p_from: string; p_to: string };
+        Returns: Json;
+      };
       get_grownup_pin_status: {
         Args: never;
         Returns: {
@@ -1092,6 +1325,20 @@ export type Database = {
         Args: { p_child_id: string; p_tutor_user_id: string };
         Returns: number;
       };
+      save_scheme_draft: {
+        Args: {
+          p_level_code: string;
+          p_source_note: string;
+          p_subject_id: string;
+          p_term: number;
+          p_weeks: Json;
+        };
+        Returns: string;
+      };
+      set_app_setting: {
+        Args: { p_key: string; p_value: Json };
+        Returns: undefined;
+      };
       set_grownup_pin: { Args: { p_pin: string }; Returns: undefined };
       set_pack_info: {
         Args: {
@@ -1100,6 +1347,10 @@ export type Database = {
           p_published_unit_id: string;
         };
         Returns: Json;
+      };
+      set_unit_version_status: {
+        Args: { p_status: string; p_unit_version_id: string };
+        Returns: undefined;
       };
       sync_pull: {
         Args: { p_limit: number; p_since_seq: number };

@@ -39,12 +39,19 @@ been applied to that project, and its file name carries the version the server a
 | `20261012043223` | `ingest_progress_events`       | the only write path of progress: per-event validation, idempotency, rate limit, derivation         |
 | `20261012043359` | `pack_publishing`              | pack columns on `published_units`, `get_pack_source` / `set_pack_info` / `authorize_pack_download`, private `packs` bucket |
 | `20261012043551` | `sync_pull`                    | `sync_pull(p_since_seq, p_limit)`: one page of the learner pull (`wire.ts` `PullResponse`)          |
+| `20261012060050` | `m2_ai_tables`                 | M2 content engine 1/7: `app_settings`, `ai_jobs`, `ai_usage` (RLS, column grants, audit trigger), `private.touch_updated_at` |
+| `20261012060435` | `m2_ai_job_rpcs`               | M2 2/7: `create_ai_job`, `cancel_ai_job` (staff) and `ai_job_acquire_lease` / `ai_job_complete_step` / `ai_job_fail_step` / `ai_job_budget_check` (service_role only), settings and cost helpers |
+| `20261012061029` | `m2_content_rpcs`              | M2 3/7: `save_scheme_draft`, `approve_scheme`, `apply_chapter_plan`, `create_unit_version_draft`, `set_unit_version_status`, `get_ai_settings`, `set_app_setting`, `get_ai_usage_summary` |
+| `20261012061107` | `m2_scheme_uploads_bucket`     | M2 4/7: private `scheme-uploads` bucket (20 MiB, PDF / DOCX / text) and its two `storage.objects` policies |
+| `20261012061127` | `m2_cast_facts`                | M2 5/7: the owner's facts about Zari and Zuri merged into `characters.traits`                       |
+| `20261012062224` | `m2_usage_pricing`             | M2 6/7: prefix price lookup (`private.ai_price_for`, same rule as `priceFor` in the contract), usage logged by `ai_job_fail_step` too (new 6-arg signature), kill switch also refuses a new lease |
+| `20261012062346` | `m2_fail_step_stub_rename`     | M2 7/7: the superseded 5-arg `ai_job_fail_step` pair renamed to `*_deprecated` (a 5-positional-argument call was ambiguous between the two overloads) |
 
-The 25 tables are: `profiles`, `admin_users`, `households`, `household_members`, `children`,
+The 28 tables are: `profiles`, `admin_users`, `households`, `household_members`, `children`,
 `child_secrets`, `child_access`, `invites`, `grownup_pins`, `grownup_elevations`, `consents`,
 `audit_log`, `levels`, `subjects`, `schemes`, `scheme_weeks`, `themes`, `theme_units`, `characters`,
-`chapters`, `units`, `unit_versions`, `published_units`, `progress_events`, `unit_progress`; plus the view
-`member_display`.
+`chapters`, `units`, `unit_versions`, `published_units`, `progress_events`, `unit_progress`,
+`app_settings`, `ai_jobs`, `ai_usage`; plus the view `member_display`.
 
 ## Workflow
 
@@ -88,6 +95,10 @@ Gotchas when applying through the MCP:
 | `progress_events`                                      | `can_access_child(child_id)`: guardians of the household, tutors with a grant | **none** (`ingest_progress_events` only); append-only for every role                   |
 | `unit_progress`                                        | `can_access_child(child_id)`                                         | **none** (derived by the server from the events)                                       |
 | `households.membership_epoch` (column)                 | members (with the rest of the row)                                   | **none**: maintained by triggers, never written by a client                            |
+| `app_settings`                                         | content staff (`super_admin`, `content_editor`, `reviewer`) at aal2   | **none** (`set_app_setting`, `super_admin` at aal2, validated by shape per key and audited). Nobody holds a table write privilege, `service_role` included |
+| `ai_jobs`                                              | content staff at aal2, **own jobs only** (`super_admin` sees all), and only the columns `id, kind, status, progress, result, error, attempts, lease_until, unit_id, scheme_id, created_by, created_at, updated_at, finished_at`; `params`, `input`, `state`, `lease_token`, `idempotency_key` are granted to nobody | **none** (`create_ai_job`, `cancel_ai_job`, and the four service-role lease RPCs). `select *` is refused: name the columns |
+| `ai_usage`                                             | **none** (RLS on, no policy, no grant); read the aggregates through `get_ai_usage_summary` | **none** (written by the lease RPCs, one row per model call)                |
+| `storage.objects`, bucket `scheme-uploads`             | content staff at aal2, objects under their own `<user id>/` prefix only | INSERT under the own prefix by `super_admin` / `content_editor` at aal2; no UPDATE, no DELETE |
 
 `support` and `analyst` have no policy on any household data, consent, draft or curriculum planning table.
 `analyst` aggregate views (small-cell suppression) and time-boxed `support` access are not built yet.
@@ -136,6 +147,31 @@ Parameters are prefixed `p_`. Failures raise a stable message (see `DbErrorMessa
 | `authorize_pack_download(p_unit_id, p_version_no)` -> `{manifest_path, content_hash}` | any active household member (guardian or tutor) | the version must **serve** (below). Called by `get-pack-download` with the caller's JWT; it signs nothing itself. `not_a_household_member`, `pack_not_found` |
 | `get_pack_source(p_published_unit_id)` -> jsonb        | `super_admin`, `content_editor`, `reviewer` at **aal2** | the snapshot content and its pack state, for `publish-pack`                                             |
 | `set_pack_info(p_published_unit_id, p_manifest_path, p_content_hash)` | same admins at **aal2**, or `service_role` (a CI pack job) | **write-once**: the same values again are a no-op (`already_set: true`), different values raise `pack_info_already_set`. The path must be `units/<unit_id>/<version_no>/manifest.json`, the hash 64 lower-case hex |
+
+Content engine (M2) RPCs. Admin roles need **aal2** everywhere; failures are stable snake_case messages
+(`DbErrorMessage`), SQLSTATE `42501` for permission, `P0002` not found, `22023` invalid, `53400` limit.
+
+| RPC                                                    | Who may call                                  | Notes                                                                                                   |
+| ------------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `create_ai_job(p_kind, p_params, p_input, p_unit_id, p_scheme_id, p_idempotency_key)` -> JobRow | `super_admin`, `content_editor` | the `ai-job` function resolves the engine input with the caller's JWT and stores it here (hidden from clients). Idempotent per (creator, key); `idempotency_key_reused` for another kind; `kill_switch` (42501); `too_many_jobs` (53400) at 5 unfinished jobs per creator. A reviewer cannot create jobs: every job ends in a write only editors may do |
+| `cancel_ai_job(p_job_id)` -> JobRow                    | the creator, or `super_admin`; any content staff may call but see only what they may see | a finished job is returned unchanged; another person's job is `job_not_found`. A step in flight loses its output (the lease is dropped) but its spend is still logged |
+| `save_scheme_draft(p_subject_id, p_level_code, p_term, p_weeks, p_source_note)` -> uuid | `super_admin`, `content_editor` | replaces the weeks of the DRAFT scheme of (subject, level, term) or creates it; a scheme that is not a draft is never rewritten (`scheme_not_draft`). Weeks are validated like `Scheme` in content-schema |
+| `approve_scheme(p_scheme_id)`                          | `super_admin`, `reviewer`                     | draft -> approved; needs a teaching week; approving an approved scheme is a no-op; audited               |
+| `apply_chapter_plan(p_scheme_id, p_plan)` -> counts    | `super_admin`, `content_editor`               | needs an APPROVED scheme. Creates / updates draft chapters and units (3 to 5 per chapter, weeks must exist), links the theme, idempotent (an unchanged plan writes nothing), atomic; a unit that has a version is never changed or dropped (`unit_has_versions`); a chapter that is no longer a draft keeps its title (`chapter_not_draft`) |
+| `create_unit_version_draft(p_unit_id, p_content, p_lint_report, p_generated_by, p_model, p_prompt_version, p_base_version_id)` -> `{id, version}` | `super_admin`, `content_editor` | the only way the function saves an AI draft: numbered under a row lock, always a `draft`, `stale_base` unless the base is the latest version (or null for a first one). `SECURITY INVOKER`, so RLS and the `unit_versions` guard trigger stay the last line of defence |
+| `set_unit_version_status(p_unit_version_id, p_status)` | staff; see notes                              | draft -> in_review (any staff), in_review -> approved or back to draft (`reviewer`, `super_admin` only); every other move is `illegal_status_move`. `SECURITY INVOKER`: publishing stays `publish_unit_version` |
+| `get_ai_settings()` -> `AiSettings`                    | content staff                                 | stored keys laid over the defaults (`DEFAULT_AI_SETTINGS`), so an empty table is a working configuration |
+| `set_app_setting(p_key, p_value)`                      | `super_admin`                                 | known keys only (`ai.models`, `ai.kill_switch`, `ai.budget`, `ai.prices`, `ai.effort`, `ai.prompt_version`); the value is validated by shape; only a real change is audited |
+| `get_ai_usage_summary(p_from, p_to)` -> `{totals, by_day, by_model, by_kind}` | `super_admin`, `content_editor`, `analyst` | window of at most 366 days (`invalid_range`); costs sum only KNOWN prices and unpriced calls are counted separately: unknown is never shown as zero |
+| `ai_job_acquire_lease(p_job_id, p_lease_seconds)`      | **`service_role` only**                       | `{acquired, reason busy \| terminal, job, kind, input, state, lease_token}`. A live lease is `busy`; an expired lease is taken over and counts as one failed attempt (`aborted`), the third ends the job; refused with `kill_switch` while the switch is on |
+| `ai_job_complete_step(p_job_id, p_lease_token, p_step, p_output, p_usage, p_progress, p_result)` -> boolean | **`service_role` only** | stores the output only while the token still holds the lease (false otherwise, so a late finisher cannot overwrite a newer attempt); the usage is logged either way; a `p_result` finishes the job |
+| `ai_job_fail_step(p_job_id, p_lease_token, p_step, p_error, p_retryable, p_usage default '[]')` -> boolean | **`service_role` only** | records `{code, message<=500, step, retryable}` only (no raw output, no stack); 3 failed attempts or a non-retryable error end the job; the billed calls of the failed step go to `ai_usage` |
+| `ai_job_budget_check(p_job_id)`                        | **`service_role` only**                       | `{kill_switch, job_cost_usd, day_cost_usd, max_usd_per_job, daily_usd_cap, unpriced_calls, day_unpriced_calls}` |
+
+Cost rule: `ai.prices` maps a model id (or a prefix of it) to USD per million tokens. A call is priced by
+the exact id, else by the LONGEST key that is a prefix of the reported id, so the alias `claude-opus-5-5`
+prices the snapshot `claude-opus-5-5-20261001`. No match is `NULL` (unpriced), never zero. This is
+`priceFor` of `packages/authoring-core/src/contract.ts`; pgTAP `080` checks the two agree on the cases.
 
 Elevation-gated actions: invite creation, member removal, grant/revoke of tutor access, PIN change,
 granting consent, changing a child's daily limit, deleting/restoring a child.
@@ -200,7 +236,9 @@ server stored, and devices verify those; for one snapshot the output is always t
 | `get-pack-download`              | any signed-in household member or granted tutor | `POST {p_unit_id, p_version_no}` -> `PackDownload {manifest, urls, expires_at}` (`wire.ts`). Authorised by `authorize_pack_download` with the **caller's JWT**; only then the service role reads the authorised manifest from storage and signs URLs (2 hours, Range supported) for the files that manifest lists. Storage paths are derived from the validated ids and hashes, never copied from the manifest text; a manifest that disagrees with the database is a 500 `pack_corrupt` |
 | `publish-pack`                   | `super_admin`, `content_editor`, `reviewer` at aal2 | `POST {published_unit_id}`: `get_pack_source` (caller's JWT) -> build the pack -> upload with the service role (manifest last) -> `set_pack_info` (caller's JWT). Idempotent: a snapshot whose pack is built returns `already_built: true` and touches nothing; a crashed run is re-run (uploads overwrite identical bytes). 409 `not_current` for a superseded or tombstoned snapshot, 422 `content_not_packable` for content that does not parse |
 
-Both have `verify_jwt = true` in `supabase/config.toml`, accept `POST` only, and return
+`ai-job` (the content engine, below) is a third function with the same conventions.
+
+Both pack functions have `verify_jwt = true` in `supabase/config.toml`, accept `POST` only, and return
 `{error: {code, message}}` with stable snake_case codes (database messages pass through; anything else is
 a bare 500 `internal_error`, the detail only in the logs). The service role is created in
 `_shared/clients.ts` and is used for storage only, after the database has said yes.
@@ -215,6 +253,46 @@ MCP `deploy_edge_function` cannot carry the 830 KB vendor bundle, so the dev pro
 **trimmed** vendor (esbuild with `--external:zod`, the `zod` import rewritten to `npm:zod@4.6.6`;
 byte-for-byte the same results on the golden unit). Redeploy with the CLI before real use so the deployed
 code is the committed code.
+
+## The content engine (M2): `ai-job`
+
+ADR 0007: client-driven stepping. The admin app calls `ai-job` with `{action: 'create' | 'step' | 'cancel'}`
+(`AiJobRequest` in `packages/authoring-core/src/contract.ts`); one `step` request runs ONE engine step.
+
+| Piece                                                       | Role                                                                                       |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `supabase/functions/ai-job/index.ts`                        | Deno glue: `Deno.serve`, `EdgeRuntime.waitUntil`, the Anthropic SDK (pinned 0.133.0), the two Supabase clients, `_shared/vendor/authoring-core.js` |
+| `_shared/ai-job-handler.ts`                                 | the whole protocol as a pure function `handleAiJob(req, deps)`: CORS, auth, validation, create, step, cancel, failure accounting |
+| `_shared/ai-job-context.ts`                                 | turns ids into the engine input by reading with the **caller's JWT** (RLS applies to every read) |
+| `_shared/ai-job-errors.ts`, `ai-job-types.ts`               | error codes -> HTTP statuses, database error mapping, structural types of the contract       |
+| `_shared/ai-job-{fake-db,test-kit}.ts`, `*.test.ts`          | in-memory Supabase client and job backend (mirrors the SQL), 123 Vitest tests in `_shared` (91 for `ai-job`) |
+
+How a step goes: authenticate (JWT claims, `aal2`, `admin_users` role; the gateway verifies the signature,
+the database re-checks everything) -> load the job with the caller's client (RLS) -> only the creator
+steps -> finished jobs answer 200 as they are -> `ANTHROPIC_API_KEY` present (else 500, no lease taken) ->
+`get_ai_settings` -> kill switch (503) -> a live lease answers `{busy: true}` -> `ai_job_budget_check`
+(per-job and daily caps, 429 `budget_exceeded`) -> `ai_job_acquire_lease` (service role) -> **202** and the
+step runs in `waitUntil` -> the output is stored by `ai_job_complete_step`; for unit jobs the draft is
+first saved with `create_unit_version_draft` using the **caller's JWT** (`generated_by = 'ai'`,
+`stale_base` is a non-retryable conflict). The service role is used for the four `ai_job_*` RPCs and
+nothing else. A failure stores a fixed, safe message (never the engine's text, raw model output, a key or
+a stack trace); the billed calls of a failed step are logged too.
+
+Secrets (Supabase dashboard -> Edge Functions -> Secrets, or `supabase secrets set`; never in the repo):
+`ANTHROPIC_API_KEY` and `ALLOWED_ORIGINS` (comma-separated admin app origins; `http://localhost:<port>` and
+`http://127.0.0.1:<port>` are always allowed for development; the origin is reflected, never `*`).
+
+Deploy from the repo with the CLI (the bundle is about 1 MB, too big for the MCP deploy tool):
+
+```sh
+node scripts/vendor-authoring.mjs && supabase functions deploy ai-job
+```
+
+`verify_jwt = true` is set in `supabase/config.toml`. The function has **not** been deployed or called
+against the real project from the build environment (egress to `*.supabase.co` is blocked there); the
+database half is tested live (pgTAP 080 to 082) and the handler by Vitest, including an integration test that
+runs the real step engine with the demo model through the handler for `chapter_plan`, `unit_generate` and
+`unit_revise`, once with the engine source and once with the Deno bundle.
 
 ## Seed: the golden unit
 
@@ -243,8 +321,16 @@ publish left 6 rows in `audit_log` (the temporary admin that signed it was delet
 | `071_membership_epoch.test.sql`        |    27 | the epoch changes on every access change and only then; distinct across households                  |
 | `072_sync_pull.test.sql`               |    52 | `sync_pull`: wire shape, scope, paging, tombstones, flattened units, serving rule, cursor safety     |
 | `073_pack_publishing.test.sql`         |    55 | pack columns and constraints, write-once `set_pack_info`, who may call what, `authorize_pack_download`, bucket |
+| `080_ai_jobs.test.sql`                 |   161 | `app_settings` / `ai_jobs` / `ai_usage` access and column grants, `create_ai_job` (roles, aal2, idempotency, kill switch, limit of 5), `cancel_ai_job`, the lease RPCs (busy, takeover, late finisher, 3 attempts, scrubbed errors), costs (prefix price lookup), budget check, failed-but-billed usage |
+| `081_ai_content_rpcs.test.sql`         |   159 | `save_scheme_draft`, `approve_scheme`, `apply_chapter_plan` (validation, idempotency, atomic refusal, units with versions), `create_unit_version_draft` (`stale_base`, provenance, guard trigger), `set_unit_version_status` |
+| `082_ai_settings_usage_storage_cast.test.sql` | 116 | `get_ai_settings` / `set_app_setting` (shape validation per key, audit), `get_ai_usage_summary`, the `scheme-uploads` bucket policies (conditional: skipped with a note when the storage service has not created the bucket or policies), the owner's cast facts |
 
-All 11 files pass (489 tests).
+All 14 files pass (925 tests; the 489 of M0 and M1 are unchanged apart from `000`, below).
+
+`000_hardening` was extended, not weakened: its two function-ACL tripwires now list the M2 functions on
+purpose, and its "Zari and Zuri are stubs with empty traits" assertion became "they carry only the
+owner's facts (age, gender, pronouns, empty personality, empty voice, no relationship)", because
+`m2_cast_facts` writes exactly those into `traits`.
 
 CI (`.github/workflows/ci.yml`, job `database`): `supabase start` then `supabase test db`. Each file
 creates pgTAP itself (`create extension if not exists pgtap with schema extensions`) inside its
@@ -317,13 +403,14 @@ and must be kept in step with the CHECK constraints and RPC messages by hand.
 
 ## Advisors (Supabase `get_advisors`)
 
-Last run after the M1 server work (`sync_pull` and the seeded golden unit): **no ERROR or WARN, security
-or performance.** The new tables (`progress_events`, `unit_progress`), the new columns and the private
-`packs` bucket raise nothing.
+Last run after the M2 server work (the seven `m2_*` migrations): **no ERROR or WARN, security or
+performance.** The M1 tables (`progress_events`, `unit_progress`), the private `packs` and `scheme-uploads`
+buckets and the M2 tables raise nothing but INFO.
 
 Deliberately accepted (INFO only):
 
-- **`rls_enabled_no_policy` x4** on `child_secrets`, `invites`, `grownup_pins`, `grownup_elevations`.
+- **`rls_enabled_no_policy` x5** on `child_secrets`, `invites`, `grownup_pins`, `grownup_elevations` and
+  `ai_usage` (nobody reads usage rows directly: `get_ai_usage_summary` is the read path).
   This is the design: these tables hold secrets (picture-passcode hash, invite token hashes, PIN
   hash and lockout state, elevations). RLS is on, no policy exists and no privilege is granted to any
   client role, so they can only be reached through `SECURITY DEFINER` code. Adding a `using (false)`
@@ -378,3 +465,42 @@ resolve `private.*` functions as the caller) and is not in the PostgREST `db-sch
   that signed it.
 - **First `super_admin`** must be inserted by hand (`insert into public.admin_users`, as the owner);
   TOTP enrolment is a Supabase Auth setting, not a schema feature.
+
+### M2 content engine: follow-ups and decisions
+
+- **The deprecated `ai_job_fail_step` pair is still in the database.** `m2_usage_pricing` replaced the
+  5-argument `ai_job_fail_step` by a 6-argument one (`p_usage jsonb default '[]'`); the old pair could not
+  be dropped through the MCP (a line starting with `drop` is held back for human confirmation, and the
+  call times out). It is revoked from everybody and renamed `ai_job_fail_step_deprecated`
+  (`m2_fail_step_stub_rename`), so nothing can call it by accident. It is visible in the generated types.
+  Remove both by hand, as the owner, in the SQL editor, then regenerate the types:
+
+  ```sql
+  drop function public.ai_job_fail_step_deprecated(uuid, uuid, text, jsonb, boolean);
+  drop function private.ai_job_fail_step_deprecated(uuid, uuid, text, jsonb, boolean);
+  ```
+
+- **`ai-job` has never run against the real project.** Not deployed, not called (egress blocked in the
+  build environment). Before the first use: set `ANTHROPIC_API_KEY` and `ALLOWED_ORIGINS` as function
+  secrets, run `node scripts/vendor-authoring.mjs`, `supabase functions deploy ai-job`, then smoke test with
+  an aal2 `content_editor`: create a `chapter_plan` job on an approved scheme and step it to the end.
+  The Deno glue (`ai-job/index.ts`) is type-checked against stubs and the vendored bundle was exercised
+  from Node, but `Deno.serve`, `EdgeRuntime.waitUntil` and the Anthropic client are not exercised by any test.
+- **A step must finish inside its lease.** `STEP_LEASE_SECONDS = 150`; the engine call is aborted
+  15 s earlier (`AbortSignal.timeout`), the model client is built with a 120 s timeout and one retry. A
+  worker killed by the platform leaves an expired lease: the next `step` takes it over, which counts as one
+  failed attempt (so a step that always kills its worker ends the job after 3).
+- **Roles.** `reviewer` cannot create jobs, step them or upload schemes: every job ends in a write that only
+  `super_admin` / `content_editor` may do. Only the creator steps a job (`super_admin` may cancel any).
+  Reviewers approve schemes and unit versions; they read (not create) the drafts.
+- **Spend is logged even when the output is not stored** (a late finisher after a takeover, a cancelled
+  job, a failed step): the model was called and billed. `ai_usage.est_cost_usd` is NULL for a model with
+  no price; the budget check sums only known costs, so set `ai.prices` before relying on the caps.
+- **`stage_to` of a planned unit is validated but not stored**: `units` has no such column (the plan keeps
+  it in the job `result`).
+- **Fresh local stack.** The `scheme-uploads` bucket is declared in `supabase/config.toml` and created by
+  the migration with `on conflict do nothing`; the two `storage.objects` policies are installed only when
+  the storage schema exists. pgTAP `082` skips those assertions (with a note) if they are not there.
+- **`_shared/clients.ts` still says the service role is used "ONLY for the private `packs` bucket".** It
+  now also calls the four `ai_job_*` RPCs, after the caller has been authenticated and authorised. The
+  comment was not edited by M2.2.

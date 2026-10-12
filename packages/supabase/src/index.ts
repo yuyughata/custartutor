@@ -50,6 +50,32 @@ export type UnitVersion = Tables<'unit_versions'>;
 export type PublishedUnit = Tables<'published_units'>;
 export type ProgressEvent = Tables<'progress_events'>;
 export type UnitProgress = Tables<'unit_progress'>;
+export type AppSetting = Tables<'app_settings'>;
+/**
+ * A content-engine job as a client may read it: `input`, `state`, `lease_token`, `params` and `idempotency_key`
+ * are not granted to any API role (column privileges), so a `select` must name exactly these columns. The same
+ * shape is what `create_ai_job` and `cancel_ai_job` return.
+ */
+export type AiJob = Pick<
+  Tables<'ai_jobs'>,
+  | 'id'
+  | 'kind'
+  | 'status'
+  | 'progress'
+  | 'result'
+  | 'error'
+  | 'attempts'
+  | 'lease_until'
+  | 'unit_id'
+  | 'scheme_id'
+  | 'created_by'
+  | 'created_at'
+  | 'updated_at'
+  | 'finished_at'
+>;
+/** The columns of {@link AiJob}, for `select(AI_JOB_COLUMNS)`. */
+export const AI_JOB_COLUMNS =
+  'id,kind,status,progress,result,error,attempts,lease_until,unit_id,scheme_id,created_by,created_at,updated_at,finished_at';
 
 // Column domains (mirror the CHECK constraints) --------------------------------------------------
 export type AdminRole = 'super_admin' | 'content_editor' | 'reviewer' | 'support' | 'analyst';
@@ -69,6 +95,13 @@ export type UnitKind = 'lesson' | 'mini_project' | 'term_project' | 'revision' |
 export type UnitVersionStatus = 'draft' | 'in_review' | 'approved' | 'published' | 'superseded';
 export type GeneratedBy = 'ai' | 'human';
 export type ConsentAction = 'grant' | 'withdraw';
+export type AiJobKind = 'scheme_ingest' | 'chapter_plan' | 'unit_generate' | 'unit_revise';
+export type AiJobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+/** `ai_usage.task`: which model role made the call. */
+export type AiTask = 'authoring' | 'tutor' | 'moderation';
+/** The keys `app_settings` accepts (CHECK constraint); `set_app_setting` validates the value of each by shape. */
+export type AppSettingKey =
+  'ai.models' | 'ai.kill_switch' | 'ai.budget' | 'ai.prices' | 'ai.effort' | 'ai.prompt_version';
 export type ProgressEventType =
   | 'unit_started'
   | 'section_completed'
@@ -143,4 +176,48 @@ export type DbErrorMessage =
   | 'published_unit_not_found'
   | 'invalid_pack_path'
   | 'invalid_content_hash'
-  | 'pack_info_already_set';
+  | 'pack_info_already_set'
+  // content engine: jobs, settings, usage
+  | 'kill_switch'
+  | 'too_many_jobs'
+  | 'job_not_found'
+  | 'idempotency_key_reused'
+  | 'invalid_idempotency_key'
+  | 'invalid_job_kind'
+  | 'invalid_job_input'
+  | 'invalid_job_params'
+  | 'unit_id_required'
+  | 'scheme_id_required'
+  | 'invalid_lease_seconds'
+  | 'invalid_step'
+  | 'invalid_progress'
+  | 'invalid_usage'
+  | 'invalid_setting_key'
+  | 'invalid_setting_value'
+  | 'invalid_range'
+  // content engine: schemes, chapter plans, unit versions
+  | 'unit_not_found'
+  | 'scheme_not_found'
+  | 'subject_not_found'
+  | 'invalid_term'
+  | 'invalid_level'
+  | 'invalid_source_note'
+  | 'invalid_scheme_weeks'
+  | 'scheme_not_draft'
+  | 'scheme_not_approved'
+  | 'scheme_has_no_teaching_weeks'
+  | 'invalid_chapter_plan'
+  | 'duplicate_chapter_no'
+  | 'duplicate_unit_no'
+  | 'unknown_scheme_week'
+  | 'unit_has_versions'
+  | 'chapter_not_draft'
+  | 'invalid_generated_by'
+  | 'invalid_unit_content'
+  | 'unit_content_too_large'
+  | 'invalid_lint_report'
+  | 'invalid_ai_provenance'
+  | 'unit_not_editable'
+  | 'stale_base'
+  | 'invalid_status'
+  | 'illegal_status_move';

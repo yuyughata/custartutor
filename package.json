@@ -18,8 +18,8 @@
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "vendor": "node scripts/vendor-schema.mjs",
-    "vendor:check": "node scripts/vendor-schema.mjs --check"
+    "vendor": "node scripts/vendor-schema.mjs && node scripts/vendor-authoring.mjs",
+    "vendor:check": "node scripts/vendor-schema.mjs --check && node scripts/vendor-authoring.mjs --check"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

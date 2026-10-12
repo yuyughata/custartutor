@@ -1,0 +1,155 @@
+{
+  "settings_default": {
+    "budget": { "daily_usd_cap": null, "max_usd_per_job": null },
+    "effort": {},
+    "models": {
+      "tutor": "claude-sonnet-5-5",
+      "authoring": "claude-opus-5-5",
+      "moderation": "claude-haiku-5-5"
+    },
+    "prices": {},
+    "kill_switch": false,
+    "prompt_version": "m2-v1"
+  },
+  "settings_priced": {
+    "budget": { "daily_usd_cap": null, "max_usd_per_job": null },
+    "effort": {},
+    "models": {
+      "tutor": "claude-sonnet-5-5",
+      "authoring": "claude-opus-5-5",
+      "moderation": "claude-haiku-5-5"
+    },
+    "prices": {
+      "claude-opus-5-5": {
+        "input_per_mtok": 1,
+        "output_per_mtok": 2,
+        "cache_read_per_mtok": 0.1,
+        "cache_write_per_mtok": 1.25
+      }
+    },
+    "kill_switch": false,
+    "prompt_version": "m2-v1"
+  },
+  "save_scheme_draft": "e62c5a97-1481-407d-8212-d37e503ac814",
+  "apply_chapter_plan": {
+    "units": 6,
+    "chapters": 2,
+    "units_created": 6,
+    "units_removed": 0,
+    "units_updated": 0,
+    "chapters_created": 2,
+    "chapters_removed": 0
+  },
+  "apply_chapter_plan_again": {
+    "units": 6,
+    "chapters": 2,
+    "units_created": 0,
+    "units_removed": 0,
+    "units_updated": 0,
+    "chapters_created": 0,
+    "chapters_removed": 0
+  },
+  "create_ai_job": {
+    "id": "d5d7305e-9315-42c3-805d-bfa09ea91448",
+    "kind": "unit_generate",
+    "error": null,
+    "result": null,
+    "status": "queued",
+    "unit_id": "fa9e8e7b-1bf5-4792-9b8e-da316bd3ad23",
+    "attempts": 0,
+    "progress": { "done": [], "next": null, "total": 0 },
+    "scheme_id": null,
+    "created_at": "2026-10-12T07:16:38.499218+00:00",
+    "created_by": "f9000000-0000-4000-8000-000000000001",
+    "updated_at": "2026-10-12T07:16:38.499218+00:00",
+    "finished_at": null,
+    "lease_until": null
+  },
+  "job_row_running": {
+    "id": "d5d7305e-9315-42c3-805d-bfa09ea91448",
+    "kind": "unit_generate",
+    "error": null,
+    "result": null,
+    "status": "running",
+    "unit_id": "fa9e8e7b-1bf5-4792-9b8e-da316bd3ad23",
+    "attempts": 0,
+    "progress": { "done": ["outline"], "next": "section:story_opener", "total": 19 },
+    "scheme_id": null,
+    "created_at": "2026-10-12T07:16:38.499218+00:00",
+    "created_by": "f9000000-0000-4000-8000-000000000001",
+    "updated_at": "2026-10-12T07:16:38.499218+00:00",
+    "finished_at": null,
+    "lease_until": null
+  },
+  "usage_summary": {
+    "by_day": [
+      {
+        "day": "2026-10-12",
+        "calls": 2,
+        "est_cost_usd": 0.002575,
+        "input_tokens": 1010,
+        "output_tokens": 505,
+        "unpriced_calls": 1,
+        "cache_read_tokens": 2000,
+        "cache_creation_tokens": 300
+      }
+    ],
+    "totals": {
+      "jobs": { "failed": 0, "queued": 0, "running": 1, "cancelled": 0, "succeeded": 0 },
+      "calls": 2,
+      "est_cost_usd": 0.002575,
+      "input_tokens": 1010,
+      "output_tokens": 505,
+      "unpriced_calls": 1,
+      "cache_read_tokens": 2000,
+      "cache_creation_tokens": 300
+    },
+    "by_kind": [
+      {
+        "jobs": { "failed": 0, "queued": 0, "running": 0, "cancelled": 0, "succeeded": 0 },
+        "kind": "scheme_ingest",
+        "calls": 0,
+        "est_cost_usd": null,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "unpriced_calls": 0,
+        "cache_read_tokens": 0,
+        "cache_creation_tokens": 0
+      },
+      {
+        "jobs": { "failed": 0, "queued": 0, "running": 1, "cancelled": 0, "succeeded": 0 },
+        "kind": "unit_generate",
+        "calls": 2,
+        "est_cost_usd": 0.002575,
+        "input_tokens": 1010,
+        "output_tokens": 505,
+        "unpriced_calls": 1,
+        "cache_read_tokens": 2000,
+        "cache_creation_tokens": 300
+      }
+    ],
+    "by_model": [
+      {
+        "calls": 1,
+        "model": "claude-opus-5-5-20261001",
+        "est_cost_usd": 0.002575,
+        "input_tokens": 1000,
+        "output_tokens": 500,
+        "unpriced_calls": 0,
+        "cache_read_tokens": 2000,
+        "cache_creation_tokens": 300
+      },
+      {
+        "calls": 1,
+        "model": "unpriced-model",
+        "est_cost_usd": null,
+        "input_tokens": 10,
+        "output_tokens": 5,
+        "unpriced_calls": 1,
+        "cache_read_tokens": 0,
+        "cache_creation_tokens": 0
+      }
+    ]
+  },
+  "create_unit_version_draft": { "id": "4bd87bae-86ca-414b-bac2-6a0a07092b73", "version": 1 }
+}

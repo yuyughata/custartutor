@@ -4,7 +4,8 @@
 //                    every table read runs under the caller's own permissions and RLS. All authorisation
 //                    decisions go through it.
 //   serviceClient()  the service role. It bypasses RLS and is used ONLY for the private `packs` bucket
-//                    (reading a manifest, signing URLs, uploading pack files), never for anything the
+//                    (reading a manifest, signing URLs, uploading pack files) and, in `ai-job`, for the
+//                    four service-role-only `ai_job_*` lease/state/usage RPCs. Never for anything the
 //                    caller's own permissions already allow, and never before the user client has
 //                    authorised the request.
 

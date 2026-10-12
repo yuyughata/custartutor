@@ -8,6 +8,15 @@ Exit criterion (plan §10): P1 Basic Science Term 1 (8 teaching weeks) drafted b
 published. That needs a live `ANTHROPIC_API_KEY`; everything else is built and tested against a fake model first
 (see "What is and is not verified").
 
+## Status
+
+| #    | Package                              | State                                                                                                                                                       |
+| ---- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M2.1 | `authoring-core`                     | built; 367 tests against fake models; the live API path and the prompts are unverified                                                                      |
+| M2.2 | server                               | seven migrations applied to the dev database; 925 pgTAP tests (436 new) pass; edge function written and tested with injected dependencies, **not deployed** |
+| M2.3 | `apps/admin`                         | built; 221 tests; verified in a browser in demo mode; the live path is covered by a recording fake client and by a regression test on real server output    |
+| exit | 8 units drafted, reviewed, published | waits for `ANTHROPIC_API_KEY`, the CLI deploy and your review: see [m2-live-test.md](m2-live-test.md)                                                       |
+
 ## Flow
 
 ```
