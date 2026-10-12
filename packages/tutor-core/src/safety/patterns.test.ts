@@ -164,7 +164,10 @@ describe('compileTemplate', () => {
     expect(test('i want to stay home')).toBe(false);
   });
 
-  it('rejects an unclosed group', () => {
+  it('rejects an unclosed group, a nested group and characters that are not words', () => {
     expect(() => compileTemplate('i (want')).toThrow();
+    expect(() => compileTemplate('i (want|(need))')).toThrow(/nested/);
+    expect(() => compileTemplate("i don't want")).toThrow(/may only hold/);
+    expect(() => compileTemplate('i (want )?to')).toThrow();
   });
 });

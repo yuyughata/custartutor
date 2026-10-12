@@ -29,6 +29,15 @@ function literal(text: string): string {
 
 /** Compiles one template (syntax in patternData.ts) to a regular expression over normalised text. */
 export function compileTemplate(template: string): RegExp {
+  // A mistake in a template (an apostrophe, a "?", a nested group) must fail loudly, not quietly match nothing.
+  if (!/^[a-z0-9 ()[\]|.]+$/.test(template)) {
+    throw new Error(
+      `Safety template "${template}" may only hold a-z, 0-9, spaces and ( ) [ ] | ...`,
+    );
+  }
+  if (/\([^)]*[([]|\[[^\]]*[([]/.test(template)) {
+    throw new Error(`Safety template "${template}" has a nested group, which is not supported`);
+  }
   let source = '';
   let index = 0;
   while (index < template.length) {
