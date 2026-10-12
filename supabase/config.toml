@@ -1,0 +1,29 @@
+# Supabase CLI configuration for local development and CI (`supabase start`, `supabase test db`).
+#
+# The hosted project is "CUSTAR Tutor" (kjmjyxherydvefwtzmez, eu-west-1). It is the DEV database until
+# real families onboard; production gets its own project. Git is the source of truth for the schema:
+# see supabase/migrations/README.md.
+#
+# Hosted-only settings that are NOT configured here (set them in the dashboard):
+#   * admin accounts must enrol TOTP MFA (every admin policy and RPC requires aal2);
+#   * email OTP / Google providers and custom SMTP for guardian sign-in;
+#   * the exposed schemas must stay ["public"] (the `private` schema must never be exposed).
+
+project_id = "custartutor"
+
+[api]
+enabled = true
+port = 54321
+# `private` holds SECURITY DEFINER helpers and RPC implementations: it must never be exposed.
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323

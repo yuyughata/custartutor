@@ -10,7 +10,12 @@ export type SqlRow = Record<string, SqlValue>;
 /**
  * A SQLite connection. In the app it wraps `expo-sqlite` (WAL, exclusive transactions); in tests it wraps
  * `node:sqlite`. `transaction` MUST be exclusive: no other statement on the connection may interleave
- * with the callback (expo-sqlite's `withExclusiveTransactionAsync`).
+ * with the callback.
+ *
+ * Adapter note (expo-sqlite): `withExclusiveTransactionAsync(task: (txn) => Promise<void>)` returns void and
+ * is unavailable on web (fall back to `withTransactionAsync` there). `transaction<T>` is implementable on
+ * top of either: capture the callback's result in a closure variable and return it after the call. The core
+ * only ever uses the `tx` argument inside the callback (never the outer driver).
  */
 export interface SqlDriver {
   /** Runs one or more statements separated by semicolons. No parameters. */
@@ -81,6 +86,13 @@ export interface Random {
   /** RFC 4122 v4 UUID. */
   uuid(): string;
   bytes(length: number): Uint8Array;
+}
+
+/** Connectivity, for Wi-Fi-only downloads and "am I online" hints. Backed by `expo-network` in the app. */
+export interface Network {
+  isOnline(): Promise<boolean>;
+  /** True on Wi-Fi or ethernet (not a metered mobile connection). */
+  isUnmetered(): Promise<boolean>;
 }
 
 export interface Ports {
