@@ -249,6 +249,23 @@ function Dashboard() {
             Primary {child.level_code.slice(1)} ·{' '}
             {child.reading_mode === 'pre_reader' ? 'listens' : 'reads and writes'}
           </Body>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+            <Button
+              label="AI tutor"
+              variant="ghost"
+              onPress={() => router.push(`/grownups/tutor/${child.id}`)}
+            />
+            <Button
+              label="Worksheets"
+              variant="ghost"
+              onPress={() => router.push(`/grownups/worksheets/${child.id}`)}
+            />
+            <Button
+              label="Helper mode"
+              variant="ghost"
+              onPress={() => router.push(`/grownups/helper/${child.id}`)}
+            />
+          </View>
         </Card>
       ))}
       {adding ? (

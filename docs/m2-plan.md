@@ -98,6 +98,26 @@ Plus:
 - The deterministic gate is the content-schema Zod parse plus `lintUnit`; a unit with lint errors gets at most two
   repair steps and is then saved anyway as a draft with its errors visible (a human decides).
 
+## M2.4: human editing and units added by hand (owner requirement, 2026-10-12)
+
+The owner requires that **everything Claude drafts (lessons, units, worksheets) can be revised by a person in a
+text-editor space**, and that an admin can **add units to a chapter by hand, up to five**. Until M2.4 the only way to
+change a draft was "Revise with Claude", and units came only from scheme weeks.
+
+- **Editor** (`/units/[unitId]/edit`): edits the whole unit as structured fields, not raw JSON: header, sections, blocks
+  of every type (text with `**bold**`, bullets, definitions, examples, dialogue, callouts, steps, tables, illustration
+  brief and alt text), questions of every kind with answer-spec editors and a "try it" grader, tutor-script nodes, the
+  session plan, the workbook (the worksheet content: tiers, drill, take-it-home, not-yet, variants) and the teacher's
+  manual including the helper script. Live Zod and lint messages beside the field, a reading-level meter, undo and redo,
+  a local autosave, and a side-by-side preview with `UnitView`.
+- **Save** creates a **new `human` version** through `create_unit_version_draft` (never edits a version in place);
+  `stale_base` shows a conflict screen. Approval is still a separate step for a reviewer.
+- **Ids**: existing ids cannot be renamed. An id that was never published may be deleted; an id of a published snapshot
+  of the unit may not (`lintVersionIds` against the published history, not against the previous draft).
+- **Planner**: add a unit to a chapter (up to 5), remove a unit that has no version, reorder within a chapter, and
+  move between neighbouring chapters, with one atomic server RPC for the new layout. The 3 to 5 rule stays enforced in
+  the planner, the RPC and `publish_unit_version`.
+
 ## Admin app screens (M2.3)
 
 Sign-in (email code, then TOTP; enrol on first use), Home (to-do: schemes awaiting approval, units awaiting review),
