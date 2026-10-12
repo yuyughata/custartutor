@@ -112,6 +112,8 @@ export interface TxtProps {
   locked?: boolean;
   /** An optional field: emptying the box removes it from the unit (an empty text would not parse). */
   optional?: boolean;
+  /** Called with the new text instead of writing it to the path (for answers whose parts move together). */
+  onValue?: (next: string) => void;
 }
 
 export const Txt = memoPath(function Txt({
@@ -127,6 +129,7 @@ export const Txt = memoPath(function Txt({
   hideLabel,
   locked,
   optional,
+  onValue,
 }: TxtProps): ReactNode {
   const actions = useActions();
   const env = useEnv();
@@ -136,7 +139,7 @@ export const Txt = memoPath(function Txt({
       <TextEditor
         label={label}
         value={value}
-        onChange={(next) => actions.setField(path, optional && next === '' ? undefined : next)}
+        onChange={(next) => (onValue ? onValue(next) : actions.setField(path, optional && next === '' ? undefined : next))}
         fieldKey={pathKey(path)}
         readOnly={env.readOnly || locked === true}
         invalid={issues.some((issue) => issue.severity === 'error')}
