@@ -4,7 +4,7 @@
 -- search_path, append-only tables that regained UPDATE/DELETE.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(24);
+select plan(32);
 
 -- RLS everywhere ------------------------------------------------------------------------------------
 select is(
@@ -62,13 +62,25 @@ select is(
     where n.nspname = 'private'
       and has_function_privilege('authenticated', p.oid, 'EXECUTE')),
   array[
-    'accept_invite', 'can_access_child', 'create_household', 'create_invite',
-    'elevate_grownup', 'end_grownup_elevation', 'get_grownup_pin_status', 'grant_child_access',
-    'has_admin_role', 'has_grownup_elevation', 'is_granted_tutor', 'is_household_member',
-    'member_display_name', 'publish_unit_version', 'remove_member', 'revoke_child_access',
-    'set_grownup_pin'
+    'accept_invite', 'authorize_pack_download', 'can_access_child', 'create_household',
+    'create_invite', 'elevate_grownup', 'end_grownup_elevation', 'get_grownup_pin_status',
+    'get_pack_source', 'grant_child_access', 'has_admin_role', 'has_grownup_elevation',
+    'ingest_progress_events', 'is_granted_tutor', 'is_household_member', 'member_display_name',
+    'publish_unit_version', 'remove_member', 'revoke_child_access', 'set_grownup_pin',
+    'set_pack_info', 'sync_pull'
   ]::name[],
   'authenticated can execute exactly the intended private helpers and RPC implementations'
+);
+
+-- the service role (edge functions, CI jobs) resolves exactly one private function
+select is(
+  (select array_agg(p.proname order by p.proname)
+     from pg_proc p
+     join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'private'
+      and has_function_privilege('service_role', p.oid, 'EXECUTE')),
+  array['set_pack_info']::name[],
+  'service_role can execute exactly one private function (set_pack_info)'
 );
 
 select is(
@@ -105,11 +117,12 @@ select is(
 select is(
   (select count(*)::int
      from unnest(array['anon', 'authenticated', 'service_role']) as r(role_name)
-    cross join unnest(array['public.consents', 'public.audit_log', 'public.published_units']) as t(tbl)
+    cross join unnest(array['public.consents', 'public.audit_log', 'public.published_units',
+                            'public.progress_events']) as t(tbl)
     cross join unnest(array['UPDATE', 'DELETE', 'TRUNCATE']) as p(priv)
     where has_table_privilege(r.role_name, t.tbl, p.priv)),
   0,
-  'consents, audit_log and published_units cannot be UPDATEd, DELETEd or TRUNCATEd by any API role'
+  'consents, audit_log, published_units and progress_events cannot be UPDATEd, DELETEd or TRUNCATEd by any API role'
 );
 
 select is(
@@ -120,6 +133,8 @@ select is(
        ('household_members', 'INSERT'), ('household_members', 'UPDATE'), ('household_members', 'DELETE'),
        ('child_access', 'INSERT'), ('child_access', 'UPDATE'), ('child_access', 'DELETE'),
        ('published_units', 'INSERT'),
+       ('progress_events', 'INSERT'), ('progress_events', 'UPDATE'), ('progress_events', 'DELETE'),
+       ('unit_progress', 'INSERT'), ('unit_progress', 'UPDATE'), ('unit_progress', 'DELETE'),
        ('unit_versions', 'DELETE'),
        ('audit_log', 'INSERT'),
        ('consents', 'UPDATE')
@@ -183,6 +198,22 @@ select throws_ok($$select public.elevate_grownup('device-1', '2580')$$, '42501',
 select throws_ok(
   $$select public.publish_unit_version('00000000-0000-4000-8000-000000000000')$$,
   '42501', null, 'anon cannot call publish_unit_version'
+);
+select throws_ok($$select * from public.progress_events$$, '42501', null, 'anon cannot read progress_events');
+select throws_ok($$select * from public.unit_progress$$, '42501', null, 'anon cannot read unit_progress');
+select throws_ok($$select public.ingest_progress_events('[]'::jsonb)$$, '42501', null, 'anon cannot call ingest_progress_events');
+select throws_ok($$select public.sync_pull(0, 10)$$, '42501', null, 'anon cannot call sync_pull');
+select throws_ok(
+  $$select public.authorize_pack_download('00000000-0000-4000-8000-000000000000', 1)$$,
+  '42501', null, 'anon cannot call authorize_pack_download'
+);
+select throws_ok(
+  $$select public.set_pack_info('00000000-0000-4000-8000-000000000000', 'x', repeat('a', 64))$$,
+  '42501', null, 'anon cannot call set_pack_info'
+);
+select throws_ok(
+  $$select public.get_pack_source('00000000-0000-4000-8000-000000000000')$$,
+  '42501', null, 'anon cannot call get_pack_source'
 );
 
 reset role;

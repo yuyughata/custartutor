@@ -284,3 +284,19 @@ export async function wipeServerData(tx: SqlDriver): Promise<void> {
     await tx.run(`DELETE FROM ${table}`);
   }
 }
+
+/**
+ * Sign-out / account switch: removes every trace of the account's data from the device, including unsent
+ * events, the local event log, progress, the sync cursor and the epoch. Keeps the device id and sequence
+ * (they identify the installation), the clock state and downloaded packs (public curriculum content).
+ */
+export async function purgeAccountData(db: SqlDriver): Promise<void> {
+  await db.transaction(async (tx) => {
+    await wipeServerData(tx);
+    await tx.run('DELETE FROM outbox');
+    await tx.run('DELETE FROM local_event');
+    await tx.run(
+      "DELETE FROM meta WHERE key IN ('last_sync_seq', 'membership_epoch', 'last_verified_at', 'server_offset_ms')",
+    );
+  });
+}

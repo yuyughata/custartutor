@@ -6,9 +6,10 @@
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
-    "web": "expo start --web",
-    "build:web": "expo export --platform web",
-    "typecheck": "tsc --noEmit"
+    "web": "npm run copy:wasm && expo start --web",
+    "build:web": "npm run copy:wasm && expo export --platform web",
+    "typecheck": "tsc --noEmit",
+    "copy:wasm": "node scripts/copy-sqljs-wasm.mjs"
   },
   "dependencies": {
     "@custar/content-schema": "*",
@@ -34,11 +35,13 @@
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-web": "~0.21.0"
+    "react-native-web": "~0.21.0",
+    "sql.js": "^1.13.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
     "typescript": "~5.9.3",
-    "@types/aes-js": "^3.1.4"
+    "@types/aes-js": "^3.1.4",
+    "@types/sql.js": "^1.4.9"
   }
 }

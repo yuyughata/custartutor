@@ -1,3 +1,4 @@
+import type { SqlDriver, SqlRow, SqlValue } from './ports';
 import type { WireEvent } from './wire';
 
 /** Builders for wire events in tests. Not exported from the package. */
@@ -87,4 +88,32 @@ export function shuffled<T>(items: readonly T[], seed: number): T[] {
     [out[i], out[j]] = [out[j] as T, out[i] as T];
   }
   return out;
+}
+
+/**
+ * Wraps a driver so any statement whose SQL matches `shouldFail` throws, also inside transactions. Used to
+ * prove that multi-statement writes are atomic (everything rolls back).
+ */
+export function failingDriver(
+  inner: SqlDriver,
+  shouldFail: (sql: string, params?: readonly SqlValue[]) => boolean,
+): SqlDriver {
+  const wrap = (target: SqlDriver): SqlDriver => ({
+    exec: (sql) =>
+      shouldFail(sql) ? Promise.reject(new Error('injected failure')) : target.exec(sql),
+    run: (sql, params) =>
+      shouldFail(sql, params)
+        ? Promise.reject(new Error('injected failure'))
+        : target.run(sql, params),
+    all: <T extends SqlRow = SqlRow>(sql: string, params?: readonly SqlValue[]) =>
+      shouldFail(sql, params)
+        ? Promise.reject(new Error('injected failure'))
+        : target.all<T>(sql, params),
+    get: <T extends SqlRow = SqlRow>(sql: string, params?: readonly SqlValue[]) =>
+      shouldFail(sql, params)
+        ? Promise.reject(new Error('injected failure'))
+        : target.get<T>(sql, params),
+    transaction: (fn) => target.transaction((tx) => fn(wrap(tx))),
+  });
+  return wrap(inner);
 }

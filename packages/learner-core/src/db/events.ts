@@ -8,40 +8,54 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K>
 export type NewEvent = DistributiveOmit<WireEvent, 'client_event_id' | 'device_id' | 'device_seq'>;
 
 /**
- * Records one event: in ONE transaction it takes the next `device_seq`, writes the row to `local_event`
- * (the device's own log) and to `outbox` (the push queue). If anything fails nothing is written and no
- * sequence number is consumed. Returns the stored event.
+ * Records events: in ONE transaction it takes the next `device_seq` for each, writes the rows to
+ * `local_event` (the device's own log) and to `outbox` (the push queue). If anything fails nothing is
+ * written and no sequence number is consumed. Returns the stored events in order.
  */
+export async function appendEvents(
+  ports: { db: SqlDriver; random: Random; clock: Clock },
+  inputs: readonly NewEvent[],
+): Promise<WireEvent[]> {
+  const { db, random, clock } = ports;
+  return db.transaction(async (tx) => {
+    const deviceId = await getOrCreateDeviceId(tx, random);
+    const stored: WireEvent[] = [];
+    for (const input of inputs) {
+      const deviceSeq = await nextDeviceSeq(tx);
+      const event = WireEvent.parse({
+        ...input,
+        client_event_id: random.uuid(),
+        device_id: deviceId,
+        device_seq: deviceSeq,
+      });
+      await tx.run(
+        `INSERT INTO local_event (client_event_id, child_id, unit_id, device_seq, event_type, occurred_at, payload_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          event.client_event_id,
+          event.child_id,
+          event.unit_id,
+          event.device_seq,
+          event.event_type,
+          event.occurred_at,
+          JSON.stringify(event.payload),
+        ],
+      );
+      await enqueue(tx, event, clock.now());
+      stored.push(event);
+    }
+    return stored;
+  });
+}
+
+/** One event; see `appendEvents`. */
 export async function appendEvent(
   ports: { db: SqlDriver; random: Random; clock: Clock },
   input: NewEvent,
 ): Promise<WireEvent> {
-  const { db, random, clock } = ports;
-  return db.transaction(async (tx) => {
-    const deviceId = await getOrCreateDeviceId(tx, random);
-    const deviceSeq = await nextDeviceSeq(tx);
-    const event = WireEvent.parse({
-      ...input,
-      client_event_id: random.uuid(),
-      device_id: deviceId,
-      device_seq: deviceSeq,
-    });
-    await tx.run(
-      `INSERT INTO local_event (client_event_id, child_id, unit_id, device_seq, event_type, occurred_at, payload_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        event.client_event_id,
-        event.child_id,
-        event.unit_id,
-        event.device_seq,
-        event.event_type,
-        event.occurred_at,
-        JSON.stringify(event.payload),
-      ],
-    );
-    await enqueue(tx, event, clock.now());
-    return event;
-  });
+  const [event] = await appendEvents(ports, [input]);
+  if (!event) throw new Error('appendEvents returned no event');
+  return event;
 }
 
 export type LocalEventRecord = {

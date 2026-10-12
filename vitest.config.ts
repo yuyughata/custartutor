@@ -6,6 +6,7 @@ export default defineConfig({
       'packages/**/src/**/*.test.ts',
       'packages/**/src/**/*.test.tsx',
       'scripts/**/*.test.mjs',
+      'supabase/functions/_shared/**/*.test.ts',
     ],
     environment: 'node',
   },

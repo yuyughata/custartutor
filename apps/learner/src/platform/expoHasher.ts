@@ -9,9 +9,14 @@ function toHex(buffer: ArrayBuffer): string {
 export function createExpoHasher(files: FileStore): Hasher {
   return {
     sha256Hex: async (bytes) =>
-      toHex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes)),
+      toHex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, new Uint8Array(bytes))),
     sha256FileHex: async (path) =>
-      toHex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, await files.readBytes(path))),
+      toHex(
+        await Crypto.digest(
+          Crypto.CryptoDigestAlgorithm.SHA256,
+          new Uint8Array(await files.readBytes(path)),
+        ),
+      ),
   };
 }
 

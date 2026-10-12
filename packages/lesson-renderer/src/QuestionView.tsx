@@ -58,6 +58,7 @@ function Choice({
         borderColor: selected ? teal.bar : palette.placeholderBorder,
         backgroundColor: selected ? teal.tint : palette.white,
         justifyContent: 'center',
+        maxWidth: '100%',
       }}
     >
       <Text

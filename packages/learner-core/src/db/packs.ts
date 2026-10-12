@@ -57,6 +57,18 @@ export async function setPackFileState(
   );
 }
 
+/** Marks several files verified in one go (call inside a transaction). */
+export async function markPackFilesVerified(
+  tx: SqlDriver,
+  unitId: string,
+  versionNo: number,
+  rows: readonly { path: string; bytes: number }[],
+): Promise<void> {
+  for (const row of rows) {
+    await setPackFileState(tx, unitId, versionNo, row.path, 'verified', row.bytes);
+  }
+}
+
 export async function listPackFiles(
   db: SqlDriver,
   unitId: string,
@@ -89,17 +101,11 @@ export async function findVerifiedBlob(db: SqlDriver, sha256: string): Promise<P
   );
 }
 
-/** How many media/audio rows OTHER than the given (unit, version) still reference this blob. */
-export async function blobReferencesOutside(
-  db: SqlDriver,
-  sha256: string,
-  unitId: string,
-  versionNo: number,
-): Promise<number> {
+/** How many media/audio rows (any version, any unit, any state) reference this blob. */
+export async function countBlobReferences(db: SqlDriver, sha256: string): Promise<number> {
   const row = await db.get<{ n: number }>(
-    `SELECT COUNT(*) AS n FROM pack_file
-     WHERE sha256 = ? AND kind <> 'content' AND NOT (unit_id = ? AND version_no = ?)`,
-    [sha256, unitId, versionNo],
+    "SELECT COUNT(*) AS n FROM pack_file WHERE sha256 = ? AND kind <> 'content'",
+    [sha256],
   );
   return row?.n ?? 0;
 }

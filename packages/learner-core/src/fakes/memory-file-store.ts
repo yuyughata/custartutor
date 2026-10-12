@@ -30,49 +30,47 @@ export class MemoryFileStore implements FileStore {
     this.data.set(key, bytes.slice());
   }
 
-  exists(path: string): Promise<boolean> {
-    return Promise.resolve(this.data.has(this.key(path)));
+  // Every method is async so that failures (bad path, no space) are rejections, as with a real file system.
+
+  async exists(path: string): Promise<boolean> {
+    return this.data.has(this.key(path));
   }
 
   async readText(path: string): Promise<string> {
     return decodeUtf8(await this.readBytes(path));
   }
 
-  readBytes(path: string): Promise<Uint8Array> {
+  async readBytes(path: string): Promise<Uint8Array> {
     const bytes = this.data.get(this.key(path));
-    if (!bytes) return Promise.reject(new Error(`ENOENT: ${path}`));
-    return Promise.resolve(bytes.slice());
+    if (!bytes) throw new Error(`ENOENT: ${path}`);
+    return bytes.slice();
   }
 
-  writeText(path: string, text: string): Promise<void> {
+  async writeText(path: string, text: string): Promise<void> {
     this.put(path, encodeUtf8(text));
-    return Promise.resolve();
   }
 
-  writeBytes(path: string, bytes: Uint8Array): Promise<void> {
+  async writeBytes(path: string, bytes: Uint8Array): Promise<void> {
     this.put(path, bytes);
-    return Promise.resolve();
   }
 
-  move(from: string, to: string): Promise<void> {
+  async move(from: string, to: string): Promise<void> {
     const bytes = this.data.get(this.key(from));
-    if (!bytes) return Promise.reject(new Error(`ENOENT: ${from}`));
+    if (!bytes) throw new Error(`ENOENT: ${from}`);
     this.data.delete(this.key(from));
     this.data.set(this.key(to), bytes);
-    return Promise.resolve();
   }
 
-  remove(path: string): Promise<void> {
+  async remove(path: string): Promise<void> {
     this.data.delete(this.key(path));
-    return Promise.resolve();
   }
 
-  size(path: string): Promise<number | null> {
-    return Promise.resolve(this.data.get(this.key(path))?.length ?? null);
+  async size(path: string): Promise<number | null> {
+    return this.data.get(this.key(path))?.length ?? null;
   }
 
-  freeDiskBytes(): Promise<number> {
-    return Promise.resolve(Math.max(0, this.capacity - this.usedBytes()));
+  async freeDiskBytes(): Promise<number> {
+    return Math.max(0, this.capacity - this.usedBytes());
   }
 
   // ---- test helpers ----------------------------------------------------------------------------

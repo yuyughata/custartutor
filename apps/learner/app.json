@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "CUSTAR Tutor",
+    "slug": "custar-tutor",
+    "scheme": "custar-tutor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": { "package": "com.custar.tutor" },
+    "ios": { "bundleIdentifier": "com.custar.tutor" },
+    "plugins": ["expo-router", "expo-secure-store", "expo-sqlite"],
+    "web": { "bundler": "metro", "output": "single" }
+  }
+}

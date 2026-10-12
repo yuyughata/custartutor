@@ -24,8 +24,14 @@ export class IntegrityError extends Error {
   readonly expected?: string;
   readonly actual?: string;
 
-  constructor(path: string, message: string, expected?: string, actual?: string) {
-    super(message);
+  constructor(
+    path: string,
+    message: string,
+    expected?: string,
+    actual?: string,
+    options?: { cause?: unknown },
+  ) {
+    super(message, options);
     this.name = 'IntegrityError';
     this.path = path;
     if (expected !== undefined) this.expected = expected;
