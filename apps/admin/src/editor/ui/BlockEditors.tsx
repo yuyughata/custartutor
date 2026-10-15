@@ -6,7 +6,15 @@ import { BLOCK_TYPES, type BlockType } from '@custar/content-schema';
 import { Button } from '../../ui/Button';
 import { Small } from '../../ui/Text';
 import { colors, radii, space } from '../../ui/theme';
-import { TABLE_MAX_COLUMNS, TABLE_MAX_ROWS, blockSummary, tableAddColumn, tableAddRow, tableRemoveColumn, tableRemoveRow } from '../blocks';
+import {
+  TABLE_MAX_COLUMNS,
+  TABLE_MAX_ROWS,
+  blockSummary,
+  tableAddColumn,
+  tableAddRow,
+  tableRemoveColumn,
+  tableRemoveRow,
+} from '../blocks';
 import { BLOCK_LABELS } from '../factories';
 import { duplicateBlock, moveBlock, removeBlock } from '../ops';
 import { getAt, setAt, type Path } from '../path';
@@ -21,7 +29,9 @@ function str(value: unknown): string {
 }
 
 function recs(value: unknown): Rec[] {
-  return Array.isArray(value) ? value.map((v) => (typeof v === 'object' && v !== null ? (v as Rec) : {})) : [];
+  return Array.isArray(value)
+    ? value.map((v) => (typeof v === 'object' && v !== null ? (v as Rec) : {}))
+    : [];
 }
 
 function strs(value: unknown): string[] {
@@ -61,7 +71,10 @@ export function LangField({ path, value }: { path: Path; value: unknown }): Reac
   }
   if (env.readOnly) return null;
   return (
-    <AddButton label="Set a different language" onPress={() => actions.commit((u) => setAt(u, [...path, 'lang'], 'yo'))} />
+    <AddButton
+      label="Set a different language"
+      onPress={() => actions.commit((u) => setAt(u, [...path, 'lang'], 'yo'))}
+    />
   );
 }
 
@@ -94,8 +107,20 @@ function BlockFields({
           hint="A bold lead-in (optional) is shown before the text, like a glossary entry."
           renderItem={(itemPath, index) => (
             <>
-              <Txt path={[...itemPath, 'lead']} label={`Lead-in of item ${index + 1} (optional)`} value={str(recs(block.items)[index]?.lead)} optional />
-              <Txt path={[...itemPath, 'text']} label={`Text of item ${index + 1}`} value={str(recs(block.items)[index]?.text)} multiline rich rows={2} />
+              <Txt
+                path={[...itemPath, 'lead']}
+                label={`Lead-in of item ${index + 1} (optional)`}
+                value={str(recs(block.items)[index]?.lead)}
+                optional
+              />
+              <Txt
+                path={[...itemPath, 'text']}
+                label={`Text of item ${index + 1}`}
+                value={str(recs(block.items)[index]?.text)}
+                multiline
+                rich
+                rows={2}
+              />
             </>
           )}
         />
@@ -104,13 +129,25 @@ function BlockFields({
       return (
         <>
           <Txt path={at('term')} label="Term" value={str(block.term)} />
-          <Txt path={at('meaning')} label="Meaning" value={str(block.meaning)} multiline rich rows={3} />
+          <Txt
+            path={at('meaning')}
+            label="Meaning"
+            value={str(block.meaning)}
+            multiline
+            rich
+            rows={3}
+          />
         </>
       );
     case 'example':
       return (
         <>
-          <Txt path={at('label')} label="Label" value={str(block.label)} hint='For example "Example" or "Try this".' />
+          <Txt
+            path={at('label')}
+            label="Label"
+            value={str(block.label)}
+            hint='For example "Example" or "Try this".'
+          />
           <Txt path={at('text')} label="Text" value={str(block.text)} multiline rich rows={3} />
         </>
       );
@@ -124,8 +161,19 @@ function BlockFields({
           blank={() => ({ character: '', text: '' })}
           renderItem={(itemPath, index) => (
             <>
-              <Txt path={[...itemPath, 'character']} label={`Who says line ${index + 1}`} value={str(recs(block.lines)[index]?.character)} />
-              <Txt path={[...itemPath, 'text']} label={`What line ${index + 1} says`} value={str(recs(block.lines)[index]?.text)} multiline rich rows={2} />
+              <Txt
+                path={[...itemPath, 'character']}
+                label={`Who says line ${index + 1}`}
+                value={str(recs(block.lines)[index]?.character)}
+              />
+              <Txt
+                path={[...itemPath, 'text']}
+                label={`What line ${index + 1} says`}
+                value={str(recs(block.lines)[index]?.text)}
+                multiline
+                rich
+                rows={2}
+              />
             </>
           )}
         />
@@ -151,11 +199,15 @@ function BlockFields({
           />
           {typeof block.asset_id === 'string' ? (
             <Note>
-              Picture attached: <Text style={{ fontFamily: 'monospace' }}>{block.asset_id}</Text>. Uploading or replacing pictures is not done in this editor; the
-              attachment is kept as it is when you save.
+              Picture attached: <Text style={{ fontFamily: 'monospace' }}>{block.asset_id}</Text>.
+              Uploading or replacing pictures is not done in this editor; the attachment is kept as
+              it is when you save.
             </Note>
           ) : (
-            <Small>No picture is attached yet. The learner app shows the brief in a dashed box until one is added.</Small>
+            <Small>
+              No picture is attached yet. The learner app shows the brief in a dashed box until one
+              is added.
+            </Small>
           )}
         </>
       );
@@ -176,8 +228,19 @@ function BlockFields({
           blank={() => ({ label: `Step ${recs(block.steps).length + 1}`, text: '' })}
           renderItem={(itemPath, index) => (
             <>
-              <Txt path={[...itemPath, 'label']} label={`Label of step ${index + 1}`} value={str(recs(block.steps)[index]?.label)} />
-              <Txt path={[...itemPath, 'text']} label={`What to do in step ${index + 1}`} value={str(recs(block.steps)[index]?.text)} multiline rich rows={2} />
+              <Txt
+                path={[...itemPath, 'label']}
+                label={`Label of step ${index + 1}`}
+                value={str(recs(block.steps)[index]?.label)}
+              />
+              <Txt
+                path={[...itemPath, 'text']}
+                label={`What to do in step ${index + 1}`}
+                value={str(recs(block.steps)[index]?.text)}
+                multiline
+                rich
+                rows={2}
+              />
             </>
           )}
         />
@@ -185,13 +248,24 @@ function BlockFields({
     case 'table': {
       const headers = strs(block.headers);
       const rows = Array.isArray(block.rows) ? block.rows.map(strs) : [];
-      const change = (fn: (table: Rec) => Rec): void => actions.commit((u) => setAt(u, path, fn(getAt(u, path) as Rec)));
+      const change = (fn: (table: Rec) => Rec): void =>
+        actions.commit((u) => setAt(u, path, fn(getAt(u, path) as Rec)));
       return (
         <View style={{ gap: space[3] }}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSoft }}>Column headings</Text>
-          <Small>Add or remove a column with the buttons under the rows, so every row stays as wide as the headings.</Small>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSoft }}>
+            Column headings
+          </Text>
+          <Small>
+            Add or remove a column with the buttons under the rows, so every row stays as wide as
+            the headings.
+          </Small>
           {headers.map((heading, c) => (
-            <Txt key={c} path={at('headers', c)} label={`Heading of column ${c + 1}`} value={heading} />
+            <Txt
+              key={c}
+              path={at('headers', c)}
+              label={`Heading of column ${c + 1}`}
+              value={heading}
+            />
           ))}
           <TableGrid path={path} headers={headers} rows={rows} change={change} />
         </View>
@@ -213,12 +287,18 @@ function BlockFields({
           ) : null}
           {question ? (
             <Note>
-              {str(question.kind).replace(/_/g, ' ')} · tier {String(question.tier ?? '?')} · {str(question.prompt) || 'no prompt yet'}
+              {str(question.kind).replace(/_/g, ' ')} · tier {String(question.tier ?? '?')} ·{' '}
+              {str(question.prompt) || 'no prompt yet'}
             </Note>
           ) : null}
           {id !== '' && question ? (
             <View style={{ alignItems: 'flex-start' }}>
-              <Button label="Edit this question" small variant="secondary" onPress={() => actions.jump(['questions', id])} />
+              <Button
+                label="Edit this question"
+                small
+                variant="secondary"
+                onPress={() => actions.jump(['questions', id])}
+              />
             </View>
           ) : null}
         </>
@@ -228,10 +308,14 @@ function BlockFields({
       return (
         <View style={{ gap: space[2] }}>
           <Note>
-            This block has a type the editor does not know ("{str(block.original_type)}"), probably from a newer version of the content format. It is kept exactly as it is. A unit with
-            an unrecognised block cannot be published, so the only thing you can do here is remove it.
+            This block has a type the editor does not know ("{str(block.original_type)}"), probably
+            from a newer version of the content format. It is kept exactly as it is. A unit with an
+            unrecognised block cannot be published, so the only thing you can do here is remove it.
           </Note>
-          <Text selectable style={{ fontFamily: 'monospace', fontSize: 12, color: colors.textSoft }}>
+          <Text
+            selectable
+            style={{ fontFamily: 'monospace', fontSize: 12, color: colors.textSoft }}
+          >
             {JSON.stringify(block.raw ?? null, null, 2)}
           </Text>
         </View>
@@ -259,10 +343,25 @@ function TableGrid({
       <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSoft }}>Rows</Text>
       <IssueLines issues={issues} />
       {rows.map((row, r) => (
-        <View key={r} style={{ gap: space[1], padding: space[3], borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.page }}>
+        <View
+          key={r}
+          style={{
+            gap: space[1],
+            padding: space[3],
+            borderRadius: radii.md,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.page,
+          }}
+        >
           <Text style={{ fontSize: 13, fontWeight: '700', color: colors.subtle }}>Row {r + 1}</Text>
           {headers.map((heading, c) => (
-            <Txt key={c} path={[...path, 'rows', r, c]} label={`Row ${r + 1}, ${heading.trim() === '' ? `column ${c + 1}` : heading}`} value={row[c] ?? ''} />
+            <Txt
+              key={c}
+              path={[...path, 'rows', r, c]}
+              label={`Row ${r + 1}, ${heading.trim() === '' ? `column ${c + 1}` : heading}`}
+              value={row[c] ?? ''}
+            />
           ))}
           {!env.readOnly ? (
             <View style={{ alignItems: 'flex-start' }}>
@@ -281,8 +380,20 @@ function TableGrid({
       ))}
       {!env.readOnly ? (
         <Row>
-          <Button label="Add row" small variant="secondary" disabled={rows.length >= TABLE_MAX_ROWS} onPress={() => change(tableAddRow)} />
-          <Button label="Add column" small variant="secondary" disabled={headers.length >= TABLE_MAX_COLUMNS} onPress={() => change(tableAddColumn)} />
+          <Button
+            label="Add row"
+            small
+            variant="secondary"
+            disabled={rows.length >= TABLE_MAX_ROWS}
+            onPress={() => change(tableAddRow)}
+          />
+          <Button
+            label="Add column"
+            small
+            variant="secondary"
+            disabled={headers.length >= TABLE_MAX_COLUMNS}
+            onPress={() => change(tableAddColumn)}
+          />
           {headers.map((heading, c) => (
             <Button
               key={c}
@@ -313,12 +424,21 @@ export interface BlockCardProps {
   question: Rec | undefined;
 }
 
-export const BlockCard = memo(function BlockCard({ sectionIndex, sectionId, blockIndex, count, block, questions, question }: BlockCardProps): ReactNode {
+export const BlockCard = memo(function BlockCard({
+  sectionIndex,
+  sectionId,
+  blockIndex,
+  count,
+  block,
+  questions,
+  question,
+}: BlockCardProps): ReactNode {
   const actions = useActions();
   const path: Path = ['sections', sectionIndex, 'blocks', blockIndex];
   const issues = useIssuesAt(path);
   const type = str(block.type);
-  const label = type === 'unknown' ? 'Unrecognised block' : (BLOCK_LABELS[type as BlockType] ?? type);
+  const label =
+    type === 'unknown' ? 'Unrecognised block' : (BLOCK_LABELS[type as BlockType] ?? type);
   const noun = `block ${blockIndex + 1} (${label.toLowerCase()})`;
   return (
     <ItemCard
@@ -334,14 +454,22 @@ export const BlockCard = memo(function BlockCard({ sectionIndex, sectionId, bloc
           canUp={blockIndex > 0}
           canDown={blockIndex < count - 1}
           onUp={() => actions.commit((u) => moveBlock(u, sectionIndex, blockIndex, blockIndex - 1))}
-          onDown={() => actions.commit((u) => moveBlock(u, sectionIndex, blockIndex, blockIndex + 1))}
+          onDown={() =>
+            actions.commit((u) => moveBlock(u, sectionIndex, blockIndex, blockIndex + 1))
+          }
           {...(type !== 'question' && type !== 'unknown'
-            ? { onDuplicate: () => actions.commit((u) => duplicateBlock(u, sectionIndex, blockIndex)) }
+            ? {
+                onDuplicate: () =>
+                  actions.commit((u) => duplicateBlock(u, sectionIndex, blockIndex)),
+              }
             : {})}
           onRemove={() => {
             actions.confirmDelete({
               title: `Remove block ${blockIndex + 1} (${label})?`,
-              notes: type === 'question' ? ['The question itself stays in the unit; it is only taken out of this section.'] : [],
+              notes:
+                type === 'question'
+                  ? ['The question itself stays in the unit; it is only taken out of this section.']
+                  : [],
               confirmLabel: 'Remove block',
               onConfirm: () => actions.commit((u) => removeBlock(u, sectionIndex, blockIndex)),
             });
@@ -355,4 +483,3 @@ export const BlockCard = memo(function BlockCard({ sectionIndex, sectionId, bloc
     </ItemCard>
   );
 });
-

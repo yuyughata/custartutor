@@ -7,6 +7,7 @@ import { ChapterPlanResult } from '@custar/authoring-core';
 import { Scheme } from '@custar/content-schema';
 import type { ChapterRow, SchemeDetail } from '../api/types';
 import { ChapterPlanEditor } from '../components/ChapterPlanEditor';
+import { LayoutEditor } from '../components/LayoutEditor';
 import { JobPanel } from '../components/JobPanel';
 import { useAction } from '../hooks/useAction';
 import { useCatalog, type Catalog } from '../hooks/useCatalog';
@@ -84,6 +85,9 @@ function Planner({
   const [key, setKey] = useState(newKey());
   const denied = whyNot(role, 'job.start');
   const hasChapters = (chapters.data?.length ?? 0) > 0;
+  const [editingLayout, setEditingLayout] = useState(false);
+  const [layoutKey, setLayoutKey] = useState(0);
+  const layoutDenied = whyNot(role, 'layout.apply');
 
   const resume = job.resume;
   const jobParam = params.job;
@@ -133,13 +137,42 @@ function Planner({
 
   return (
     <View style={{ gap: space[4] }}>
-      <Section title="Chapters and units so far" testID="chapters-section">
+      <Section
+        title="Chapters and units so far"
+        testID="chapters-section"
+        action={
+          hasChapters && !editingLayout ? (
+            <Button
+              label="Edit layout"
+              variant="secondary"
+              testID="edit-layout"
+              onPress={() => setEditingLayout(true)}
+              disabled={Boolean(layoutDenied)}
+              reason={layoutDenied}
+            />
+          ) : undefined
+        }
+      >
         <Async state={chapters}>
           {(rows) =>
             rows.length === 0 ? (
               <EmptyState title="Nothing planned yet">
                 <P>Press “Propose chapters” below. Nothing is created until you apply the plan.</P>
               </EmptyState>
+            ) : editingLayout ? (
+              <LayoutEditor
+                key={layoutKey}
+                schemeId={scheme.id}
+                chapters={rows}
+                weeks={scheme.weeks.map((week) => ({ week_no: week.week_no, topic: week.topic }))}
+                defaultStage={rows[0]?.units[0]?.stage ?? 'absorb'}
+                onApplied={() => chapters.reload()}
+                onReload={() => {
+                  chapters.reload();
+                  setLayoutKey((value) => value + 1);
+                }}
+                onClose={() => setEditingLayout(false)}
+              />
             ) : (
               <ExistingChapters chapters={rows} />
             )
@@ -156,6 +189,20 @@ function Planner({
             ? ' Applying again updates the titles, objectives and stage of units that have no draft yet; a unit that already has a draft is left alone and the server will say so.'
             : ''}
         </P>
+        {hasChapters ? (
+          <Banner
+            tone="warning"
+            title="Planning again replaces units that have no draft"
+            testID="replan-warning"
+          >
+            <P>
+              A new plan is matched to the existing units by chapter and position, and a unit
+              without any draft that the new plan does not contain is removed. Units you added by
+              hand, and the new numbering, are not kept. To add, remove or reorder single units, use
+              “Edit layout” above instead.
+            </P>
+          </Banner>
+        ) : null}
         {propose.error ? (
           <Banner tone="danger" title="The job could not be started" testID="start-error">
             <P>{propose.error.message}</P>

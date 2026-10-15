@@ -4,7 +4,8 @@
 import type { UnitKind } from '@custar/content-schema';
 import { getAt, type Path } from './path';
 
-export type EditorTab = 'overview' | 'project' | 'sections' | 'questions' | 'plan' | 'workbook' | 'manual';
+export type EditorTab =
+  'overview' | 'project' | 'sections' | 'questions' | 'plan' | 'workbook' | 'manual';
 
 export const TAB_LABELS: Record<EditorTab, string> = {
   overview: 'Overview',
@@ -64,12 +65,18 @@ export function jumpPlan(unit: unknown, path: Path): JumpPlan {
       if (typeof index !== 'number') return { tab: 'sections', open: [] };
       const sectionId = stringAt(unit, ['sections', index, 'id']);
       const open = [keys.section(sectionId)];
-      if (path[2] === 'blocks' && typeof path[3] === 'number') open.push(keys.block(sectionId, path[3]));
+      if (path[2] === 'blocks' && typeof path[3] === 'number')
+        open.push(keys.block(sectionId, path[3]));
       if (path[2] === 'tutor_script') {
         const scope = `sec:${sectionId}`;
         open.push(keys.script(scope));
         if (path[3] === 'nodes' && typeof path[4] === 'number') {
-          open.push(keys.node(scope, stringAt(unit, ['sections', index, 'tutor_script', 'nodes', path[4], 'id'])));
+          open.push(
+            keys.node(
+              scope,
+              stringAt(unit, ['sections', index, 'tutor_script', 'nodes', path[4], 'id']),
+            ),
+          );
         }
       }
       return { tab: 'sections', open };
@@ -94,7 +101,8 @@ export function jumpPlan(unit: unknown, path: Path): JumpPlan {
         if (path[1] === 'script') open.push(keys.manualRow(index));
         if (path[1] === 'helper_script') open.push(keys.helperRow(index));
       }
-      if (path[1] === 'theme_map' && path[2] === 'lenses' && typeof path[3] === 'number') open.push(keys.lens(path[3]));
+      if (path[1] === 'theme_map' && path[2] === 'lenses' && typeof path[3] === 'number')
+        open.push(keys.lens(path[3]));
       return { tab: 'manual', open };
     }
     case 'tutor_script': {
@@ -160,12 +168,16 @@ export function describeLocation(unit: unknown, path: Path): string {
     case 'workbook':
       return 'Workbook';
     case 'teacher_manual': {
-      if (path[1] === 'script' && typeof path[2] === 'number') return `Teacher's manual, script row ${path[2] + 1}`;
-      if (path[1] === 'helper_script' && typeof path[2] === 'number') return `Teacher's manual, helper script row ${path[2] + 1}`;
+      if (path[1] === 'script' && typeof path[2] === 'number')
+        return `Teacher's manual, script row ${path[2] + 1}`;
+      if (path[1] === 'helper_script' && typeof path[2] === 'number')
+        return `Teacher's manual, helper script row ${path[2] + 1}`;
       return "Teacher's manual";
     }
     case 'tutor_script':
-      return typeof path[2] === 'number' ? `Project tutor script, line ${path[2] + 1}` : 'Project tutor script';
+      return typeof path[2] === 'number'
+        ? `Project tutor script, line ${path[2] + 1}`
+        : 'Project tutor script';
     case 'steps':
       return typeof path[1] === 'number' ? `Project step ${path[1] + 1}` : 'Project steps';
     case 'rubric':

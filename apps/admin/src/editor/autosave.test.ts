@@ -19,7 +19,12 @@ function memory(): StorageLike & { data: Map<string, string> } {
   };
 }
 
-const saved = { savedAt: '2026-10-12T10:00:00Z', unitId: 'u1', baseVersionId: 'v1', content: { a: 1 } };
+const saved = {
+  savedAt: '2026-10-12T10:00:00Z',
+  unitId: 'u1',
+  baseVersionId: 'v1',
+  content: { a: 1 },
+};
 
 describe('autosave', () => {
   it('is keyed by unit and base version', () => {
@@ -51,7 +56,10 @@ describe('autosave', () => {
         throw new Error('blocked');
       },
     };
-    expect(writeAutosave(broken, saved)).toEqual({ ok: false, reason: 'The browser had no room for the autosave.' });
+    expect(writeAutosave(broken, saved)).toEqual({
+      ok: false,
+      reason: 'The browser had no room for the autosave.',
+    });
     expect(readAutosave(broken, 'u1', 'v1')).toBeNull();
     expect(() => clearAutosave(broken, 'u1', 'v1')).not.toThrow();
   });
@@ -71,7 +79,9 @@ describe('autosave', () => {
   });
 
   it('sameContent ignores key order', () => {
-    expect(sameContent({ a: 1, b: [1, { c: 2, d: 3 }] }, { b: [1, { d: 3, c: 2 }], a: 1 })).toBe(true);
+    expect(sameContent({ a: 1, b: [1, { c: 2, d: 3 }] }, { b: [1, { d: 3, c: 2 }], a: 1 })).toBe(
+      true,
+    );
     expect(sameContent({ a: 1 }, { a: 2 })).toBe(false);
     expect(sameContent([1, 2], [2, 1])).toBe(false);
   });

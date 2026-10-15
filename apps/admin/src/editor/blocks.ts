@@ -61,7 +61,9 @@ function headersOf(table: Rec): string[] {
 }
 
 function rowsOf(table: Rec): string[][] {
-  return Array.isArray(table.rows) ? table.rows.map((row) => (Array.isArray(row) ? row.map(str) : [])) : [];
+  return Array.isArray(table.rows)
+    ? table.rows.map((row) => (Array.isArray(row) ? row.map(str) : []))
+    : [];
 }
 
 export const TABLE_MAX_COLUMNS = 8;

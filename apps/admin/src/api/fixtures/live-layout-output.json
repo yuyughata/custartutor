@@ -1,0 +1,207 @@
+{
+  "layout_noop": {
+    "units": 6,
+    "layout": [
+      {
+        "title": "Counting",
+        "units": [
+          { "id": "3fb4eb63-9bf8-4df0-8fc3-0e7e98a9c2de", "unit_no": 1 },
+          { "id": "5a9c4d9d-cdf7-464e-9316-4f1c3779d31c", "unit_no": 2 },
+          { "id": "839bf385-5c52-475b-b884-b7a9686dbc6a", "unit_no": 3 }
+        ],
+        "number": 1,
+        "chapter_id": "f6c2feac-f113-4ef0-8179-eda3f0da5c43"
+      },
+      {
+        "title": "Adding",
+        "units": [
+          { "id": "4932fb34-7a8e-4bef-8c80-573416305b62", "unit_no": 4 },
+          { "id": "3976cf02-7d47-4668-ad56-cda02011efca", "unit_no": 5 },
+          { "id": "874617b7-2fb2-4a22-b2af-465bc274cccb", "unit_no": 6 }
+        ],
+        "number": 2,
+        "chapter_id": "a2a42654-7b41-44a1-b2a5-35482f861961"
+      }
+    ],
+    "chapters": 2,
+    "units_moved": 0,
+    "units_created": 0,
+    "units_updated": 0,
+    "units_archived": 0,
+    "chapters_created": 0,
+    "created_unit_ids": [],
+    "units_renumbered": 0,
+    "created_chapter_ids": []
+  },
+  "layout_add": {
+    "units": 7,
+    "layout": [
+      {
+        "title": "Counting",
+        "units": [
+          { "id": "3fb4eb63-9bf8-4df0-8fc3-0e7e98a9c2de", "unit_no": 1 },
+          { "id": "5a9c4d9d-cdf7-464e-9316-4f1c3779d31c", "unit_no": 2 },
+          { "id": "839bf385-5c52-475b-b884-b7a9686dbc6a", "unit_no": 3 },
+          { "id": "99677737-03e5-4eb4-9871-333f1a5e617e", "unit_no": 4 }
+        ],
+        "number": 1,
+        "chapter_id": "f6c2feac-f113-4ef0-8179-eda3f0da5c43"
+      },
+      {
+        "title": "Adding",
+        "units": [
+          { "id": "4932fb34-7a8e-4bef-8c80-573416305b62", "unit_no": 5 },
+          { "id": "3976cf02-7d47-4668-ad56-cda02011efca", "unit_no": 6 },
+          { "id": "874617b7-2fb2-4a22-b2af-465bc274cccb", "unit_no": 7 }
+        ],
+        "number": 2,
+        "chapter_id": "a2a42654-7b41-44a1-b2a5-35482f861961"
+      }
+    ],
+    "chapters": 2,
+    "units_moved": 0,
+    "units_created": 1,
+    "units_updated": 0,
+    "units_archived": 0,
+    "chapters_created": 0,
+    "created_unit_ids": ["99677737-03e5-4eb4-9871-333f1a5e617e"],
+    "units_renumbered": 3,
+    "created_chapter_ids": []
+  },
+  "human_version_1": { "id": "fc43eead-70a5-4e06-8914-9fc3e95aa55b", "version": 1 },
+  "human_version_2": { "id": "31b6047b-ff67-442f-aeac-d48f2186bb1e", "version": 2 },
+  "human_version_row": {
+    "id": "31b6047b-ff67-442f-aeac-d48f2186bb1e",
+    "model": null,
+    "status": "draft",
+    "unit_id": "5a9c4d9d-cdf7-464e-9316-4f1c3779d31c",
+    "version": 2,
+    "created_at": "2026-10-12T21:14:37.039864+00:00",
+    "created_by": "fa000000-0000-4000-8000-000000000001",
+    "lint_report": {
+      "ok": true,
+      "errors": [],
+      "review": [],
+      "summary": "Edited by hand in the admin editor. No model was involved.",
+      "warnings": []
+    },
+    "generated_by": "human",
+    "prompt_version": null,
+    "schema_version": 1,
+    "base_version_id": "fc43eead-70a5-4e06-8914-9fc3e95aa55b"
+  },
+  "error_stale_base": { "code": "22023", "hint": "", "details": "", "message": "stale_base" },
+  "error_renumber": {
+    "code": "22023",
+    "hint": "",
+    "details": "[{\"id\": \"5a9c4d9d-cdf7-464e-9316-4f1c3779d31c\", \"to\": 1, \"from\": 2, \"title\": \"U2\"}]",
+    "message": "layout_renumbers_versioned_units"
+  },
+  "error_out_of_date": {
+    "code": "22023",
+    "hint": "",
+    "details": "",
+    "message": "layout_out_of_date"
+  },
+  "error_too_many": {
+    "code": "22023",
+    "hint": "",
+    "details": "",
+    "message": "chapter_unit_count_invalid"
+  },
+  "layout_renumbered": {
+    "units": 6,
+    "layout": [
+      {
+        "title": "Counting",
+        "units": [
+          { "id": "5a9c4d9d-cdf7-464e-9316-4f1c3779d31c", "unit_no": 1 },
+          { "id": "839bf385-5c52-475b-b884-b7a9686dbc6a", "unit_no": 2 },
+          { "id": "99677737-03e5-4eb4-9871-333f1a5e617e", "unit_no": 3 }
+        ],
+        "number": 1,
+        "chapter_id": "f6c2feac-f113-4ef0-8179-eda3f0da5c43"
+      },
+      {
+        "title": "Adding",
+        "units": [
+          { "id": "4932fb34-7a8e-4bef-8c80-573416305b62", "unit_no": 4 },
+          { "id": "3976cf02-7d47-4668-ad56-cda02011efca", "unit_no": 5 },
+          { "id": "874617b7-2fb2-4a22-b2af-465bc274cccb", "unit_no": 6 }
+        ],
+        "number": 2,
+        "chapter_id": "a2a42654-7b41-44a1-b2a5-35482f861961"
+      }
+    ],
+    "chapters": 2,
+    "units_moved": 0,
+    "units_created": 0,
+    "units_updated": 0,
+    "units_archived": 1,
+    "chapters_created": 0,
+    "created_unit_ids": [],
+    "units_renumbered": 6,
+    "created_chapter_ids": []
+  },
+  "publish": "c1a58536-3dda-489c-87e5-e4507b8bd2e5",
+  "published_history": [
+    {
+      "id": "c1a58536-3dda-489c-87e5-e4507b8bd2e5",
+      "content": { "header": { "title": "U2 by hand" }, "schema_version": 1 },
+      "is_current": true,
+      "version_no": 2,
+      "published_at": "2026-10-12T21:14:37.039864+00:00"
+    }
+  ],
+  "unit_rows": [
+    {
+      "id": "5a9c4d9d-cdf7-464e-9316-4f1c3779d31c",
+      "title": "U2",
+      "status": "published",
+      "unit_no": 1,
+      "chapter_id": "f6c2feac-f113-4ef0-8179-eda3f0da5c43"
+    },
+    {
+      "id": "839bf385-5c52-475b-b884-b7a9686dbc6a",
+      "title": "U3",
+      "status": "draft",
+      "unit_no": 2,
+      "chapter_id": "f6c2feac-f113-4ef0-8179-eda3f0da5c43"
+    },
+    {
+      "id": "99677737-03e5-4eb4-9871-333f1a5e617e",
+      "title": "Our local market",
+      "status": "draft",
+      "unit_no": 3,
+      "chapter_id": "f6c2feac-f113-4ef0-8179-eda3f0da5c43"
+    },
+    {
+      "id": "4932fb34-7a8e-4bef-8c80-573416305b62",
+      "title": "U4",
+      "status": "draft",
+      "unit_no": 4,
+      "chapter_id": "a2a42654-7b41-44a1-b2a5-35482f861961"
+    },
+    {
+      "id": "3976cf02-7d47-4668-ad56-cda02011efca",
+      "title": "U5",
+      "status": "draft",
+      "unit_no": 5,
+      "chapter_id": "a2a42654-7b41-44a1-b2a5-35482f861961"
+    },
+    {
+      "id": "874617b7-2fb2-4a22-b2af-465bc274cccb",
+      "title": "U6",
+      "status": "draft",
+      "unit_no": 6,
+      "chapter_id": "a2a42654-7b41-44a1-b2a5-35482f861961"
+    },
+    {
+      "id": "3fb4eb63-9bf8-4df0-8fc3-0e7e98a9c2de",
+      "title": "U1",
+      "status": "archived",
+      "unit_no": 10000,
+      "chapter_id": "f6c2feac-f113-4ef0-8179-eda3f0da5c43"
+    }
+  ]
+}

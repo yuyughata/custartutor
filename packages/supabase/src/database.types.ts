@@ -1246,6 +1246,10 @@ export type Database = {
         Args: { p_plan: Json; p_scheme_id: string };
         Returns: Json;
       };
+      apply_unit_layout: {
+        Args: { p_confirm_renumber?: boolean; p_layout: Json; p_scheme_id: string };
+        Returns: Json;
+      };
       approve_scheme: { Args: { p_scheme_id: string }; Returns: undefined };
       authorize_pack_download: {
         Args: { p_unit_id: string; p_version_no: number };

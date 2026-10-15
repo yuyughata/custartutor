@@ -28,14 +28,16 @@ export function latestVersionOf(state: DemoState, unitId: string): UnitVersionFu
 
 /** All units of a subject and level, in teaching order (term, then unit number). */
 export function unitsInOrder(state: DemoState, subjectId: string, levelCode: string): DemoUnit[] {
-  return state.units
-    .map((unit) => ({ unit, chapter: chapterOf(state, unit) }))
-    .map(({ unit, chapter }) => ({ unit, scheme: schemeOf(state, chapter) }))
-    .filter(({ scheme }) => scheme.subject_id === subjectId && scheme.level_code === levelCode)
-    // A removed (archived) unit is not part of the teaching order.
-    .filter(({ unit }) => unit.status !== 'archived')
-    .sort((a, b) => a.scheme.term - b.scheme.term || a.unit.unit_no - b.unit.unit_no)
-    .map(({ unit }) => unit);
+  return (
+    state.units
+      .map((unit) => ({ unit, chapter: chapterOf(state, unit) }))
+      .map(({ unit, chapter }) => ({ unit, scheme: schemeOf(state, chapter) }))
+      .filter(({ scheme }) => scheme.subject_id === subjectId && scheme.level_code === levelCode)
+      // A removed (archived) unit is not part of the teaching order.
+      .filter(({ unit }) => unit.status !== 'archived')
+      .sort((a, b) => a.scheme.term - b.scheme.term || a.unit.unit_no - b.unit.unit_no)
+      .map(({ unit }) => unit)
+  );
 }
 
 export function previousUnit(state: DemoState, unit: DemoUnit): DemoUnit | undefined {

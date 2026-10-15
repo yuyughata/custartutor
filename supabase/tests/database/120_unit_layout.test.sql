@@ -318,9 +318,11 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"f8000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}';
 select lives_ok($$select public.apply_unit_layout(t120.s('probe'), t120.cur(t120.s('probe')))$$, 'a super_admin at aal2 applies a layout');
 reset role;
-select is(
+-- (lives_ok runs the call in a sub-transaction, so xmax is that sub-transaction's id, not this one: any non-zero xmax
+-- on a row that was free a moment ago is the lock)
+select isnt(
   (select s.xmax::text from public.schemes s where s.id = t120.s('probe')),
-  (pg_current_xact_id()::xid)::text,
+  '0',
   'the scheme row is locked FOR UPDATE by the call (it serialises with apply_chapter_plan and with other layouts)'
 );
 select is(

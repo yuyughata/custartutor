@@ -11,7 +11,9 @@ export function focusField(keys: readonly string[]): boolean {
     const target = document.querySelector<HTMLElement>(`[data-field="${escaped}"]`);
     if (!target) continue;
     target.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    const focusable = target.matches(FOCUSABLE) ? target : target.querySelector<HTMLElement>(FOCUSABLE);
+    const focusable = target.matches(FOCUSABLE)
+      ? target
+      : target.querySelector<HTMLElement>(FOCUSABLE);
     focusable?.focus({ preventScroll: true });
     const previous = target.style.outline;
     target.style.outline = '3px solid #c6791e';

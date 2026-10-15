@@ -106,7 +106,8 @@ const KNOWN: Record<string, { kind: AdminErrorKind; message: string }> = {
   },
   invalid_layout_unit: {
     kind: 'invalid',
-    message: 'The server rejected a unit in the layout. Check its title, objective, kind, stage and periods.',
+    message:
+      'The server rejected a unit in the layout. Check its title, objective, kind, stage and periods.',
   },
   duplicate_unit_in_layout: {
     kind: 'invalid',
@@ -443,7 +444,9 @@ export function renumberDetail(
   if (typeof raw !== 'string') return [];
   try {
     const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as { id: string; title: string; from: number; to: number }[]) : [];
+    return Array.isArray(parsed)
+      ? (parsed as { id: string; title: string; from: number; to: number }[])
+      : [];
   } catch {
     return [];
   }

@@ -246,7 +246,9 @@ const tap: K<'tap_image'> = {
   prompt: 'Tap the bin',
   brief: 'A street',
   alt: 'A street with a bin',
-  answer: { hotspots: [{ id: 'hs_1', label: 'bin', x: 0.1, y: 0.1, w: 0.3, h: 0.3, correct: true }] },
+  answer: {
+    hotspots: [{ id: 'hs_1', label: 'bin', x: 0.1, y: 0.1, w: 0.3, h: 0.3, correct: true }],
+  },
 };
 
 describe('tap_image', () => {
@@ -274,7 +276,13 @@ describe('tap_image', () => {
 
 describe('speak', () => {
   it('"exact" is the default and is left out of the data', () => {
-    const speak: K<'speak'> = { id: 'q_p', kind: 'speak', tier: 1, prompt: 'Say hello', answer: { expected: ['hello'] } };
+    const speak: K<'speak'> = {
+      id: 'q_p',
+      kind: 'speak',
+      tier: 1,
+      prompt: 'Say hello',
+      answer: { expected: ['hello'] },
+    };
     const contains = speakSetMatch(speak, 'contains');
     expect(contains.answer.match).toBe('contains');
     expect('match' in speakSetMatch(contains, 'exact').answer).toBe(false);

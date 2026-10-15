@@ -9,7 +9,18 @@ import { keys } from '../jump';
 import { addNode, removeNode } from '../ops';
 import { getAt, moveItem, removeAt, setAt, type Path } from '../path';
 import { useActions, useEnv, useIssuesAt } from './context';
-import { AddButton, IssueLines, ItemBar, ItemCard, Note, Pick, Row, Strings, SubHeading, Txt } from './Fields';
+import {
+  AddButton,
+  IssueLines,
+  ItemBar,
+  ItemCard,
+  Note,
+  Pick,
+  Row,
+  Strings,
+  SubHeading,
+  Txt,
+} from './Fields';
 
 type Rec = Record<string, unknown>;
 
@@ -20,7 +31,9 @@ function strs(value: unknown): string[] {
   return Array.isArray(value) ? value.map(str) : [];
 }
 function recs(value: unknown): Rec[] {
-  return Array.isArray(value) ? value.map((v) => (typeof v === 'object' && v !== null ? (v as Rec) : {})) : [];
+  return Array.isArray(value)
+    ? value.map((v) => (typeof v === 'object' && v !== null ? (v as Rec) : {}))
+    : [];
 }
 
 type WaitMode = 'none' | 'question' | 'accepted';
@@ -45,9 +58,20 @@ interface NodeCardProps {
   questions: readonly { id: string; label: string }[];
 }
 
-const NodeCard = memo(function NodeCard({ scope, sectionIndex, nodeIndex, count, node, siblingIds, questions }: NodeCardProps): ReactNode {
+const NodeCard = memo(function NodeCard({
+  scope,
+  sectionIndex,
+  nodeIndex,
+  count,
+  node,
+  siblingIds,
+  questions,
+}: NodeCardProps): ReactNode {
   const actions = useActions();
-  const base: Path = sectionIndex === null ? ['tutor_script', 'nodes', nodeIndex] : ['sections', sectionIndex, 'tutor_script', 'nodes', nodeIndex];
+  const base: Path =
+    sectionIndex === null
+      ? ['tutor_script', 'nodes', nodeIndex]
+      : ['sections', sectionIndex, 'tutor_script', 'nodes', nodeIndex];
   const issues = useIssuesAt(base);
   const id = str(node.id);
   const mode = waitMode(node);
@@ -58,19 +82,30 @@ const NodeCard = memo(function NodeCard({ scope, sectionIndex, nodeIndex, count,
       subtitle={str(node.say).replace(/\*\*/g, '').slice(0, 80)}
       openKey={keys.node(scope, id)}
       defaultOpen={false}
-      fieldKey={sectionIndex === null ? `tutor_script.nodes[${nodeIndex}]` : `sections[${sectionIndex}].tutor_script.nodes[${nodeIndex}]`}
+      fieldKey={
+        sectionIndex === null
+          ? `tutor_script.nodes[${nodeIndex}]`
+          : `sections[${sectionIndex}].tutor_script.nodes[${nodeIndex}]`
+      }
       rollup={base}
       bar={
         <ItemBar
           noun={`tutor line ${nodeIndex + 1}`}
           canUp={nodeIndex > 0}
           canDown={nodeIndex < count - 1}
-          onUp={() => actions.commit((u) => moveItem(u, base.slice(0, -1), nodeIndex, nodeIndex - 1))}
-          onDown={() => actions.commit((u) => moveItem(u, base.slice(0, -1), nodeIndex, nodeIndex + 1))}
+          onUp={() =>
+            actions.commit((u) => moveItem(u, base.slice(0, -1), nodeIndex, nodeIndex - 1))
+          }
+          onDown={() =>
+            actions.commit((u) => moveItem(u, base.slice(0, -1), nodeIndex, nodeIndex + 1))
+          }
           onRemove={() =>
             actions.confirmDelete({
               title: `Remove tutor line ${nodeIndex + 1} (${id})?`,
-              notes: ['Lines that jumped to it will continue in order.', ...(count === 1 ? ['It is the last line, so the whole tutor script goes.'] : [])],
+              notes: [
+                'Lines that jumped to it will continue in order.',
+                ...(count === 1 ? ['It is the last line, so the whole tutor script goes.'] : []),
+              ],
               confirmLabel: 'Remove line',
               onConfirm: () => actions.commit((u) => removeNode(u, sectionIndex, nodeIndex).unit),
             })
@@ -80,7 +115,15 @@ const NodeCard = memo(function NodeCard({ scope, sectionIndex, nodeIndex, count,
     >
       <IssueLines issues={issues} />
       <Txt path={[...base, 'id']} label="Line id (fixed)" value={id} mono locked />
-      <Txt path={[...base, 'say']} label="What the tutor says" value={str(node.say)} multiline rows={3} counts hint="Plain, short, friendly. It is spoken aloud; **bold** markers are dropped when it is read out." />
+      <Txt
+        path={[...base, 'say']}
+        label="What the tutor says"
+        value={str(node.say)}
+        multiline
+        rows={3}
+        counts
+        hint="Plain, short, friendly. It is spoken aloud; **bold** markers are dropped when it is read out."
+      />
       <Pick
         path={[...base, 'expect']}
         label="Then the tutor waits for"
@@ -93,7 +136,8 @@ const NodeCard = memo(function NodeCard({ scope, sectionIndex, nodeIndex, count,
         onPick={(next) =>
           actions.commit((u) => {
             if (next === 'none') return removeAt(u, [...base, 'expect']);
-            if (next === 'question') return setAt(u, [...base, 'expect'], { question_id: questions[0]?.id ?? '' });
+            if (next === 'question')
+              return setAt(u, [...base, 'expect'], { question_id: questions[0]?.id ?? '' });
             return setAt(u, [...base, 'expect'], { accepted: [''] });
           })
         }
@@ -102,7 +146,11 @@ const NodeCard = memo(function NodeCard({ scope, sectionIndex, nodeIndex, count,
         <Pick
           path={[...base, 'expect', 'question_id']}
           label="Question that grades the reply"
-          value={questions.some((q) => q.id === str(getAt(node, ['expect', 'question_id']))) ? str(getAt(node, ['expect', 'question_id'])) : ''}
+          value={
+            questions.some((q) => q.id === str(getAt(node, ['expect', 'question_id'])))
+              ? str(getAt(node, ['expect', 'question_id']))
+              : ''
+          }
           placeholder="Choose a question…"
           options={questions.map((q) => ({ value: q.id, label: q.label }))}
         />
@@ -117,15 +165,39 @@ const NodeCard = memo(function NodeCard({ scope, sectionIndex, nodeIndex, count,
           hint="Matched like fill-in-the-blank answers (not case sensitive, one typo forgiven)."
         />
       ) : null}
-      <Strings path={[...base, 'on_correct']} label="Says when the reply is right (the app picks one)" noun="line" values={strs(node.on_correct)} min={0} addLabel="Add a line for a right reply" />
-      <Strings path={[...base, 'on_incorrect']} label="Says when the reply is wrong (the app picks one)" noun="line" values={strs(node.on_incorrect)} min={0} addLabel="Add a line for a wrong reply" />
-      <Strings path={[...base, 'hint']} label="Hints offered after a miss, in order" noun="hint" values={strs(node.hint)} min={0} addLabel="Add a hint" />
+      <Strings
+        path={[...base, 'on_correct']}
+        label="Says when the reply is right (the app picks one)"
+        noun="line"
+        values={strs(node.on_correct)}
+        min={0}
+        addLabel="Add a line for a right reply"
+      />
+      <Strings
+        path={[...base, 'on_incorrect']}
+        label="Says when the reply is wrong (the app picks one)"
+        noun="line"
+        values={strs(node.on_incorrect)}
+        min={0}
+        addLabel="Add a line for a wrong reply"
+      />
+      <Strings
+        path={[...base, 'hint']}
+        label="Hints offered after a miss, in order"
+        noun="hint"
+        values={strs(node.hint)}
+        min={0}
+        addLabel="Add a hint"
+      />
       <Pick
         path={[...base, 'next']}
         label="Afterwards go to"
         value={jumpsTo !== '' && siblingIds.includes(jumpsTo) ? jumpsTo : ''}
         placeholder="The next line in order"
-        options={[{ value: '', label: 'The next line in order' }, ...siblingIds.filter((s) => s !== id).map((s) => ({ value: s, label: `Jump to ${s}` }))]}
+        options={[
+          { value: '', label: 'The next line in order' },
+          ...siblingIds.filter((s) => s !== id).map((s) => ({ value: s, label: `Jump to ${s}` })),
+        ]}
       />
     </ItemCard>
   );
@@ -147,17 +219,28 @@ export function TutorScriptEditor({
 }): ReactNode {
   const actions = useActions();
   const env = useEnv();
-  const path: Path = sectionIndex === null ? ['tutor_script'] : ['sections', sectionIndex, 'tutor_script'];
+  const path: Path =
+    sectionIndex === null ? ['tutor_script'] : ['sections', sectionIndex, 'tutor_script'];
   const issues = useIssuesAt(path);
   const nodes = recs(script?.nodes);
   const ids = nodes.map((n) => str(n.id));
   return (
-    <View style={{ gap: space[2] }} {...({ dataSet: { field: sectionIndex === null ? 'tutor_script' : `sections[${sectionIndex}].tutor_script` } } as object)}>
+    <View
+      style={{ gap: space[2] }}
+      {...({
+        dataSet: {
+          field: sectionIndex === null ? 'tutor_script' : `sections[${sectionIndex}].tutor_script`,
+        },
+      } as object)}
+    >
       <SubHeading>Tutor script for {subject}</SubHeading>
       <IssueLines issues={issues} />
       {script === undefined ? (
         <>
-          <Small>No offline tutor lines for {subject}. Without them the tutor has nothing scripted to say here when the child is offline.</Small>
+          <Small>
+            No offline tutor lines for {subject}. Without them the tutor has nothing scripted to say
+            here when the child is offline.
+          </Small>
           <AddButton
             label="Add a tutor script"
             onPress={() => {
@@ -170,7 +253,9 @@ export function TutorScriptEditor({
       ) : (
         <>
           <Note>
-            {nodes.length} line{nodes.length === 1 ? '' : 's'}. Lines run in order unless one jumps to another. Everything the tutor will say is listed here; open a line to read and change it.
+            {nodes.length} line{nodes.length === 1 ? '' : 's'}. Lines run in order unless one jumps
+            to another. Everything the tutor will say is listed here; open a line to read and change
+            it.
           </Note>
           {nodes.map((node, index) => (
             <NodeCard

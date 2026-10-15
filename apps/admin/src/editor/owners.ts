@@ -37,7 +37,11 @@ export function remainder(path: Path, owner: Path): string {
     .slice(owner.length)
     .reduce<string>(
       (out, segment) =>
-        typeof segment === 'number' ? `${out}[${segment + 1}]` : out === '' ? segment : `${out}.${segment}`,
+        typeof segment === 'number'
+          ? `${out}[${segment + 1}]`
+          : out === ''
+            ? segment
+            : `${out}.${segment}`,
       '',
     );
 }

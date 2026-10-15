@@ -272,7 +272,9 @@ export function sortRemoveItem(question: Q<'sort'>, index: number): Q<'sort'> {
   return {
     ...question,
     items: question.items.filter((_, i) => i !== index),
-    answer: { mapping: Object.fromEntries(mappingEntries(question).filter(([key]) => !sameText(key, old))) },
+    answer: {
+      mapping: Object.fromEntries(mappingEntries(question).filter(([key]) => !sameText(key, old))),
+    },
   };
 }
 
@@ -283,7 +285,9 @@ export function sortRemoveCategory(question: Q<'sort'>, index: number): Q<'sort'
     ...question,
     categories: question.categories.filter((_, i) => i !== index),
     answer: {
-      mapping: Object.fromEntries(mappingEntries(question).filter(([, value]) => !sameText(value, old))),
+      mapping: Object.fromEntries(
+        mappingEntries(question).filter(([, value]) => !sameText(value, old)),
+      ),
     },
   };
 }
@@ -297,7 +301,11 @@ const clamp = (value: number, min: number, max: number): number =>
 const round3 = (value: number): number => Math.round(value * 1000) / 1000;
 
 /** Sets one part of a hotspot's rectangle, keeping it inside the picture (0 to 1 in both directions). */
-export function hotspotSetBox(hotspot: Hotspot, key: 'x' | 'y' | 'w' | 'h', value: number): Hotspot {
+export function hotspotSetBox(
+  hotspot: Hotspot,
+  key: 'x' | 'y' | 'w' | 'h',
+  value: number,
+): Hotspot {
   const next = { ...hotspot };
   if (key === 'x') next.x = round3(clamp(value, 0, 1 - 0.01));
   if (key === 'y') next.y = round3(clamp(value, 0, 1 - 0.01));
@@ -308,7 +316,10 @@ export function hotspotSetBox(hotspot: Hotspot, key: 'x' | 'y' | 'w' | 'h', valu
   return next;
 }
 
-export function tapAddHotspot(question: Q<'tap_image'>, taken: ReadonlySet<string>): Q<'tap_image'> {
+export function tapAddHotspot(
+  question: Q<'tap_image'>,
+  taken: ReadonlySet<string>,
+): Q<'tap_image'> {
   const inUse = new Set([...taken, ...question.answer.hotspots.map((h) => h.id)]);
   const id = nextFreeId(HOTSPOT_ID_PREFIX, inUse);
   const added: Hotspot = { id, label: '', x: 0.1, y: 0.1, w: 0.3, h: 0.3, correct: false };

@@ -63,7 +63,15 @@ describe('Try it uses the real grader', () => {
     const question = q('wb_match_places');
     const out = tryIt(
       question,
-      input({ pairs: { Kitchen: 'Cook', Bedroom: 'Play', Playground: 'Play', Classroom: 'Learn', Bathroom: 'Bath' } }),
+      input({
+        pairs: {
+          Kitchen: 'Cook',
+          Bedroom: 'Play',
+          Playground: 'Play',
+          Classroom: 'Learn',
+          Bathroom: 'Bath',
+        },
+      }),
     );
     expect(out.kind === 'graded' && out.result.result).toBe('partial');
     if (out.kind === 'graded') {
@@ -108,7 +116,9 @@ describe('Try it uses the real grader', () => {
       prompt: 'Tap',
       brief: 'b',
       alt: 'a',
-      answer: { hotspots: [{ id: 'hs_1', label: 'bin', x: 0, y: 0, w: 0.5, h: 0.5, correct: true }] },
+      answer: {
+        hotspots: [{ id: 'hs_1', label: 'bin', x: 0, y: 0, w: 0.5, h: 0.5, correct: true }],
+      },
     };
     const t = tryIt(tap, input({ hotspotIds: ['hs_1'] }));
     expect(t.kind === 'graded' && t.result.result).toBe('correct');
@@ -133,7 +143,13 @@ describe('Try it uses the real grader', () => {
   });
 
   it('a broken question is explained, not thrown', () => {
-    const broken = { id: 'x', kind: 'mcq', tier: 1, prompt: 'p', options: ['a', 'b'] } as unknown as Question;
+    const broken = {
+      id: 'x',
+      kind: 'mcq',
+      tier: 1,
+      prompt: 'p',
+      options: ['a', 'b'],
+    } as unknown as Question;
     const out = tryIt(broken, input({ selectedIndex: 0 }));
     expect(out.kind).toBe('ungraded');
   });

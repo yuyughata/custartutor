@@ -29,7 +29,6 @@ export interface EditorActions {
   confirmDelete(request: DeleteRequest): void;
   /** Open the cards on the way to a path and move the focus to its field. */
   jump(path: Path): void;
-  isOpen(key: string, defaultOpen: boolean): boolean;
   toggle(key: string, defaultOpen: boolean): void;
   open(key: string): void;
 }
@@ -49,6 +48,8 @@ export interface EditorEnv {
 export const ActionsContext = createContext<EditorActions | null>(null);
 export const EnvContext = createContext<EditorEnv | null>(null);
 export const IssuesContext = createContext<ReadonlyMap<string, EditorIssue[]>>(new Map());
+/** Which cards have been opened or closed by hand (key to open). A card nobody touched uses its own default. */
+export const OpenContext = createContext<ReadonlyMap<string, boolean>>(new Map());
 
 export function useActions(): EditorActions {
   const value = useContext(ActionsContext);
@@ -99,17 +100,21 @@ export function EditorProviders({
   actions,
   env,
   issues,
+  openState,
   children,
 }: {
   actions: EditorActions;
   env: EditorEnv;
   issues: ReadonlyMap<string, EditorIssue[]>;
+  openState: ReadonlyMap<string, boolean>;
   children: ReactNode;
 }): ReactNode {
   return (
     <ActionsContext.Provider value={actions}>
       <EnvContext.Provider value={env}>
-        <IssuesContext.Provider value={issues}>{children}</IssuesContext.Provider>
+        <IssuesContext.Provider value={issues}>
+          <OpenContext.Provider value={openState}>{children}</OpenContext.Provider>
+        </IssuesContext.Provider>
       </EnvContext.Provider>
     </ActionsContext.Provider>
   );

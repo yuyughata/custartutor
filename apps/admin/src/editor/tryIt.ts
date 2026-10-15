@@ -41,7 +41,9 @@ export type TryOutcome =
 export function responseFor(question: Question, input: TryInput): QuestionResponse | null {
   switch (question.kind) {
     case 'mcq':
-      return input.selectedIndex === null ? null : { kind: 'mcq', selected_index: input.selectedIndex };
+      return input.selectedIndex === null
+        ? null
+        : { kind: 'mcq', selected_index: input.selectedIndex };
     case 'fill_blank':
       return {
         kind: 'fill_blank',
@@ -92,9 +94,14 @@ function itemLines(question: Question, result: GradeResult): string[] {
     case 'fill_blank':
       return items.map((ok, i) => `Blank ${i + 1}: ${ok ? 'right' : 'wrong'}`);
     case 'match':
-      return items.map((ok, i) => `${question.answer.pairs[i]?.left ?? `Pair ${i + 1}`}: ${ok ? 'right' : 'wrong'}`);
+      return items.map(
+        (ok, i) =>
+          `${question.answer.pairs[i]?.left ?? `Pair ${i + 1}`}: ${ok ? 'right' : 'wrong'}`,
+      );
     case 'sort':
-      return items.map((ok, i) => `${question.items[i] ?? `Item ${i + 1}`}: ${ok ? 'right' : 'wrong'}`);
+      return items.map(
+        (ok, i) => `${question.items[i] ?? `Item ${i + 1}`}: ${ok ? 'right' : 'wrong'}`,
+      );
     default:
       return [];
   }
@@ -106,7 +113,9 @@ export function tryIt(question: Question, input: TryInput): TryOutcome {
       return {
         kind: 'ungraded',
         headline: 'Not marked: the child checks their own drawing.',
-        lines: ['A drawing can be ticked off against the self-check list, but it never counts towards mastery.'],
+        lines: [
+          'A drawing can be ticked off against the self-check list, but it never counts towards mastery.',
+        ],
       };
     }
     return {
@@ -117,7 +126,11 @@ export function tryIt(question: Question, input: TryInput): TryOutcome {
   }
   const response = responseFor(question, input);
   if (response === null) {
-    return { kind: 'ungraded', headline: 'Pick or type an answer to see how it would be marked.', lines: [] };
+    return {
+      kind: 'ungraded',
+      headline: 'Pick or type an answer to see how it would be marked.',
+      lines: [],
+    };
   }
   let result: GradeResult;
   try {

@@ -49,12 +49,18 @@ function setIn(node: unknown, path: Path, depth: number, value: unknown): unknow
   if (typeof segment === 'number') {
     const list = Array.isArray(node) ? node : [];
     const copy = list.slice();
-    const child = depth + 1 >= path.length ? value : setIn(list[segment] ?? emptyFor(next), path, depth + 1, value);
+    const child =
+      depth + 1 >= path.length
+        ? value
+        : setIn(list[segment] ?? emptyFor(next), path, depth + 1, value);
     copy[segment] = child;
     return copy;
   }
   const rec = isRec(node) ? node : {};
-  const child = depth + 1 >= path.length ? value : setIn(rec[segment] ?? emptyFor(next), path, depth + 1, value);
+  const child =
+    depth + 1 >= path.length
+      ? value
+      : setIn(rec[segment] ?? emptyFor(next), path, depth + 1, value);
   return { ...rec, [segment]: child };
 }
 
@@ -74,7 +80,12 @@ export function removeAt<T>(root: T, path: Path): T {
   const parent = getAt(root, parentPath);
   if (Array.isArray(parent)) {
     if (typeof last !== 'number' || last < 0 || last >= parent.length) return root;
-    return setIn(root, parentPath, 0, parent.filter((_, index) => index !== last)) as T;
+    return setIn(
+      root,
+      parentPath,
+      0,
+      parent.filter((_, index) => index !== last),
+    ) as T;
   }
   if (isRec(parent)) {
     if (!(String(last) in parent)) return root;

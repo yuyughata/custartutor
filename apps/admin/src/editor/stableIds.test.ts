@@ -44,7 +44,11 @@ describe('published ids', () => {
     expect(guarded.reason).toContain('version 3');
     expect(guarded.reason).toContain('cannot be deleted');
     expect(protection('question', 'wb_neighbour', ids).protected).toBe(true);
-    expect(protection('section', 'brand_new', ids)).toEqual({ protected: false, versions: [], reason: null });
+    expect(protection('section', 'brand_new', ids)).toEqual({
+      protected: false,
+      versions: [],
+      reason: null,
+    });
     expect(protection('section', 'practice_time', null).protected).toBe(false);
   });
 });
@@ -91,7 +95,9 @@ describe('the check against the published history', () => {
     const ids = publishedIdsOf([snapshot(1, gold)]);
     const withoutNode = removeNode(gold, 0, 0).unit;
     const warnings = droppedSoftIds(withoutNode, ids);
-    expect(warnings.some((w) => w.code === 'tutor_node_id_dropped' && w.message.includes('n_intro'))).toBe(true);
+    expect(
+      warnings.some((w) => w.code === 'tutor_node_id_dropped' && w.message.includes('n_intro')),
+    ).toBe(true);
     expect(warnings.every((w) => w.severity === 'warning')).toBe(true);
     expect(droppedSoftIds(gold, ids)).toEqual([]);
     const noVariants = setAt(gold, ['workbook', 'practice_variants'], []);

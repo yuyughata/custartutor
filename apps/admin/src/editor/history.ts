@@ -31,7 +31,10 @@ export function push<T>(
   const now = options.now ?? Date.now();
   const key = options.key ?? null;
   const merge =
-    key !== null && key === history.lastKey && now - history.lastAt <= COALESCE_MS && history.past.length > 0;
+    key !== null &&
+    key === history.lastKey &&
+    now - history.lastAt <= COALESCE_MS &&
+    history.past.length > 0;
   const past = merge ? history.past : [...history.past, history.present].slice(-HISTORY_LIMIT);
   return { past, present: next, future: [], lastKey: key, lastAt: now };
 }

@@ -2,7 +2,7 @@
 // blank is filled, a pair has two sides, an item is sorted into a group. Every change goes through the functions in
 // `answers.ts`, which keep the parts that depend on each other consistent (remove an option and "correct" follows).
 import { useRef, useState, type ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { countBlanks, type Question } from '@custar/content-schema';
 import { Small } from '../../ui/Text';
 import { colors, radii, space } from '../../ui/theme';
@@ -47,8 +47,20 @@ import {
   tapUpdateHotspot,
 } from '../answers';
 import { pathKey, type Path } from '../path';
-import { useActions, useEnv, useIssuesAt } from './context';
-import { AddButton, Flag, IssueLines, ItemBar, Mark, Note, Pick, Row, Strings, SubHeading, Txt } from './Fields';
+import { useEnv, useIssuesAt } from './context';
+import {
+  AddButton,
+  Flag,
+  IssueLines,
+  ItemBar,
+  Mark,
+  Note,
+  Pick,
+  Row,
+  Strings,
+  SubHeading,
+  Txt,
+} from './Fields';
 import { TextEditor } from './TextEditor';
 
 type Q<K extends Question['kind']> = Extract<Question, { kind: K }>;
@@ -59,10 +71,6 @@ export interface AnswerProps<K extends Question['kind']> {
   /** `['questions', id]` */
   path: Path;
   edit: (fn: (question: Q<K>) => Q<K>, key?: string) => void;
-}
-
-function str(value: unknown): string {
-  return typeof value === 'string' ? value : '';
 }
 
 /** A text box whose change is made by a builder function (so index-coupled data moves with it). */
@@ -107,12 +115,25 @@ export function McqAnswer({ question, path, edit }: AnswerProps<'mcq'>): ReactNo
   const env = useEnv();
   const count = question.options.length;
   return (
-    <View style={{ gap: space[2] }} {...({ dataSet: { field: pathKey([...path, 'options']) } } as object)}>
+    <View
+      style={{ gap: space[2] }}
+      {...({ dataSet: { field: pathKey([...path, 'options']) } } as object)}
+    >
       <SubHeading>Options and the correct answer</SubHeading>
       <IssueLines issues={issues} />
       <IssueLines issues={answerIssues} />
       {question.options.map((option, index) => (
-        <View key={index} style={{ gap: space[1], padding: space[3], borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.page }}>
+        <View
+          key={index}
+          style={{
+            gap: space[1],
+            padding: space[3],
+            borderRadius: radii.md,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.page,
+          }}
+        >
           <Built
             path={[...path, 'options', index]}
             label={`Option ${index + 1}`}
@@ -132,7 +153,9 @@ export function McqAnswer({ question, path, edit }: AnswerProps<'mcq'>): ReactNo
               canDown={index < count - 1}
               onUp={() => edit((q) => mcqMoveOption(q, index, index - 1))}
               onDown={() => edit((q) => mcqMoveOption(q, index, index + 1))}
-              {...(count > MCQ_MIN_OPTIONS ? { onRemove: () => edit((q) => mcqRemoveOption(q, index)) } : {})}
+              {...(count > MCQ_MIN_OPTIONS
+                ? { onRemove: () => edit((q) => mcqRemoveOption(q, index)) }
+                : {})}
             />
           </Row>
         </View>
@@ -152,14 +175,26 @@ export function McqAnswer({ question, path, edit }: AnswerProps<'mcq'>): ReactNo
 // --- fill in the blank -------------------------------------------------------------------------------------------------
 
 /** Units are typed as a comma-separated list; the text stays as typed while the list is rebuilt from it. */
-function UnitsField({ path, units, onUnits }: { path: Path; units: readonly string[]; onUnits: (units: string[]) => void }): ReactNode {
+function UnitsField({
+  path,
+  units,
+  onUnits,
+}: {
+  path: Path;
+  units: readonly string[];
+  onUnits: (units: string[]) => void;
+}): ReactNode {
   const env = useEnv();
   const [text, setText] = useState(units.join(', '));
   const last = useRef(units.join('|'));
   const joined = units.join('|');
   if (last.current !== joined) {
     last.current = joined;
-    const mine = text.split(',').map((u) => u.trim()).filter((u) => u !== '').join('|');
+    const mine = text
+      .split(',')
+      .map((u) => u.trim())
+      .filter((u) => u !== '')
+      .join('|');
     if (mine !== joined) setText(units.join(', '));
   }
   return (
@@ -182,17 +217,31 @@ export function FillBlankAnswer({ question, path, edit }: AnswerProps<'fill_blan
   const wanted = Math.max(1, countBlanks(question.prompt));
   const blanks = question.answer.blanks;
   return (
-    <View style={{ gap: space[2] }} {...({ dataSet: { field: pathKey([...path, 'answer']) } } as object)}>
+    <View
+      style={{ gap: space[2] }}
+      {...({ dataSet: { field: pathKey([...path, 'answer']) } } as object)}
+    >
       <SubHeading>Accepted answers for each blank</SubHeading>
       <Small>
-        Put a run of three or more underscores (____) in the prompt for each blank. The blanks below follow the prompt: type another ____ and another blank appears.
+        Put a run of three or more underscores (____) in the prompt for each blank. The blanks below
+        follow the prompt: type another ____ and another blank appears.
       </Small>
       <IssueLines issues={issues} />
       {blanks.map((blank, index) => {
         const setBlank = (patch: (b: typeof blank) => typeof blank, key?: string): void =>
           edit((q) => fillUpdateBlank(q, index, patch), key);
         return (
-          <View key={index} style={{ gap: space[2], padding: space[3], borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.page }}>
+          <View
+            key={index}
+            style={{
+              gap: space[2],
+              padding: space[3],
+              borderRadius: radii.md,
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.page,
+            }}
+          >
             <Text style={{ fontSize: 14, fontWeight: '800', color: colors.primaryDark }}>
               Blank {index + 1} of {wanted}
             </Text>
@@ -205,11 +254,17 @@ export function FillBlankAnswer({ question, path, edit }: AnswerProps<'fill_blan
                   onText={(next, key) => setBlank((b) => fillSetAccepted(b, a, next), key)}
                 />
                 {blank.accepted.length > 1 ? (
-                  <ItemBar noun={`accepted answer ${a + 1} of blank ${index + 1}`} onRemove={() => setBlank((b) => fillRemoveAccepted(b, a))} />
+                  <ItemBar
+                    noun={`accepted answer ${a + 1} of blank ${index + 1}`}
+                    onRemove={() => setBlank((b) => fillRemoveAccepted(b, a))}
+                  />
                 ) : null}
               </View>
             ))}
-            <AddButton label="Add another accepted answer" onPress={() => setBlank((b) => fillAddAccepted(b))} />
+            <AddButton
+              label="Add another accepted answer"
+              onPress={() => setBlank((b) => fillAddAccepted(b))}
+            />
             <Flag
               label="Compare as numbers"
               value={blank.numeric === true}
@@ -217,7 +272,11 @@ export function FillBlankAnswer({ question, path, edit }: AnswerProps<'fill_blan
               onChange={(on) => setBlank((b) => fillSetFlag(b, 'numeric', on))}
             />
             {blank.numeric === true ? (
-              <UnitsField path={[...path, 'answer', 'blanks', index]} units={blank.units ?? []} onUnits={(units) => setBlank((b) => fillSetUnits(b, units))} />
+              <UnitsField
+                path={[...path, 'answer', 'blanks', index]}
+                units={blank.units ?? []}
+                onUnits={(units) => setBlank((b) => fillSetUnits(b, units))}
+              />
             ) : null}
             <Flag
               label="Spelling must be exact (no typo tolerance)"
@@ -239,11 +298,24 @@ export function MatchAnswer({ question, path, edit }: AnswerProps<'match'>): Rea
   const env = useEnv();
   const pairs = question.answer.pairs;
   return (
-    <View style={{ gap: space[2] }} {...({ dataSet: { field: pathKey([...path, 'answer']) } } as object)}>
+    <View
+      style={{ gap: space[2] }}
+      {...({ dataSet: { field: pathKey([...path, 'answer']) } } as object)}
+    >
       <SubHeading>Pairs</SubHeading>
       <IssueLines issues={issues} />
       {pairs.map((pair, index) => (
-        <View key={index} style={{ gap: space[1], padding: space[3], borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.page }}>
+        <View
+          key={index}
+          style={{
+            gap: space[1],
+            padding: space[3],
+            borderRadius: radii.md,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.page,
+          }}
+        >
           <Built
             path={[...path, 'answer', 'pairs', index, 'left']}
             label={`Pair ${index + 1}, left side`}
@@ -256,10 +328,17 @@ export function MatchAnswer({ question, path, edit }: AnswerProps<'match'>): Rea
             value={pair.right}
             onText={(next, key) => edit((q) => matchSetPair(q, index, 'right', next), key)}
           />
-          {pairs.length > MATCH_MIN_PAIRS ? <ItemBar noun={`pair ${index + 1}`} onRemove={() => edit((q) => matchRemovePair(q, index))} /> : null}
+          {pairs.length > MATCH_MIN_PAIRS ? (
+            <ItemBar
+              noun={`pair ${index + 1}`}
+              onRemove={() => edit((q) => matchRemovePair(q, index))}
+            />
+          ) : null}
         </View>
       ))}
-      {!env.readOnly ? <AddButton label="Add pair" onPress={() => edit((q) => matchAddPair(q))} /> : null}
+      {!env.readOnly ? (
+        <AddButton label="Add pair" onPress={() => edit((q) => matchAddPair(q))} />
+      ) : null}
       <Strings
         path={[...path, 'distractors']}
         label="Extra right-hand items that match nothing (optional)"
@@ -279,12 +358,25 @@ export function CircleAnswer({ question, path, edit }: AnswerProps<'circle'>): R
   const env = useEnv();
   const count = question.options.length;
   return (
-    <View style={{ gap: space[2] }} {...({ dataSet: { field: pathKey([...path, 'options']) } } as object)}>
+    <View
+      style={{ gap: space[2] }}
+      {...({ dataSet: { field: pathKey([...path, 'options']) } } as object)}
+    >
       <SubHeading>Options: tick every correct one</SubHeading>
       <IssueLines issues={issues} />
       <IssueLines issues={answerIssues} />
       {question.options.map((option, index) => (
-        <View key={index} style={{ gap: space[1], padding: space[3], borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.page }}>
+        <View
+          key={index}
+          style={{
+            gap: space[1],
+            padding: space[3],
+            borderRadius: radii.md,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.page,
+          }}
+        >
           <Built
             path={[...path, 'options', index]}
             label={`Option ${index + 1}`}
@@ -298,7 +390,12 @@ export function CircleAnswer({ question, path, edit }: AnswerProps<'circle'>): R
               on={circleIsCorrect(question, index)}
               onPress={() => edit((q) => circleToggleCorrect(q, index))}
             />
-            {count > CIRCLE_MIN_OPTIONS ? <ItemBar noun={`option ${index + 1}`} onRemove={() => edit((q) => circleRemoveOption(q, index))} /> : null}
+            {count > CIRCLE_MIN_OPTIONS ? (
+              <ItemBar
+                noun={`option ${index + 1}`}
+                onRemove={() => edit((q) => circleRemoveOption(q, index))}
+              />
+            ) : null}
           </Row>
         </View>
       ))}
@@ -321,10 +418,16 @@ export function SortAnswer({ question, path, edit }: AnswerProps<'sort'>): React
   const categoryIssues = useIssuesAt([...path, 'categories']);
   const answerIssues = useIssuesAt([...path, 'answer']);
   const env = useEnv();
-  const categoryOptions = question.categories.map((name, index) => ({ value: String(index), label: name.trim() === '' ? `Group ${index + 1} (no name yet)` : name }));
+  const categoryOptions = question.categories.map((name, index) => ({
+    value: String(index),
+    label: name.trim() === '' ? `Group ${index + 1} (no name yet)` : name,
+  }));
   return (
     <View style={{ gap: space[3] }}>
-      <View style={{ gap: space[2] }} {...({ dataSet: { field: pathKey([...path, 'categories']) } } as object)}>
+      <View
+        style={{ gap: space[2] }}
+        {...({ dataSet: { field: pathKey([...path, 'categories']) } } as object)}
+      >
         <SubHeading>Groups</SubHeading>
         <IssueLines issues={categoryIssues} />
         {question.categories.map((name, index) => (
@@ -335,19 +438,39 @@ export function SortAnswer({ question, path, edit }: AnswerProps<'sort'>): React
               value={name}
               onText={(next, key) => edit((q) => sortSetCategoryName(q, index, next), key)}
             />
-            {question.categories.length > SORT_MIN ? <ItemBar noun={`group ${index + 1}`} onRemove={() => edit((q) => sortRemoveCategory(q, index))} /> : null}
+            {question.categories.length > SORT_MIN ? (
+              <ItemBar
+                noun={`group ${index + 1}`}
+                onRemove={() => edit((q) => sortRemoveCategory(q, index))}
+              />
+            ) : null}
           </View>
         ))}
-        {!env.readOnly ? <AddButton label="Add group" onPress={() => edit((q) => sortAddCategory(q))} /> : null}
+        {!env.readOnly ? (
+          <AddButton label="Add group" onPress={() => edit((q) => sortAddCategory(q))} />
+        ) : null}
       </View>
-      <View style={{ gap: space[2] }} {...({ dataSet: { field: pathKey([...path, 'items']) } } as object)}>
+      <View
+        style={{ gap: space[2] }}
+        {...({ dataSet: { field: pathKey([...path, 'items']) } } as object)}
+      >
         <SubHeading>Items and the group each belongs to</SubHeading>
         <IssueLines issues={itemIssues} />
         <IssueLines issues={answerIssues} />
         {question.items.map((item, index) => {
           const chosen = sortCategoryIndex(question, index);
           return (
-            <View key={index} style={{ gap: space[1], padding: space[3], borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.page }}>
+            <View
+              key={index}
+              style={{
+                gap: space[1],
+                padding: space[3],
+                borderRadius: radii.md,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.page,
+              }}
+            >
               <Built
                 path={[...path, 'items', index]}
                 label={`Item ${index + 1}`}
@@ -362,11 +485,18 @@ export function SortAnswer({ question, path, edit }: AnswerProps<'sort'>): React
                 options={categoryOptions}
                 onPick={(value) => edit((q) => sortSetCategory(q, index, Number(value)))}
               />
-              {question.items.length > SORT_MIN ? <ItemBar noun={`item ${index + 1}`} onRemove={() => edit((q) => sortRemoveItem(q, index))} /> : null}
+              {question.items.length > SORT_MIN ? (
+                <ItemBar
+                  noun={`item ${index + 1}`}
+                  onRemove={() => edit((q) => sortRemoveItem(q, index))}
+                />
+              ) : null}
             </View>
           );
         })}
-        {!env.readOnly ? <AddButton label="Add item" onPress={() => edit((q) => sortAddItem(q))} /> : null}
+        {!env.readOnly ? (
+          <AddButton label="Add item" onPress={() => edit((q) => sortAddItem(q))} />
+        ) : null}
       </View>
     </View>
   );
@@ -375,9 +505,24 @@ export function SortAnswer({ question, path, edit }: AnswerProps<'sort'>): React
 // --- tap the picture ---------------------------------------------------------------------------------------------------
 
 type BoxKey = 'x' | 'y' | 'w' | 'h';
-const BOX_LABELS: Record<BoxKey, string> = { x: 'Left edge', y: 'Top edge', w: 'Width', h: 'Height' };
+const BOX_LABELS: Record<BoxKey, string> = {
+  x: 'Left edge',
+  y: 'Top edge',
+  w: 'Width',
+  h: 'Height',
+};
 
-function BoxField({ path, label, value, onNumber }: { path: Path; label: string; value: number; onNumber: (value: number) => void }): ReactNode {
+function BoxField({
+  path,
+  label,
+  value,
+  onNumber,
+}: {
+  path: Path;
+  label: string;
+  value: number;
+  onNumber: (value: number) => void;
+}): ReactNode {
   const env = useEnv();
   const [text, setText] = useState(String(value));
   const last = useRef(value);
@@ -403,7 +548,11 @@ function BoxField({ path, label, value, onNumber }: { path: Path; label: string;
 }
 
 /** The picture area with each hotspot drawn on it, so a rectangle can be seen as well as typed. */
-export function HotspotMap({ hotspots }: { hotspots: Q<'tap_image'>['answer']['hotspots'] }): ReactNode {
+export function HotspotMap({
+  hotspots,
+}: {
+  hotspots: Q<'tap_image'>['answer']['hotspots'];
+}): ReactNode {
   return (
     <View
       accessibilityLabel="Map of the tap areas on the picture"
@@ -450,30 +599,65 @@ export function TapImageAnswer({ question, path, edit }: AnswerProps<'tap_image'
   const hotspots = question.answer.hotspots;
   return (
     <View style={{ gap: space[3] }}>
-      <Txt path={[...path, 'brief']} label="Brief for the illustrator" value={question.brief ?? ''} multiline rows={3} optional hint="Describe the picture. Needed until a picture is attached." />
-      <Txt path={[...path, 'alt']} label="Alt text (read by screen readers and spoken by the tutor)" value={question.alt} multiline rows={2} counts />
+      <Txt
+        path={[...path, 'brief']}
+        label="Brief for the illustrator"
+        value={question.brief ?? ''}
+        multiline
+        rows={3}
+        optional
+        hint="Describe the picture. Needed until a picture is attached."
+      />
+      <Txt
+        path={[...path, 'alt']}
+        label="Alt text (read by screen readers and spoken by the tutor)"
+        value={question.alt}
+        multiline
+        rows={2}
+        counts
+      />
       {question.asset_id ? (
         <Note>
-          Picture attached: <Text style={{ fontFamily: 'monospace' }}>{question.asset_id}</Text>. Uploading or replacing pictures is not done in this editor; the attachment is kept when you
-          save.
+          Picture attached: <Text style={{ fontFamily: 'monospace' }}>{question.asset_id}</Text>.
+          Uploading or replacing pictures is not done in this editor; the attachment is kept when
+          you save.
         </Note>
       ) : (
-        <Small>No picture is attached yet. The tap areas below are positions on the picture, as fractions of its width and height (0 to 1).</Small>
+        <Small>
+          No picture is attached yet. The tap areas below are positions on the picture, as fractions
+          of its width and height (0 to 1).
+        </Small>
       )}
-      <View style={{ gap: space[2] }} {...({ dataSet: { field: pathKey([...path, 'answer']) } } as object)}>
+      <View
+        style={{ gap: space[2] }}
+        {...({ dataSet: { field: pathKey([...path, 'answer']) } } as object)}
+      >
         <SubHeading>Tap areas</SubHeading>
         <IssueLines issues={issues} />
         <HotspotMap hotspots={hotspots} />
         {hotspots.map((hotspot, index) => (
-          <View key={hotspot.id + index} style={{ gap: space[2], padding: space[3], borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.page }}>
+          <View
+            key={hotspot.id + index}
+            style={{
+              gap: space[2],
+              padding: space[3],
+              borderRadius: radii.md,
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.page,
+            }}
+          >
             <Text style={{ fontSize: 14, fontWeight: '800', color: colors.primaryDark }}>
-              Area {index + 1} <Text style={{ fontFamily: 'monospace', fontWeight: '400' }}>({hotspot.id})</Text>
+              Area {index + 1}{' '}
+              <Text style={{ fontFamily: 'monospace', fontWeight: '400' }}>({hotspot.id})</Text>
             </Text>
             <Built
               path={[...path, 'answer', 'hotspots', index, 'label']}
               label={`Area ${index + 1}, what it shows`}
               value={hotspot.label}
-              onText={(next, key) => edit((q) => tapUpdateHotspot(q, index, (h) => ({ ...h, label: next })), key)}
+              onText={(next, key) =>
+                edit((q) => tapUpdateHotspot(q, index, (h) => ({ ...h, label: next })), key)
+              }
             />
             <Row>
               {(['x', 'y', 'w', 'h'] as const).map((key) => (
@@ -482,7 +666,12 @@ export function TapImageAnswer({ question, path, edit }: AnswerProps<'tap_image'
                   path={[...path, 'answer', 'hotspots', index, key]}
                   label={`Area ${index + 1}, ${BOX_LABELS[key].toLowerCase()}`}
                   value={hotspot[key]}
-                  onNumber={(value) => edit((q) => tapUpdateHotspot(q, index, (h) => hotspotSetBox(h, key, value)), pathKey([...path, 'answer', 'hotspots', index, key]))}
+                  onNumber={(value) =>
+                    edit(
+                      (q) => tapUpdateHotspot(q, index, (h) => hotspotSetBox(h, key, value)),
+                      pathKey([...path, 'answer', 'hotspots', index, key]),
+                    )
+                  }
                 />
               ))}
             </Row>
@@ -490,18 +679,29 @@ export function TapImageAnswer({ question, path, edit }: AnswerProps<'tap_image'
               label={hotspot.correct ? 'Correct area' : 'Not a correct area'}
               name={`Area ${index + 1} is a correct area`}
               on={hotspot.correct}
-              onPress={() => edit((q) => tapUpdateHotspot(q, index, (h) => ({ ...h, correct: !h.correct })))}
+              onPress={() =>
+                edit((q) => tapUpdateHotspot(q, index, (h) => ({ ...h, correct: !h.correct })))
+              }
             />
             {hotspots.length > 1 ? (
               <ItemBar
                 noun={`area ${index + 1}`}
                 onRemove={() => edit((q) => tapRemoveHotspot(q, index))}
-                removeBlockedReason={publishedTaken.has(hotspot.id) ? 'This area id was published; ids should stay stable. Edit it instead.' : null}
+                removeBlockedReason={
+                  publishedTaken.has(hotspot.id)
+                    ? 'This area id was published; ids should stay stable. Edit it instead.'
+                    : null
+                }
               />
             ) : null}
           </View>
         ))}
-        {!env.readOnly ? <AddButton label="Add tap area" onPress={() => edit((q) => tapAddHotspot(q, publishedTaken))} /> : null}
+        {!env.readOnly ? (
+          <AddButton
+            label="Add tap area"
+            onPress={() => edit((q) => tapAddHotspot(q, publishedTaken))}
+          />
+        ) : null}
       </View>
     </View>
   );
@@ -528,7 +728,9 @@ export function SpeakAnswer({ question, path, edit }: AnswerProps<'speak'>): Rea
           { value: 'exact', label: 'The whole transcript must match' },
           { value: 'contains', label: 'The phrase may sit inside a longer reply' },
         ]}
-        onPick={(value) => edit((q) => speakSetMatch(q, value === 'contains' ? 'contains' : 'exact'))}
+        onPick={(value) =>
+          edit((q) => speakSetMatch(q, value === 'contains' ? 'contains' : 'exact'))
+        }
       />
     </View>
   );
@@ -548,7 +750,13 @@ export function DrawAnswer({ question, path }: AnswerProps<'draw'>): ReactNode {
   );
 }
 
-export function RubricAnswer({ question, path }: { question: Q<'free_text'> | Q<'spoken'>; path: Path }): ReactNode {
+export function RubricAnswer({
+  question,
+  path,
+}: {
+  question: Q<'free_text'> | Q<'spoken'>;
+  path: Path;
+}): ReactNode {
   return (
     <View style={{ gap: space[3] }}>
       <Strings
@@ -558,7 +766,14 @@ export function RubricAnswer({ question, path }: { question: Q<'free_text'> | Q<
         values={question.rubric.criteria}
         min={1}
       />
-      <Txt path={[...path, 'rubric', 'exemplar']} label="A model answer (optional)" value={question.rubric.exemplar ?? ''} multiline rows={3} optional />
+      <Txt
+        path={[...path, 'rubric', 'exemplar']}
+        label="A model answer (optional)"
+        value={question.rubric.exemplar ?? ''}
+        multiline
+        rows={3}
+        optional
+      />
     </View>
   );
 }

@@ -1,10 +1,14 @@
 // A developer aid (demo mode only): the job and error states that are hard to reach in the demo flow, drawn from
 // fixed data: a queued job, a step being retried, a job that failed, a cancelled job, and the error panels for an
 // authenticator code that is needed again, an ended session, a refused action and a lost connection.
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { goldenUnit2 } from '@custar/content-schema/fixtures';
 import type { JobRow } from '@custar/authoring-core';
 import { AdminApiError } from '../api/errors';
+import type { UnitVersionSummary } from '../api/types';
 import { JobPanel } from '../components/JobPanel';
+import { ConflictPanel } from '../editor/ui/ConflictPanel';
+import { setAt } from '../editor/path';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useRuntime } from '../runtime/RuntimeProvider';
 import { Banner } from '../ui/Banner';
@@ -36,6 +40,62 @@ const BASE: JobRow = {
 };
 
 const noop = (): void => undefined;
+
+// The conflict screen of the unit editor, drawn from the golden unit: I changed two headings, version 3 changed one of
+// the same headings differently and another section, so one item is a choice and two are taken automatically.
+const CONFLICT_BASE: unknown = JSON.parse(JSON.stringify(goldenUnit2));
+const CONFLICT_MINE = setAt(
+  setAt(CONFLICT_BASE, ['sections', 2, 'heading'], 'Places in Our School (my wording)'),
+  ['sections', 5, 'heading'],
+  'Staying Safe (my wording)',
+);
+const CONFLICT_THEIRS = setAt(
+  setAt(CONFLICT_BASE, ['sections', 2, 'heading'], 'Places in Our School (their wording)'),
+  ['sections', 7, 'heading'],
+  'Our Places Walk (their wording)',
+);
+const NEWER: UnitVersionSummary = {
+  id: '00000000-0000-4000-8000-0000000000a3',
+  unit_id: '00000000-0000-4000-8000-0000000000a0',
+  version: 3,
+  schema_version: 1,
+  status: 'draft',
+  generated_by: 'human',
+  model: null,
+  prompt_version: null,
+  lint_report: null,
+  base_version_id: null,
+  created_by: null,
+  created_at: '2026-10-12T11:30:00Z',
+};
+
+function ConflictFixture(): ReactNode {
+  const [merged, setMerged] = useState<string | null>(null);
+  return (
+    <Stack gap={space[3]}>
+      <ConflictPanel
+        base={CONFLICT_BASE}
+        mine={CONFLICT_MINE}
+        theirs={CONFLICT_THEIRS}
+        newer={NEWER}
+        baseVersion={2}
+        onUseMerged={(unit) => {
+          const sections = (unit as { sections: { heading: string }[] }).sections;
+          setMerged(
+            `Combined: section 3 "${sections[2]?.heading}", section 6 "${sections[5]?.heading}", section 8 "${sections[7]?.heading}".`,
+          );
+        }}
+        onDiscardMine={() => setMerged('Started again from the newer version.')}
+        onBack={() => setMerged('Went back to editing.')}
+      />
+      {merged ? (
+        <Banner tone="success" title="What the editor would do next" testID="conflict-result">
+          <P>{merged}</P>
+        </Banner>
+      ) : null}
+    </Stack>
+  );
+}
 
 export default function PreviewStatesScreen(): ReactNode {
   usePageTitle('UI states');
@@ -108,6 +168,8 @@ export default function PreviewStatesScreen(): ReactNode {
         error={null}
         title="A cancelled job"
       />
+      <H2>The unit editor: a save refused because a newer version exists</H2>
+      <ConflictFixture />
       <H2>Errors</H2>
       <ErrorState
         error={

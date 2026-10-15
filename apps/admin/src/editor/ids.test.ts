@@ -33,7 +33,13 @@ describe('nextFreeId', () => {
 describe('allIdsIn', () => {
   it('collects section, question, node, hotspot and variant ids', () => {
     const ids = allIdsIn(goldenUnit2);
-    for (const id of ['come_and_explore', 'wb_match_places', 'n_intro', 'variant_places', 'qf_gutter']) {
+    for (const id of [
+      'come_and_explore',
+      'wb_match_places',
+      'n_intro',
+      'variant_places',
+      'qf_gutter',
+    ]) {
       expect(ids.has(id)).toBe(true);
     }
   });

@@ -75,7 +75,11 @@ export function readAutosave(
   }
 }
 
-export function clearAutosave(storage: StorageLike | null, unitId: string, baseVersionId: string): void {
+export function clearAutosave(
+  storage: StorageLike | null,
+  unitId: string,
+  baseVersionId: string,
+): void {
   try {
     storage?.removeItem(autosaveKey(unitId, baseVersionId));
   } catch {

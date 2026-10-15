@@ -245,7 +245,7 @@ select is(
   'blocked, failed and replaced turns stay out of the history'
 );
 reset role;
-update public.tutor_sessions set in_flight_turn_id = null, in_flight_until = null;
+update public.tutor_sessions set in_flight_turn_id = null, in_flight_until = null where true;
 set local role service_role;
 set local request.jwt.claims = '{"role":"service_role"}';
 select is(
@@ -255,7 +255,7 @@ select is(
 );
 reset role;
 -- the claim of T6 / T7 is not a problem for the checks below: release it
-update public.tutor_sessions set in_flight_turn_id = null, in_flight_until = null;
+update public.tutor_sessions set in_flight_turn_id = null, in_flight_until = null where true;
 select results_eq(
   $$select seq, role, status from public.tutor_messages where seq between 3 and 10 order by seq$$,
   $$values (3, 'child', 'blocked'), (4, 'tutor', 'blocked'), (5, 'child', 'failed'), (6, 'tutor', 'failed'), (7, 'child', 'replaced'), (8, 'tutor', 'replaced')$$,

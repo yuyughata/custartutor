@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { stripInlineMarkup } from '@custar/content-schema';
-import { charCount, hasUnmatchedMarker, plainText, splitBold, toggleBold, wordCount } from './markup';
+import {
+  charCount,
+  hasUnmatchedMarker,
+  plainText,
+  splitBold,
+  toggleBold,
+  wordCount,
+} from './markup';
 
 describe('splitBold', () => {
   it('splits on balanced markers', () => {

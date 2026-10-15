@@ -33,7 +33,11 @@ function header(ctx: StarterContext): Record<string, unknown> {
     stage: ctx.stage,
     chapter: ctx.chapter,
     unit_no: ctx.unit_no,
-    ...(ctx.week_no !== null ? { week_no: ctx.week_no } : ctx.kind === 'lesson' ? { week_no: 1 } : {}),
+    ...(ctx.week_no !== null
+      ? { week_no: ctx.week_no }
+      : ctx.kind === 'lesson'
+        ? { week_no: 1 }
+        : {}),
   };
 }
 
@@ -41,7 +45,11 @@ export function starterUnit(ctx: StarterContext): Record<string, unknown> {
   const base = { schema_version: 1, kind: ctx.kind, header: header(ctx) };
   switch (ctx.kind) {
     case 'lesson': {
-      const types: SectionType[] = [STARTER_ENRICHMENT[0] as SectionType, ...ALWAYS_PRESENT_TYPES, STARTER_ENRICHMENT[1] as SectionType];
+      const types: SectionType[] = [
+        STARTER_ENRICHMENT[0] as SectionType,
+        ...ALWAYS_PRESENT_TYPES,
+        STARTER_ENRICHMENT[1] as SectionType,
+      ];
       const used = new Set<string>();
       const sections = types.map((type) => {
         const id = nextFreeId(sectionIdPrefix(type), used);
@@ -100,8 +108,22 @@ export function starterUnit(ctx: StarterContext): Record<string, unknown> {
         reflection_prompts: [''],
       };
     case 'revision':
-      return { ...base, sections: [newSection('revision_topic', nextFreeId(sectionIdPrefix('revision_topic'), new Set()))], questions: {}, scoring: { total_marks: 10, pass_mark: 5 } };
+      return {
+        ...base,
+        sections: [
+          newSection('revision_topic', nextFreeId(sectionIdPrefix('revision_topic'), new Set())),
+        ],
+        questions: {},
+        scoring: { total_marks: 10, pass_mark: 5 },
+      };
     case 'assessment':
-      return { ...base, sections: [newSection('assessment_part', nextFreeId(sectionIdPrefix('assessment_part'), new Set()))], questions: {}, scoring: { total_marks: 10, pass_mark: 5 } };
+      return {
+        ...base,
+        sections: [
+          newSection('assessment_part', nextFreeId(sectionIdPrefix('assessment_part'), new Set())),
+        ],
+        questions: {},
+        scoring: { total_marks: 10, pass_mark: 5 },
+      };
   }
 }

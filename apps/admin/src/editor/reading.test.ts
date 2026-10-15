@@ -40,7 +40,10 @@ describe('readingMeter', () => {
   });
 
   it('ignores bold markers and non-prose blocks', () => {
-    const blocks: AnyBlock[] = [paragraph('**Quick** now.'), { type: 'question', question_id: 'x' }];
+    const blocks: AnyBlock[] = [
+      paragraph('**Quick** now.'),
+      { type: 'question', question_id: 'x' },
+    ];
     expect(readingMeter(blocks, 'absorb').words).toBe(2);
   });
 

@@ -63,8 +63,12 @@ export function labelOf(key: string, ...units: unknown[]): string {
   if (key.startsWith('section:')) {
     const id = key.slice('section:'.length);
     for (const unit of units) {
-      const found = isRec(unit) && Array.isArray(unit.sections) ? unit.sections.find((s) => isRec(s) && s.id === id) : undefined;
-      if (isRec(found) && typeof found.heading === 'string' && found.heading.trim() !== '') return `Section "${found.heading}" (${id})`;
+      const found =
+        isRec(unit) && Array.isArray(unit.sections)
+          ? unit.sections.find((s) => isRec(s) && s.id === id)
+          : undefined;
+      if (isRec(found) && typeof found.heading === 'string' && found.heading.trim() !== '')
+        return `Section "${found.heading}" (${id})`;
     }
     return `Section ${id}`;
   }
@@ -145,7 +149,11 @@ export interface MergeResult {
   fromTheirs: string[];
 }
 
-function changeOf(base: Map<string, unknown>, other: Map<string, unknown>, key: string): Change | null {
+function changeOf(
+  base: Map<string, unknown>,
+  other: Map<string, unknown>,
+  key: string,
+): Change | null {
   const had = base.has(key);
   const has = other.has(key);
   if (!had && !has) return null;
@@ -155,12 +163,19 @@ function changeOf(base: Map<string, unknown>, other: Map<string, unknown>, key: 
 }
 
 /** Inserts each id missing from `skeleton` after the id that precedes it in the list it came from. */
-function withMembers(skeleton: string[], members: ReadonlySet<string>, sources: readonly (readonly string[])[]): string[] {
+function withMembers(
+  skeleton: string[],
+  members: ReadonlySet<string>,
+  sources: readonly (readonly string[])[],
+): string[] {
   const out = skeleton.filter((id) => members.has(id));
   for (const source of sources) {
     source.forEach((id, index) => {
       if (!members.has(id) || out.includes(id)) return;
-      const before = source.slice(0, index).reverse().find((candidate) => out.includes(candidate));
+      const before = source
+        .slice(0, index)
+        .reverse()
+        .find((candidate) => out.includes(candidate));
       if (before === undefined) out.unshift(id);
       else out.splice(out.indexOf(before) + 1, 0, id);
     });
@@ -168,7 +183,12 @@ function withMembers(skeleton: string[], members: ReadonlySet<string>, sources: 
   return out;
 }
 
-export function mergeUnits(base: unknown, mine: unknown, theirs: unknown, choices: Readonly<Record<string, Choice>> = {}): MergeResult {
+export function mergeUnits(
+  base: unknown,
+  mine: unknown,
+  theirs: unknown,
+  choices: Readonly<Record<string, Choice>> = {},
+): MergeResult {
   const b = itemsOf(base);
   const m = itemsOf(mine);
   const t = itemsOf(theirs);
@@ -191,7 +211,12 @@ export function mergeUnits(base: unknown, mine: unknown, theirs: unknown, choice
     } else if (m.has(key) === t.has(key) && sameContent(m.get(key), t.get(key))) {
       take.set(key, 'theirs');
     } else {
-      clashes.push({ key, label: labelOf(key, mine, theirs, base), mine: mineChange, theirs: theirChange });
+      clashes.push({
+        key,
+        label: labelOf(key, base, mine, theirs),
+        mine: mineChange,
+        theirs: theirChange,
+      });
       const choice = choices[key];
       if (choice) take.set(key, choice);
     }
@@ -209,7 +234,12 @@ export function mergeUnits(base: unknown, mine: unknown, theirs: unknown, choice
     const left = common(mineOrder, theirOrder);
     const right = common(theirOrder, mineOrder);
     if (left.some((id, i) => id !== right[i])) {
-      clashes.push({ key: ORDER_KEY, label: labelOf(ORDER_KEY), mine: 'changed', theirs: 'changed' });
+      clashes.push({
+        key: ORDER_KEY,
+        label: labelOf(ORDER_KEY),
+        mine: 'changed',
+        theirs: 'changed',
+      });
       const choice = choices[ORDER_KEY];
       if (choice) orderFrom = choice;
     }
@@ -223,7 +253,12 @@ export function mergeUnits(base: unknown, mine: unknown, theirs: unknown, choice
   const result: Rec = isRec(theirs) ? (structuredClone(theirs) as Rec) : {};
   const sectionsNow = new Map<string, unknown>();
   if (Array.isArray(result.sections)) {
-    result.sections.forEach((section, i) => sectionsNow.set(isRec(section) && typeof section.id === 'string' ? section.id : `#${i}`, section));
+    result.sections.forEach((section, i) =>
+      sectionsNow.set(
+        isRec(section) && typeof section.id === 'string' ? section.id : `#${i}`,
+        section,
+      ),
+    );
   }
   const questionsNow: Rec = isRec(result.questions) ? { ...result.questions } : {};
   let hasQuestions = isRec(result.questions) || (isRec(mine) && isRec(mine.questions));
@@ -253,10 +288,18 @@ export function mergeUnits(base: unknown, mine: unknown, theirs: unknown, choice
     }
   }
 
-  if (sectionsNow.size > 0 || Array.isArray(result.sections) || (isRec(mine) && Array.isArray(mine.sections))) {
+  if (
+    sectionsNow.size > 0 ||
+    Array.isArray(result.sections) ||
+    (isRec(mine) && Array.isArray(mine.sections))
+  ) {
     const members = new Set(sectionsNow.keys());
     const skeleton = orderFrom === 'mine' ? mineOrder : theirOrder;
-    const ordered = withMembers(skeleton, members, orderFrom === 'mine' ? [mineOrder, theirOrder] : [theirOrder, mineOrder]);
+    const ordered = withMembers(
+      skeleton,
+      members,
+      orderFrom === 'mine' ? [mineOrder, theirOrder] : [theirOrder, mineOrder],
+    );
     result.sections = ordered.map((id) => sectionsNow.get(id));
   }
   if (hasQuestions) result.questions = questionsNow;

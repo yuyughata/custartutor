@@ -2,7 +2,7 @@
 // version"; warnings never do. The same issues are also shown beside their fields; this panel lists all of them, so
 // none can hide inside a collapsed card.
 import { useState, type ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import { Small } from '../../ui/Text';
@@ -20,7 +20,23 @@ const SOURCE_LABEL: Record<EditorIssue['source'], string> = {
 
 const LIMIT = 60;
 
-function Item({ issue, unit, onJump }: { issue: EditorIssue; unit: unknown; onJump: (path: Path) => void }): ReactNode {
+/** The last named part of the path ("heading", "alt", "prompt"), for a message that does not say which field it is about. */
+function fieldOf(issue: EditorIssue): string {
+  const last = issue.path[issue.path.length - 1];
+  if (typeof last !== 'string' || issue.source !== 'schema') return '';
+  if (['sections', 'blocks', 'questions', 'nodes', 'answer'].includes(last)) return '';
+  return last.replace(/_/g, ' ');
+}
+
+function Item({
+  issue,
+  unit,
+  onJump,
+}: {
+  issue: EditorIssue;
+  unit: unknown;
+  onJump: (path: Path) => void;
+}): ReactNode {
   const place = describeLocation(unit, issue.owner);
   return (
     <Pressable
@@ -36,11 +52,22 @@ function Item({ issue, unit, onJump }: { issue: EditorIssue; unit: unknown; onJu
         gap: 2,
       }}
     >
-      <Text style={{ fontSize: 13, fontWeight: '800', color: issue.severity === 'error' ? colors.danger : colors.amberText }}>
+      <Text
+        style={{
+          fontSize: 13,
+          fontWeight: '800',
+          color: issue.severity === 'error' ? colors.danger : colors.amberText,
+        }}
+      >
         {issue.severity === 'error' ? '✕ Error' : '⚠ Warning'} · {place}
         {issue.where ? ` · ${issue.where}` : ''}
       </Text>
-      <Text style={{ fontSize: 14, lineHeight: 20, color: colors.text }}>{issue.message}</Text>
+      <Text style={{ fontSize: 14, lineHeight: 20, color: colors.text }}>
+        {fieldOf(issue)
+          ? `${fieldOf(issue).charAt(0).toUpperCase()}${fieldOf(issue).slice(1)}: `
+          : ''}
+        {issue.message}
+      </Text>
       <Text style={{ fontSize: 12, color: colors.subtle }}>
         {SOURCE_LABEL[issue.source]} · go to the field
       </Text>
@@ -64,9 +91,13 @@ export function IssueSummary({
   /** The checks are catching up with the last keystroke. */
   pending: boolean;
 }): ReactNode {
-  const [open, setOpen] = useState(true);
+  // Open by itself while there are errors (they block saving); a person's own choice wins once made.
+  const [chosen, setChosen] = useState<boolean | null>(null);
+  const open = chosen ?? errors > 0;
   const [all, setAll] = useState(false);
-  const sorted = [...issues].sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'error' ? -1 : 1));
+  const sorted = [...issues].sort((a, b) =>
+    a.severity === b.severity ? 0 : a.severity === 'error' ? -1 : 1,
+  );
   const shown = all ? sorted : sorted.slice(0, LIMIT);
   return (
     <View testID="issue-summary" style={{ gap: space[2] }}>
@@ -74,14 +105,21 @@ export function IssueSummary({
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         accessibilityLabel={`Checks: ${errors} errors, ${warnings} warnings. ${open ? 'Collapse' : 'Expand'} the list.`}
-        onPress={() => setOpen(!open)}
+        onPress={() => setChosen(!open)}
         style={{ flexDirection: 'row', gap: space[2], alignItems: 'center', minHeight: 32 }}
       >
         <Text aria-hidden style={{ fontSize: 14, color: colors.primaryDark, width: 14 }}>
           {open ? '▾' : '▸'}
         </Text>
         <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>Checks</Text>
-        <Text testID="issue-counts" style={{ fontSize: 14, color: errors > 0 ? colors.danger : colors.textSoft, fontWeight: '700' }}>
+        <Text
+          testID="issue-counts"
+          style={{
+            fontSize: 14,
+            color: errors > 0 ? colors.danger : colors.textSoft,
+            fontWeight: '700',
+          }}
+        >
           {errors} error{errors === 1 ? '' : 's'} · {warnings} warning{warnings === 1 ? '' : 's'}
           {pending ? ' · checking…' : ''}
         </Text>
@@ -95,13 +133,26 @@ export function IssueSummary({
           ) : (
             <>
               <Small>
-                {errors > 0 ? 'Errors stop you saving. ' : ''}Warnings are worth reading but never stop you saving. Press one to go to its field.
+                {errors > 0 ? 'Errors stop you saving. ' : ''}Warnings are worth reading but never
+                stop you saving. Press one to go to its field.
               </Small>
-              {shown.map((issue) => (
-                <Item key={issue.key} issue={issue} unit={unit} onJump={onJump} />
-              ))}
+              <ScrollView
+                style={{ maxHeight: 260 }}
+                contentContainerStyle={{ gap: space[2] }}
+                nestedScrollEnabled
+                testID="issue-list"
+              >
+                {shown.map((issue) => (
+                  <Item key={issue.key} issue={issue} unit={unit} onJump={onJump} />
+                ))}
+              </ScrollView>
               {!all && sorted.length > LIMIT ? (
-                <Button label={`Show all ${sorted.length}`} small variant="secondary" onPress={() => setAll(true)} />
+                <Button
+                  label={`Show all ${sorted.length}`}
+                  small
+                  variant="secondary"
+                  onPress={() => setAll(true)}
+                />
               ) : null}
             </>
           )}

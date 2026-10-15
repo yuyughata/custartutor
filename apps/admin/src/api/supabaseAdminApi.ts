@@ -586,7 +586,8 @@ export function createSupabaseAdminApi(supabase: SupabaseClient, options: LiveOp
           .eq('unit_id', unitId)
           .order('version_no', { ascending: true });
         return listOf(result, 'Could not read the published history.').map(
-          (row) => parseResponse(PublishedSnapshotRow, row, 'a published snapshot') as PublishedSnapshot,
+          (row) =>
+            parseResponse(PublishedSnapshotRow, row, 'a published snapshot') as PublishedSnapshot,
         );
       },
       async saveHumanVersion(input) {

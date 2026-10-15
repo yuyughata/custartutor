@@ -13,12 +13,22 @@ import {
 
 describe('blockSummary', () => {
   it('says what each kind of block is about, without the bold markers', () => {
-    expect(blockSummary({ type: 'paragraph', text: 'The **market** is busy.' })).toBe('The market is busy.');
-    expect(blockSummary({ type: 'definition', term: 'Noun', meaning: 'A naming word' })).toBe('Noun: A naming word');
-    expect(blockSummary({ type: 'bullets', items: [{ text: 'one' }, { text: 'two' }] })).toBe('2 items: one');
-    expect(blockSummary({ type: 'table', headers: ['a', 'b'], rows: [['1', '2']] })).toBe('2 columns, 1 row');
+    expect(blockSummary({ type: 'paragraph', text: 'The **market** is busy.' })).toBe(
+      'The market is busy.',
+    );
+    expect(blockSummary({ type: 'definition', term: 'Noun', meaning: 'A naming word' })).toBe(
+      'Noun: A naming word',
+    );
+    expect(blockSummary({ type: 'bullets', items: [{ text: 'one' }, { text: 'two' }] })).toBe(
+      '2 items: one',
+    );
+    expect(blockSummary({ type: 'table', headers: ['a', 'b'], rows: [['1', '2']] })).toBe(
+      '2 columns, 1 row',
+    );
     expect(blockSummary({ type: 'question', question_id: 'q_name' })).toBe('q_name');
-    expect(blockSummary({ type: 'unknown', original_type: 'poll', raw: {} })).toBe('unrecognised block type "poll"');
+    expect(blockSummary({ type: 'unknown', original_type: 'poll', raw: {} })).toBe(
+      'unrecognised block type "poll"',
+    );
   });
 
   it('is empty for a new block and for rubbish', () => {
@@ -42,12 +52,22 @@ describe('blockSummary', () => {
 });
 
 describe('table operations', () => {
-  const table = { type: 'table', headers: ['Animal', 'Sound'], rows: [['cat', 'meow'], ['dog', 'woof']] };
+  const table = {
+    type: 'table',
+    headers: ['Animal', 'Sound'],
+    rows: [
+      ['cat', 'meow'],
+      ['dog', 'woof'],
+    ],
+  };
 
   it('adds a column to the header and every row', () => {
     const next = tableAddColumn(table);
     expect(next.headers).toEqual(['Animal', 'Sound', '']);
-    expect(next.rows).toEqual([['cat', 'meow', ''], ['dog', 'woof', '']]);
+    expect(next.rows).toEqual([
+      ['cat', 'meow', ''],
+      ['dog', 'woof', ''],
+    ]);
   });
 
   it('removes a column from the header and every row, but never the last one', () => {
@@ -64,7 +84,11 @@ describe('table operations', () => {
   });
 
   it('adds a row as wide as the header and keeps at least one row', () => {
-    expect(tableAddRow(table).rows).toEqual([['cat', 'meow'], ['dog', 'woof'], ['', '']]);
+    expect(tableAddRow(table).rows).toEqual([
+      ['cat', 'meow'],
+      ['dog', 'woof'],
+      ['', ''],
+    ]);
     const one = tableRemoveRow({ ...table, rows: [['cat', 'meow']] }, 0);
     expect(one.rows).toEqual([['cat', 'meow']]);
     expect(tableRemoveRow(table, 1).rows).toEqual([['cat', 'meow']]);

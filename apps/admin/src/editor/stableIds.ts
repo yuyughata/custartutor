@@ -59,8 +59,10 @@ export function publishedIdsOf(snapshots: readonly PublishedSnapshot[]): Publish
     if (isRec(content.questions)) {
       for (const [key, question] of Object.entries(content.questions)) {
         add(out.questions, key, version);
-        const hotspots = isRec(question) && isRec(question.answer) ? question.answer.hotspots : undefined;
-        if (Array.isArray(hotspots)) hotspots.forEach((h) => isRec(h) && add(out.hotspots, h.id, version));
+        const hotspots =
+          isRec(question) && isRec(question.answer) ? question.answer.hotspots : undefined;
+        if (Array.isArray(hotspots))
+          hotspots.forEach((h) => isRec(h) && add(out.hotspots, h.id, version));
       }
     }
     for (const script of scripts) {
@@ -69,7 +71,8 @@ export function publishedIdsOf(snapshots: readonly PublishedSnapshot[]): Publish
       }
     }
     const variants = isRec(content.workbook) ? content.workbook.practice_variants : undefined;
-    if (Array.isArray(variants)) variants.forEach((v) => isRec(v) && add(out.variants, v.id, version));
+    if (Array.isArray(variants))
+      variants.forEach((v) => isRec(v) && add(out.variants, v.id, version));
   }
   return out;
 }
@@ -157,14 +160,23 @@ export function publishedIdIssues(
   }
   return [...merged.values()].map(({ versions, ...issue }) => ({
     ...issue,
-    message: issue.message.replace(/\(it is in published version \d+\)\.$/, `(published in ${versionsText(versions)}).`),
+    message: issue.message.replace(
+      /\(it is in published version \d+\)\.$/,
+      `(published in ${versionsText(versions)}).`,
+    ),
   }));
 }
 
 /** Tutor node, hotspot and practice-variant ids that a published snapshot had and the working copy has not. */
 export function droppedSoftIds(working: unknown, ids: PublishedIds): IdIssue[] {
   const now = publishedIdsOf([
-    { id: 'working', version_no: 0, is_current: false, published_at: '', content: working as never },
+    {
+      id: 'working',
+      version_no: 0,
+      is_current: false,
+      published_at: '',
+      content: working as never,
+    },
   ]);
   const out: IdIssue[] = [];
   const kinds: [keyof PublishedIds, string, string][] = [

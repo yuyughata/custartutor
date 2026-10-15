@@ -23,8 +23,9 @@ import { newKey } from '../lib/ids';
 import { isTerminal } from '../lib/jobText';
 import { buildLintView, parseVersionContent } from '../lib/lint';
 import type { JumpTarget } from '../lib/lintPaths';
-import { whyNot } from '../lib/roles';
+import { can, whyNot } from '../lib/roles';
 import { useApi, useRuntime, useSession } from '../runtime/RuntimeProvider';
+import { useGuardedRouter } from '../runtime/UnsavedGuard';
 import { Badge, ContentStatusBadge, VersionStatusBadge } from '../ui/Badge';
 import { Banner } from '../ui/Banner';
 import { Button } from '../ui/Button';
@@ -377,9 +378,11 @@ function Workspace({ context }: { context: UnitContext }): ReactNode {
 }
 
 export default function UnitWorkspaceScreen(): ReactNode {
-  const { unitId } = useLocalSearchParams<{ unitId: string }>();
+  const { unitId, saved } = useLocalSearchParams<{ unitId: string; saved?: string }>();
   const api = useApi();
   const { recheckAuth } = useRuntime();
+  const { role } = useSession();
+  const router = useGuardedRouter();
   const catalog = useCatalog();
   const context = useLoad(() => api.units.get(unitId), [api, unitId]);
   usePageTitle(
@@ -419,6 +422,21 @@ export default function UnitWorkspaceScreen(): ReactNode {
                     },
                     { label: `Unit ${data.unit.unit_no}` },
                   ]}
+                  actions={
+                    <Button
+                      label={
+                        can(role, 'unit.edit') ? 'Edit by hand' : 'Open the editor (read only)'
+                      }
+                      variant="secondary"
+                      testID="edit-by-hand"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/units/[unitId]/edit',
+                          params: { unitId: data.unit.id },
+                        })
+                      }
+                    />
+                  }
                   badges={
                     <>
                       <ContentStatusBadge status={data.unit.status} />
@@ -428,6 +446,18 @@ export default function UnitWorkspaceScreen(): ReactNode {
                     </>
                   }
                 />
+                {saved ? (
+                  <Banner
+                    tone="success"
+                    title={`Saved as version ${saved}, a draft written by a person`}
+                    testID="saved-banner"
+                  >
+                    <P>
+                      Nothing is approved or published yet. Read it below, then submit it for review
+                      like any other draft.
+                    </P>
+                  </Banner>
+                ) : null}
                 <Workspace key={data.unit.id} context={data} />
               </View>
             );

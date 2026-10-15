@@ -59,29 +59,48 @@ function isRec(value: unknown): value is Rec {
 
 /** Lint names a section by id (`sections.places_in_home`); the editor addresses it by position. */
 function normalizePath(path: Path, unit: unknown): Path {
-  if (path[0] === 'sections' && typeof path[1] === 'string' && isRec(unit) && Array.isArray(unit.sections)) {
+  if (
+    path[0] === 'sections' &&
+    typeof path[1] === 'string' &&
+    isRec(unit) &&
+    Array.isArray(unit.sections)
+  ) {
     const index = unit.sections.findIndex((s) => isRec(s) && s.id === path[1]);
     if (index >= 0) return ['sections', index, ...path.slice(2)];
   }
   return path;
 }
 
-function schemaIssues(raw: unknown): { parsed: UnitContent | null; problems: { path: string; message: string }[] } {
+function schemaIssues(raw: unknown): {
+  parsed: UnitContent | null;
+  problems: { path: string; message: string }[];
+} {
   try {
     return { parsed: parseUnit(raw), problems: [] };
   } catch (error) {
     if (error instanceof UnitParseError) return { parsed: null, problems: error.issues };
     return {
       parsed: null,
-      problems: [{ path: '', message: error instanceof Error ? error.message : 'The content could not be read.' }],
+      problems: [
+        {
+          path: '',
+          message: error instanceof Error ? error.message : 'The content could not be read.',
+        },
+      ],
     };
   }
 }
 
-function walkStrings(value: unknown, path: (string | number)[], visit: (path: Path, text: string) => void): void {
+function walkStrings(
+  value: unknown,
+  path: (string | number)[],
+  visit: (path: Path, text: string) => void,
+): void {
   if (typeof value === 'string') visit(path, value);
-  else if (Array.isArray(value)) value.forEach((item, index) => walkStrings(item, [...path, index], visit));
-  else if (isRec(value)) for (const [key, item] of Object.entries(value)) walkStrings(item, [...path, key], visit);
+  else if (Array.isArray(value))
+    value.forEach((item, index) => walkStrings(item, [...path, index], visit));
+  else if (isRec(value))
+    for (const [key, item] of Object.entries(value)) walkStrings(item, [...path, key], visit);
 }
 
 export function validateUnit(working: unknown, options: ValidateOptions = {}): ValidationResult {
@@ -113,7 +132,8 @@ export function validateUnit(working: unknown, options: ValidateOptions = {}): V
 
   // 1. the strict parse
   const { parsed, problems } = schemaIssues(working);
-  for (const problem of problems) add('error', 'schema', 'does_not_parse', problem.message, parsePath(problem.path));
+  for (const problem of problems)
+    add('error', 'schema', 'does_not_parse', problem.message, parsePath(problem.path));
 
   // 2. the publish-gate lint (on the parsed unit; on the raw one while it does not parse, as far as it can)
   let lint: LintReport | null = null;
@@ -133,7 +153,8 @@ export function validateUnit(working: unknown, options: ValidateOptions = {}): V
       );
     for (const issue of lint.errors) {
       const path = issue.path ? parsePath(issue.path) : [];
-      if (!duplicate(issue.message, normalizePath(path, working))) add('error', 'lint', issue.code, issue.message, path);
+      if (!duplicate(issue.message, normalizePath(path, working)))
+        add('error', 'lint', issue.code, issue.message, path);
     }
     for (const issue of lint.warnings) {
       add('warning', 'lint', issue.code, issue.message, issue.path ? parsePath(issue.path) : []);
@@ -166,7 +187,13 @@ export function validateUnit(working: unknown, options: ValidateOptions = {}): V
   }
   walkStrings(working, [], (path, text) => {
     if (hasUnmatchedMarker(text)) {
-      add('warning', 'editor', 'unmatched_bold', 'A ** marker has no partner, so it will show as two stars. Close the bold with another ** or remove it.', path);
+      add(
+        'warning',
+        'editor',
+        'unmatched_bold',
+        'A ** marker has no partner, so it will show as two stars. Close the bold with another ** or remove it.',
+        path,
+      );
     }
   });
 
@@ -212,7 +239,10 @@ export function issuesAt(issues: readonly EditorIssue[], owner: Path): EditorIss
 }
 
 /** Count of issues at or below a path, for a card's "N problems inside" roll-up. */
-export function countUnder(issues: readonly EditorIssue[], prefix: Path): { errors: number; warnings: number } {
+export function countUnder(
+  issues: readonly EditorIssue[],
+  prefix: Path,
+): { errors: number; warnings: number } {
   const key = pathKey(prefix);
   let errors = 0;
   let warnings = 0;

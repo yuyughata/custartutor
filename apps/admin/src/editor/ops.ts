@@ -76,7 +76,8 @@ export function questionUsage(unit: Unit, id: string): string[] {
     }
   });
   for (const [t, tier] of listAt<Rec>(unit, ['workbook', 'tiers']).entries()) {
-    if (listAt<string>(tier, ['question_ids']).includes(id)) out.push(`workbook tier ${String(tier.tier ?? t + 1)}`);
+    if (listAt<string>(tier, ['question_ids']).includes(id))
+      out.push(`workbook tier ${String(tier.tier ?? t + 1)}`);
   }
   if (listAt<string>(unit, ['workbook', 'quick_answer_drill', 'question_ids']).includes(id)) {
     out.push('the quick-answer drill');
@@ -156,8 +157,14 @@ export function removeSection(unit: Unit, index: number): OpResult {
   for (const key of ['script', 'helper_script'] as const) {
     const rows = listAt<Rec>(next, ['teacher_manual', key]);
     if (rows.some((row) => row.section_id === id)) {
-      next = setAt(next, ['teacher_manual', key], rows.filter((row) => row.section_id !== id));
-      notes.push(key === 'script' ? "removed its row from the teacher's script" : 'removed its helper steps');
+      next = setAt(
+        next,
+        ['teacher_manual', key],
+        rows.filter((row) => row.section_id !== id),
+      );
+      notes.push(
+        key === 'script' ? "removed its row from the teacher's script" : 'removed its helper steps',
+      );
     }
   }
   return { unit: next, notes };
@@ -202,7 +209,9 @@ export function duplicateSection(unit: Unit, index: number, taken: ReadonlySet<s
     }
     return copy;
   });
-  const script = isRec(source.tutor_script) ? (structuredClone(source.tutor_script) as Rec) : undefined;
+  const script = isRec(source.tutor_script)
+    ? (structuredClone(source.tutor_script) as Rec)
+    : undefined;
   if (script) {
     for (const node of listAt<Rec>(script, ['nodes'])) {
       const expectId = getAt(node, ['expect', 'question_id']);
@@ -246,7 +255,12 @@ export function moveBlock(unit: Unit, sectionIndex: number, from: number, to: nu
 export function duplicateBlock(unit: Unit, sectionIndex: number, blockIndex: number): Unit {
   const block = getAt(unit, ['sections', sectionIndex, 'blocks', blockIndex]);
   if (!isRec(block) || block.type === 'question') return unit;
-  return insertAt(unit, ['sections', sectionIndex, 'blocks'], blockIndex + 1, structuredClone(block));
+  return insertAt(
+    unit,
+    ['sections', sectionIndex, 'blocks'],
+    blockIndex + 1,
+    structuredClone(block),
+  );
 }
 
 // --- questions -------------------------------------------------------------------------------------------------------
@@ -313,7 +327,10 @@ export function removeQuestion(unit: Unit, id: string): OpResult {
       next = setAt(next, ['sections', si, 'blocks'], kept);
     }
   });
-  if (blocksRemoved > 0) notes.push(`removed ${blocksRemoved} question block${blocksRemoved === 1 ? '' : 's'} from sections`);
+  if (blocksRemoved > 0)
+    notes.push(
+      `removed ${blocksRemoved} question block${blocksRemoved === 1 ? '' : 's'} from sections`,
+    );
 
   let nodesCleared = 0;
   const clearNodes = (scriptPath: Path): void => {
@@ -340,7 +357,10 @@ export function removeQuestion(unit: Unit, id: string): OpResult {
     next = setAt(
       next,
       ['workbook', 'tiers'],
-      tiers.map((t) => ({ ...t, question_ids: listAt<string>(t, ['question_ids']).filter((q) => q !== id) })),
+      tiers.map((t) => ({
+        ...t,
+        question_ids: listAt<string>(t, ['question_ids']).filter((q) => q !== id),
+      })),
     );
     notes.push('removed it from the workbook tiers');
   }
@@ -348,7 +368,9 @@ export function removeQuestion(unit: Unit, id: string): OpResult {
     next = setAt(
       next,
       ['workbook', 'quick_answer_drill', 'question_ids'],
-      listAt<string>(next, ['workbook', 'quick_answer_drill', 'question_ids']).filter((q) => q !== id),
+      listAt<string>(next, ['workbook', 'quick_answer_drill', 'question_ids']).filter(
+        (q) => q !== id,
+      ),
     );
     notes.push('removed it from the quick-answer drill');
   }
@@ -357,7 +379,10 @@ export function removeQuestion(unit: Unit, id: string): OpResult {
     next = setAt(
       next,
       ['workbook', 'practice_variants'],
-      variants.map((v) => ({ ...v, question_ids: listAt<string>(v, ['question_ids']).filter((q) => q !== id) })),
+      variants.map((v) => ({
+        ...v,
+        question_ids: listAt<string>(v, ['question_ids']).filter((q) => q !== id),
+      })),
     );
     notes.push('removed it from the practice sets');
   }
@@ -375,14 +400,22 @@ export function scriptPath(sectionIndex: number | null): Path {
   return sectionIndex === null ? ['tutor_script'] : ['sections', sectionIndex, 'tutor_script'];
 }
 
-export function addNode(unit: Unit, sectionIndex: number | null, taken: ReadonlySet<string>): Added {
+export function addNode(
+  unit: Unit,
+  sectionIndex: number | null,
+  taken: ReadonlySet<string>,
+): Added {
   const path = scriptPath(sectionIndex);
   const nodeIds = listAt<Rec>(unit, [...path, 'nodes']).map((n) => String(n.id ?? ''));
   const used = new Set([...taken, ...nodeIds]);
   const id = nextFreeId(NODE_ID_PREFIX, used);
   const node = newTutorNode(id);
   return {
-    unit: appendAt(isRec(getAt(unit, path)) ? unit : setAt(unit, path, { nodes: [] }), [...path, 'nodes'], node),
+    unit: appendAt(
+      isRec(getAt(unit, path)) ? unit : setAt(unit, path, { nodes: [] }),
+      [...path, 'nodes'],
+      node,
+    ),
     id,
   };
 }
@@ -448,18 +481,28 @@ export function removePeriod(unit: Unit, index: number): Unit {
  * Puts a section into a period of the session plan, or takes it out. The sections of a period are kept in the order of
  * the textbook; an id that is not a section of the unit (a leftover) is kept at the end, where the person can see it.
  */
-export function setPeriodSection(unit: Unit, periodIndex: number, sectionId: string, on: boolean): Unit {
+export function setPeriodSection(
+  unit: Unit,
+  periodIndex: number,
+  sectionId: string,
+  on: boolean,
+): Unit {
   const current = listAt<string>(unit, ['session_plan', periodIndex, 'sections']);
   const chosen = new Set(current.filter((id) => id !== sectionId));
   if (on) chosen.add(sectionId);
   const known = sections(unit).map((s) => String(s.id ?? ''));
-  const ordered = [...known.filter((id) => chosen.has(id)), ...[...chosen].filter((id) => !known.includes(id))];
+  const ordered = [
+    ...known.filter((id) => chosen.has(id)),
+    ...[...chosen].filter((id) => !known.includes(id)),
+  ];
   return setAt(unit, ['session_plan', periodIndex, 'sections'], ordered);
 }
 
 /** The segments (Start, Teach, ...) a period does not list yet. */
 export function missingSegments(unit: Unit, periodIndex: number): string[] {
-  const have = new Set(listAt<Rec>(unit, ['session_plan', periodIndex, 'minutes']).map((m) => m.segment));
+  const have = new Set(
+    listAt<Rec>(unit, ['session_plan', periodIndex, 'minutes']).map((m) => m.segment),
+  );
   return SEGMENTS.filter((segment) => !have.has(segment));
 }
 
@@ -479,7 +522,9 @@ export function periodMinutes(unit: Unit, index: number): number {
 
 /** Sections that are in no period of the session plan. */
 export function sectionsOutsidePlan(unit: Unit): string[] {
-  const planned = new Set(listAt<Rec>(unit, ['session_plan']).flatMap((p) => listAt<string>(p, ['sections'])));
+  const planned = new Set(
+    listAt<Rec>(unit, ['session_plan']).flatMap((p) => listAt<string>(p, ['sections'])),
+  );
   return sections(unit)
     .map((s) => String(s.id ?? ''))
     .filter((id) => id !== '' && !planned.has(id));
@@ -520,7 +565,10 @@ export function setEvidence(unit: Unit, option: string, on: boolean): Unit {
   return setAt(
     unit,
     ['evidence_options'],
-    [...EVIDENCE_CHOICES.filter((choice) => have.has(choice)), ...[...have].filter((o) => !(EVIDENCE_CHOICES as readonly string[]).includes(o))],
+    [
+      ...EVIDENCE_CHOICES.filter((choice) => have.has(choice)),
+      ...[...have].filter((o) => !(EVIDENCE_CHOICES as readonly string[]).includes(o)),
+    ],
   );
 }
 

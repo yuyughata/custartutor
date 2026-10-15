@@ -6,6 +6,10 @@ import { charCount, hasUnmatchedMarker, splitBold, toggleBold, wordCount } from 
 import { colors, radii } from '../../ui/theme';
 import type { TextEditorProps } from './textEditorTypes';
 
+// The same stack react-native-web gives its Text, so the plain DOM elements here do not fall back to the browser's serif.
+const FONT =
+  'System, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
 const box = {
   width: '100%',
   boxSizing: 'border-box' as const,
@@ -16,7 +20,7 @@ const box = {
   lineHeight: '22px',
   color: colors.text,
   background: colors.white,
-  fontFamily: 'inherit',
+  fontFamily: FONT,
 };
 
 export function TextEditor({
@@ -74,11 +78,22 @@ export function TextEditor({
       ...box,
       borderColor: invalid ? colors.danger : colors.borderStrong,
       backgroundColor: readOnly ? colors.page : colors.white,
-      ...(mono ? { fontFamily: 'monospace' } : {}),
+      ...(mono ? { fontFamily: 'ui-monospace, Menlo, Consolas, monospace' } : {}),
       ...(multiline ? { resize: 'vertical' as const } : { minHeight: 40 }),
     },
-    onKeyDown: (event: { ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; key: string; preventDefault: () => void }) => {
-      if (rich && (event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'b') {
+    onKeyDown: (event: {
+      ctrlKey: boolean;
+      metaKey: boolean;
+      shiftKey: boolean;
+      key: string;
+      preventDefault: () => void;
+    }) => {
+      if (
+        rich &&
+        (event.ctrlKey || event.metaKey) &&
+        !event.shiftKey &&
+        event.key.toLowerCase() === 'b'
+      ) {
         event.preventDefault();
         bold();
       }
@@ -88,9 +103,20 @@ export function TextEditor({
   const segments = rich ? splitBold(value) : [];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          flexWrap: 'wrap',
+        }}
+      >
         {hideLabel ? null : (
-          <label htmlFor={id} style={{ fontSize: 14, fontWeight: 600, color: colors.textSoft }}>
+          <label
+            htmlFor={id}
+            style={{ fontSize: 14, fontWeight: 600, color: colors.textSoft, fontFamily: FONT }}
+          >
             {label}
           </label>
         )}
@@ -110,6 +136,7 @@ export function TextEditor({
               color: colors.primaryDark,
               fontWeight: 800,
               fontSize: 14,
+              fontFamily: FONT,
               cursor: 'pointer',
             }}
           >
@@ -137,7 +164,7 @@ export function TextEditor({
         />
       )}
       {hint ? (
-        <span id={`${id}-hint`} style={{ fontSize: 13, color: colors.subtle }}>
+        <span id={`${id}-hint`} style={{ fontSize: 13, color: colors.subtle, fontFamily: FONT }}>
           {hint}
         </span>
       ) : null}
@@ -153,16 +180,21 @@ export function TextEditor({
             lineHeight: '22px',
             color: colors.text,
             background: colors.primaryTint,
+            fontFamily: FONT,
             whiteSpace: 'pre-wrap',
           }}
         >
           {segments.map((part, index) =>
-            part.bold ? <strong key={index}>{part.text}</strong> : <span key={index}>{part.text}</span>,
+            part.bold ? (
+              <strong key={index}>{part.text}</strong>
+            ) : (
+              <span key={index}>{part.text}</span>
+            ),
           )}
         </div>
       ) : null}
       {(counts || rich) && multiline ? (
-        <span style={{ fontSize: 12, color: colors.subtle }}>
+        <span style={{ fontSize: 12, color: colors.subtle, fontFamily: FONT }}>
           {charCount(value)} characters · {wordCount(value)} words
           {hasUnmatchedMarker(value) ? ' · ⚠ a ** marker has no partner' : ''}
         </span>

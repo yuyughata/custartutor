@@ -48,7 +48,9 @@ const layoutReply = {
   chapters_created: 0,
   created_unit_ids: [UNIT_ID],
   created_chapter_ids: [],
-  layout: [{ chapter_id: 'c1', number: 1, title: 'Our Environment', units: [{ id: UNIT_ID, unit_no: 4 }] }],
+  layout: [
+    { chapter_id: 'c1', number: 1, title: 'Our Environment', units: [{ id: UNIT_ID, unit_no: 4 }] },
+  ],
 };
 
 describe('apply_unit_layout', () => {
@@ -101,7 +103,11 @@ describe('apply_unit_layout', () => {
     const { supabase, api } = setup();
     const detail = [{ id: 'u6', title: 'Unit 6', from: 6, to: 7 }];
     supabase.onRpc('apply_unit_layout', {
-      error: { message: 'layout_renumbers_versioned_units', code: '22023', details: JSON.stringify(detail) },
+      error: {
+        message: 'layout_renumbers_versioned_units',
+        code: '22023',
+        details: JSON.stringify(detail),
+      },
     });
     const error = await caught(api.chapters.applyLayout(SCHEME_ID, layout));
     expect(error.code).toBe('layout_renumbers_versioned_units');
@@ -115,8 +121,20 @@ describe('the published history', () => {
     const { supabase, api } = setup();
     supabase.onTable('published_units', {
       data: [
-        { id: 'p1', version_no: 1, is_current: false, published_at: '2026-10-01T00:00:00Z', content: goldenUnit2 },
-        { id: 'p2', version_no: 2, is_current: true, published_at: '2026-10-02T00:00:00Z', content: goldenUnit2 },
+        {
+          id: 'p1',
+          version_no: 1,
+          is_current: false,
+          published_at: '2026-10-01T00:00:00Z',
+          content: goldenUnit2,
+        },
+        {
+          id: 'p2',
+          version_no: 2,
+          is_current: true,
+          published_at: '2026-10-02T00:00:00Z',
+          content: goldenUnit2,
+        },
       ],
     });
     const history = await api.units.publishedHistory(UNIT_ID);
@@ -169,13 +187,24 @@ describe('saving a human version', () => {
 
   it('shows a stale base as a conflict, and a role problem as forbidden', async () => {
     const { supabase, api } = setup();
-    const input = { unitId: UNIT_ID, content: goldenUnit2 as never, lintReport: report, baseVersionId: VERSION_ID };
-    supabase.onRpc('create_unit_version_draft', { error: { message: 'stale_base', code: '22023' } });
+    const input = {
+      unitId: UNIT_ID,
+      content: goldenUnit2 as never,
+      lintReport: report,
+      baseVersionId: VERSION_ID,
+    };
+    supabase.onRpc('create_unit_version_draft', {
+      error: { message: 'stale_base', code: '22023' },
+    });
     const stale = await caught(api.units.saveHumanVersion(input));
     expect(stale).toMatchObject({ kind: 'conflict', code: 'stale_base' });
-    supabase.onRpc('create_unit_version_draft', { error: { message: 'admin_role_required', code: '42501' } });
+    supabase.onRpc('create_unit_version_draft', {
+      error: { message: 'admin_role_required', code: '42501' },
+    });
     expect((await caught(api.units.saveHumanVersion(input))).kind).toBe('forbidden');
-    supabase.onRpc('create_unit_version_draft', { error: { message: 'unit_not_editable', code: '22023' } });
+    supabase.onRpc('create_unit_version_draft', {
+      error: { message: 'unit_not_editable', code: '22023' },
+    });
     expect((await caught(api.units.saveHumanVersion(input))).message).toContain('removed');
   });
 });

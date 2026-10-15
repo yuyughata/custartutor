@@ -11,9 +11,18 @@ import { Select } from '../../ui/Select';
 import type { SelectOption } from '../../ui/selectTypes';
 import { Small } from '../../ui/Text';
 import { colors, radii, space } from '../../ui/theme';
-import { appendAt, getAt, insertAt, moveItem, pathKey, removeAt, samePath, type Path } from '../path';
+import {
+  appendAt,
+  getAt,
+  insertAt,
+  moveItem,
+  pathKey,
+  removeAt,
+  samePath,
+  type Path,
+} from '../path';
 import type { EditorIssue } from '../validate';
-import { IssuesContext, useActions, useEnv, useIssuesAt } from './context';
+import { IssuesContext, OpenContext, useActions, useEnv, useIssuesAt } from './context';
 import { TextEditor } from './TextEditor';
 
 // --- problems ------------------------------------------------------------------------------------------------------
@@ -89,10 +98,12 @@ function sameProps(a: Props, b: Props): boolean {
   return true;
 }
 
-function memoPath<P extends { path: Path }>(component: (props: P) => ReactNode): (props: P) => ReactNode {
-  return memo(component, (a, b) => sameProps(a as unknown as Props, b as unknown as Props)) as unknown as (
-    props: P,
-  ) => ReactNode;
+function memoPath<P extends { path: Path }>(
+  component: (props: P) => ReactNode,
+): (props: P) => ReactNode {
+  return memo(component, (a, b) =>
+    sameProps(a as unknown as Props, b as unknown as Props),
+  ) as unknown as (props: P) => ReactNode;
 }
 
 // --- text ------------------------------------------------------------------------------------------------------------
@@ -139,7 +150,11 @@ export const Txt = memoPath(function Txt({
       <TextEditor
         label={label}
         value={value}
-        onChange={(next) => (onValue ? onValue(next) : actions.setField(path, optional && next === '' ? undefined : next))}
+        onChange={(next) =>
+          onValue
+            ? onValue(next)
+            : actions.setField(path, optional && next === '' ? undefined : next)
+        }
         fieldKey={pathKey(path)}
         readOnly={env.readOnly || locked === true}
         invalid={issues.some((issue) => issue.severity === 'error')}
@@ -169,7 +184,14 @@ export interface NumProps {
  * A number box. The text is kept as typed ("1." stays "1." while the person is still typing) and the number is
  * written to the working copy as soon as the text is one; an empty box removes the value.
  */
-export const Num = memoPath(function Num({ path, label, value, hint, locked, width }: NumProps): ReactNode {
+export const Num = memoPath(function Num({
+  path,
+  label,
+  value,
+  hint,
+  locked,
+  width,
+}: NumProps): ReactNode {
   const actions = useActions();
   const env = useEnv();
   const issues = useIssuesAt(path);
@@ -217,12 +239,24 @@ export interface PickProps {
   onPick?: (value: string) => void;
 }
 
-export const Pick = memo(function Pick({ path, label, value, options, placeholder, hint, hideLabel, onPick }: PickProps): ReactNode {
+export const Pick = memo(function Pick({
+  path,
+  label,
+  value,
+  options,
+  placeholder,
+  hint,
+  hideLabel,
+  onPick,
+}: PickProps): ReactNode {
   const actions = useActions();
   const env = useEnv();
   const issues = useIssuesAt(path);
   return (
-    <View style={{ gap: space[1], minWidth: 120 }} {...({ dataSet: { field: pathKey(path) } } as object)}>
+    <View
+      style={{ gap: space[1], minWidth: 120 }}
+      {...({ dataSet: { field: pathKey(path) } } as object)}
+    >
       <Select
         label={label}
         value={value}
@@ -231,7 +265,9 @@ export const Pick = memo(function Pick({ path, label, value, options, placeholde
         {...(placeholder !== undefined ? { placeholder } : {})}
         {...(hint ? { hint } : {})}
         {...(hideLabel ? { hideLabel } : {})}
-        onChange={(next) => (onPick ? onPick(next) : actions.setField(path, next === '' ? undefined : next))}
+        onChange={(next) =>
+          onPick ? onPick(next) : actions.setField(path, next === '' ? undefined : next)
+        }
       />
       <IssueLines issues={issues} />
     </View>
@@ -250,7 +286,15 @@ export function Flag({
   hint?: string;
 }): ReactNode {
   const env = useEnv();
-  return <Toggle label={label} value={value} onChange={onChange} disabled={env.readOnly} {...(hint ? { hint } : {})} />;
+  return (
+    <Toggle
+      label={label}
+      value={value}
+      onChange={onChange}
+      disabled={env.readOnly}
+      {...(hint ? { hint } : {})}
+    />
+  );
 }
 
 // --- toolbars and lists ------------------------------------------------------------------------------------------------
@@ -269,19 +313,50 @@ export interface BarProps {
 }
 
 /** Move, duplicate and remove for one item. Hidden entirely when the editor is read-only. */
-export function ItemBar({ noun, canUp = true, canDown = true, onUp, onDown, onDuplicate, onRemove, removeBlockedReason }: BarProps): ReactNode {
+export function ItemBar({
+  noun,
+  canUp = true,
+  canDown = true,
+  onUp,
+  onDown,
+  onDuplicate,
+  onRemove,
+  removeBlockedReason,
+}: BarProps): ReactNode {
   const env = useEnv();
   if (env.readOnly) return null;
   return (
-    <View style={{ flexDirection: 'row', gap: space[2], flexWrap: 'wrap', alignItems: 'flex-start' }}>
+    <View
+      style={{ flexDirection: 'row', gap: space[2], flexWrap: 'wrap', alignItems: 'flex-start' }}
+    >
       {onUp ? (
-        <Button label="↑" accessibilityLabel={`Move ${noun} up`} variant="secondary" small disabled={!canUp} onPress={onUp} />
+        <Button
+          label="↑"
+          accessibilityLabel={`Move ${noun} up`}
+          variant="secondary"
+          small
+          disabled={!canUp}
+          onPress={onUp}
+        />
       ) : null}
       {onDown ? (
-        <Button label="↓" accessibilityLabel={`Move ${noun} down`} variant="secondary" small disabled={!canDown} onPress={onDown} />
+        <Button
+          label="↓"
+          accessibilityLabel={`Move ${noun} down`}
+          variant="secondary"
+          small
+          disabled={!canDown}
+          onPress={onDown}
+        />
       ) : null}
       {onDuplicate ? (
-        <Button label="Duplicate" accessibilityLabel={`Duplicate ${noun}`} variant="secondary" small onPress={onDuplicate} />
+        <Button
+          label="Duplicate"
+          accessibilityLabel={`Duplicate ${noun}`}
+          variant="secondary"
+          small
+          onPress={onDuplicate}
+        />
       ) : null}
       {onRemove ? (
         <Button
@@ -298,23 +373,55 @@ export function ItemBar({ noun, canUp = true, canDown = true, onUp, onDown, onDu
   );
 }
 
-export function AddButton({ label, onPress, disabled, reason }: { label: string; onPress: () => void; disabled?: boolean; reason?: string | null }): ReactNode {
+export function AddButton({
+  label,
+  onPress,
+  disabled,
+  reason,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  reason?: string | null;
+}): ReactNode {
   const env = useEnv();
   if (env.readOnly) return null;
   return (
     <View style={{ alignItems: 'flex-start' }}>
-      <Button label={label} variant="secondary" small onPress={onPress} disabled={disabled === true} reason={reason} />
+      <Button
+        label={label}
+        variant="secondary"
+        small
+        onPress={onPress}
+        disabled={disabled === true}
+        reason={reason}
+      />
     </View>
   );
 }
 
 /** A choice that does something when picked (add a block, add a question) and springs back to the prompt. */
-export function AddMenu({ label, options, onPick }: { label: string; options: readonly SelectOption[]; onPick: (value: string) => void }): ReactNode {
+export function AddMenu({
+  label,
+  options,
+  onPick,
+}: {
+  label: string;
+  options: readonly SelectOption[];
+  onPick: (value: string) => void;
+}): ReactNode {
   const env = useEnv();
   if (env.readOnly) return null;
   return (
     <View style={{ minWidth: 200, maxWidth: 320 }}>
-      <Select label={label} value="" options={options} placeholder={`${label}…`} hideLabel onChange={(value) => value !== '' && onPick(value)} />
+      <Select
+        label={label}
+        value=""
+        options={options}
+        placeholder={`${label}…`}
+        hideLabel
+        onChange={(value) => value !== '' && onPick(value)}
+      />
     </View>
   );
 }
@@ -370,7 +477,9 @@ export const Strings = memoPath(function Strings({
             canDown={index < values.length - 1}
             onUp={() => actions.commit((u) => moveItem(u, path, index, index - 1))}
             onDown={() => actions.commit((u) => moveItem(u, path, index, index + 1))}
-            {...(values.length > min ? { onRemove: () => actions.commit((u) => removeAt(u, [...path, index])) } : {})}
+            {...(values.length > min
+              ? { onRemove: () => actions.commit((u) => removeAt(u, [...path, index])) }
+              : {})}
           />
         </View>
       ))}
@@ -412,8 +521,9 @@ export function ItemCard({
   fieldKey?: string;
 }): ReactNode {
   const actions = useActions();
-  const open = actions.isOpen(openKey, defaultOpen);
-  const accent = tone === 'enrich' ? colors.amber : tone === 'core' ? colors.primary : colors.border;
+  const open = useContext(OpenContext).get(openKey) ?? defaultOpen;
+  const accent =
+    tone === 'enrich' ? colors.amber : tone === 'core' ? colors.primary : colors.border;
   return (
     <View
       {...(testID ? { testID } : {})}
@@ -435,12 +545,20 @@ export function ItemCard({
           accessibilityLabel={`${open ? 'Collapse' : 'Expand'} ${title}`}
           accessibilityState={{ expanded: open }}
           onPress={() => actions.toggle(openKey, defaultOpen)}
-          style={{ flexDirection: 'row', gap: space[2], alignItems: 'center', flexShrink: 1, minHeight: 32 }}
+          style={{
+            flexDirection: 'row',
+            gap: space[2],
+            alignItems: 'center',
+            flexShrink: 1,
+            minHeight: 32,
+          }}
         >
           <Text aria-hidden style={{ fontSize: 14, color: colors.primaryDark, width: 14 }}>
             {open ? '▾' : '▸'}
           </Text>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, flexShrink: 1 }}>{title}</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, flexShrink: 1 }}>
+            {title}
+          </Text>
         </Pressable>
         <RollupBadges prefix={rollup} />
       </View>
@@ -458,16 +576,41 @@ export function ItemCard({
 }
 
 export function SubHeading({ children }: { children: ReactNode }): ReactNode {
-  return createElement(Text, { style: { fontSize: 15, fontWeight: '800', color: colors.primaryDark }, accessibilityRole: 'header' }, children);
+  return createElement(
+    Text,
+    {
+      style: { fontSize: 15, fontWeight: '800', color: colors.primaryDark },
+      accessibilityRole: 'header',
+    },
+    children,
+  );
 }
 
-export function Row({ children, gap = space[3] }: { children: ReactNode; gap?: number }): ReactNode {
-  return <View style={{ flexDirection: 'row', gap, flexWrap: 'wrap', alignItems: 'flex-start' }}>{children}</View>;
+export function Row({
+  children,
+  gap = space[3],
+}: {
+  children: ReactNode;
+  gap?: number;
+}): ReactNode {
+  return (
+    <View style={{ flexDirection: 'row', gap, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      {children}
+    </View>
+  );
 }
 
 export function Note({ children }: { children: ReactNode }): ReactNode {
   return (
-    <View style={{ padding: space[3], borderRadius: radii.md, backgroundColor: colors.page, borderWidth: 1, borderColor: colors.border }}>
+    <View
+      style={{
+        padding: space[3],
+        borderRadius: radii.md,
+        backgroundColor: colors.page,
+        borderWidth: 1,
+        borderColor: colors.border,
+      }}
+    >
       <Small>{children}</Small>
     </View>
   );
@@ -513,7 +656,9 @@ export function Rows({
   const items = Array.from({ length: count }, (_, index) => index);
   return (
     <View style={{ gap: space[2] }} {...({ dataSet: { field: pathKey(path) } } as object)}>
-      {label ? <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSoft }}>{label}</Text> : null}
+      {label ? (
+        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSoft }}>{label}</Text>
+      ) : null}
       {hint ? <Small>{hint}</Small> : null}
       <IssueLines issues={issues} />
       {items.map((index) => (
@@ -547,7 +692,9 @@ export function Rows({
                     })
                 : undefined
             }
-            onRemove={count > min ? () => actions.commit((u) => removeAt(u, [...path, index])) : undefined}
+            onRemove={
+              count > min ? () => actions.commit((u) => removeAt(u, [...path, index])) : undefined
+            }
             removeBlockedReason={removeBlocked?.(index) ?? null}
           />
         </View>
@@ -565,7 +712,17 @@ export function Rows({
 }
 
 /** A button that is on or off ("Correct answer"), with the state in its name, not only its colour. */
-export function Mark({ label, on, onPress, name }: { label: string; on: boolean; onPress: () => void; name: string }): ReactNode {
+export function Mark({
+  label,
+  on,
+  onPress,
+  name,
+}: {
+  label: string;
+  on: boolean;
+  onPress: () => void;
+  name: string;
+}): ReactNode {
   const env = useEnv();
   return (
     <Pressable
@@ -590,8 +747,11 @@ export function Mark({ label, on, onPress, name }: { label: string; on: boolean;
       <Text aria-hidden style={{ fontSize: 15, color: on ? colors.success : colors.subtle }}>
         {on ? '✓' : '○'}
       </Text>
-      <Text style={{ fontSize: 14, fontWeight: '700', color: on ? colors.success : colors.textSoft }}>{label}</Text>
+      <Text
+        style={{ fontSize: 14, fontWeight: '700', color: on ? colors.success : colors.textSoft }}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
-

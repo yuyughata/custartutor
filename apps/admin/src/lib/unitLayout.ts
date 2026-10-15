@@ -48,11 +48,16 @@ export interface LayoutModel {
 
 export type LayoutEntry =
   | { id: string; set?: Partial<UnitFields> }
-  | { new: Omit<UnitFields, 'week_no' | 'periods'> & { periods?: number; week_no?: number | null; lens?: string } };
+  | {
+      new: Omit<UnitFields, 'week_no' | 'periods'> & {
+        periods?: number;
+        week_no?: number | null;
+        lens?: string;
+      };
+    };
 
 export type LayoutChapterEntry =
-  | { id: string; units: LayoutEntry[] }
-  | { new: { title: string }; units: LayoutEntry[] };
+  { id: string; units: LayoutEntry[] } | { new: { title: string }; units: LayoutEntry[] };
 
 export interface LayoutDoc {
   chapters: LayoutChapterEntry[];
@@ -123,7 +128,13 @@ export interface LayoutPlan {
   versioned: RenumberItem[];
 }
 
-const KINDS: readonly string[] = ['lesson', 'mini_project', 'term_project', 'revision', 'assessment'];
+const KINDS: readonly string[] = [
+  'lesson',
+  'mini_project',
+  'term_project',
+  'revision',
+  'assessment',
+];
 const STAGES: readonly string[] = ['absorb', 'connect', 'express'];
 
 function text(value: unknown, max: number): string | null {
@@ -133,7 +144,9 @@ function text(value: unknown, max: number): string | null {
 }
 
 function int(value: unknown, min: number, max: number): number | null {
-  return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max ? value : null;
+  return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max
+    ? value
+    : null;
 }
 
 function fieldsOf(
@@ -161,11 +174,13 @@ function fieldsOf(
     out.objective = t;
   }
   if (need('kind')) {
-    if (typeof r.kind !== 'string' || !KINDS.includes(r.kind)) throw new LayoutRefusal('invalid_layout_unit');
+    if (typeof r.kind !== 'string' || !KINDS.includes(r.kind))
+      throw new LayoutRefusal('invalid_layout_unit');
     out.kind = r.kind as UnitKind;
   }
   if (need('stage')) {
-    if (typeof r.stage !== 'string' || !STAGES.includes(r.stage)) throw new LayoutRefusal('invalid_layout_unit');
+    if (typeof r.stage !== 'string' || !STAGES.includes(r.stage))
+      throw new LayoutRefusal('invalid_layout_unit');
     out.stage = r.stage as Stage;
   }
   if ('periods' in r) {
@@ -222,7 +237,8 @@ export function planLayout(
   }
   const removed: string[] = [];
   for (const id of doc.removed ?? []) {
-    if (typeof id !== 'string' || removed.includes(id)) throw new LayoutRefusal('invalid_unit_layout');
+    if (typeof id !== 'string' || removed.includes(id))
+      throw new LayoutRefusal('invalid_unit_layout');
     removed.push(id);
   }
 
@@ -286,7 +302,8 @@ export function planLayout(
     }
   });
 
-  if (model.chapters.some((c) => !chapterIds.includes(c.id))) throw new LayoutRefusal('layout_out_of_date');
+  if (model.chapters.some((c) => !chapterIds.includes(c.id)))
+    throw new LayoutRefusal('layout_out_of_date');
   if (model.units.some((u) => !unitIds.includes(u.id) && !removed.includes(u.id))) {
     throw new LayoutRefusal('layout_out_of_date');
   }
@@ -323,9 +340,19 @@ export function planLayout(
   counts.units_archived = removed.length;
 
   const changes =
-    changedPos.length > 0 || changedFields.length > 0 || removed.length > 0 || created > 0 || newChapters > 0;
+    changedPos.length > 0 ||
+    changedFields.length > 0 ||
+    removed.length > 0 ||
+    created > 0 ||
+    newChapters > 0;
   if (!changes) {
-    return { chapters, archived: [], changes: false, counts: { ...counts, units_archived: 0 }, versioned: [] };
+    return {
+      chapters,
+      archived: [],
+      changes: false,
+      counts: { ...counts, units_archived: 0 },
+      versioned: [],
+    };
   }
 
   // versions (the server checks these after locking the rows)
@@ -337,7 +364,8 @@ export function planLayout(
     if (!unit.hasVersions) continue;
     if (changedFields.includes(unit.id)) throw new LayoutRefusal('unit_has_versions');
     const target = chapters[item.pos - 1]?.id ?? null;
-    if (target !== unit.chapter_id && unit.published) throw new LayoutRefusal('published_unit_cannot_move');
+    if (target !== unit.chapter_id && unit.published)
+      throw new LayoutRefusal('published_unit_cannot_move');
     versioned.push({ id: unit.id, title: unit.title, from: unit.unit_no, to: item.rank });
   }
   for (const id of removed) {

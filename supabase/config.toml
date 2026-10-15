@@ -72,3 +72,11 @@ verify_jwt = true
 # Function secret) and, optionally, ALLOWED_ORIGINS (comma-separated browser origins of the admin app).
 [functions.ai-job]
 verify_jwt = true
+
+# The AI tutor (M3, ADR 0008): one turn per request, answered as Server-Sent Events. The function authenticates the caller,
+# checks that the child belongs to a household the caller is a guardian of, applies the gates (tutor.enabled, kill switch,
+# consent, daily budget, one turn in flight) and uses the service role only for the tutor_* RPCs. Secrets:
+# ANTHROPIC_API_KEY (Edge Function secret) and, optionally, ALLOWED_ORIGINS. The tutor is OFF until a super_admin confirms
+# the safeguarding owner and calls set_tutor_enabled.
+[functions.tutor-chat]
+verify_jwt = true

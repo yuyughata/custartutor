@@ -68,7 +68,8 @@ export function readingMeter(blocks: readonly AnyBlock[], stage: Stage): Reading
         if (count === 0) continue;
         sentences += 1;
         words += count;
-        if (longest === null || count > longest.words) longest = { words: count, text: part.trim() };
+        if (longest === null || count > longest.words)
+          longest = { words: count, text: part.trim() };
       }
     }
   }

@@ -46,6 +46,8 @@ been applied to that project, and its file name carries the version the server a
 | `20261012061127` | `m2_cast_facts`                | M2 5/7: the owner's facts about Zari and Zuri merged into `characters.traits`                       |
 | `20261012062224` | `m2_usage_pricing`             | M2 6/7: prefix price lookup (`private.ai_price_for`, same rule as `priceFor` in the contract), usage logged by `ai_job_fail_step` too (new 6-arg signature), kill switch also refuses a new lease |
 | `20261012062346` | `m2_fail_step_stub_rename`     | M2 7/7: the superseded 5-arg `ai_job_fail_step` pair renamed to `*_deprecated` (a 5-positional-argument call was ambiguous between the two overloads) |
+| `20261012081415` | `m2_unit_layout`               | M2.4 1/2: `apply_unit_layout(p_scheme_id, p_layout, p_confirm_renumber)` (units added, removed and reordered by hand, 3 to 5 per chapter; the numbering decision is in the file header), `private.json_uuid`, `private.layout_unit_fields`, `private.unit_layout_result` |
+| `20261012082805` | `m2_unit_layout_theme_links`   | M2.4 2/2: a unit that leaves a themed chapter loses its link to that chapter's theme (`create or replace` of `private.apply_unit_layout`) |
 
 The 28 tables are: `profiles`, `admin_users`, `households`, `household_members`, `children`,
 `child_secrets`, `child_access`, `invites`, `grownup_pins`, `grownup_elevations`, `consents`,
@@ -158,6 +160,7 @@ Content engine (M2) RPCs. Admin roles need **aal2** everywhere; failures are sta
 | `save_scheme_draft(p_subject_id, p_level_code, p_term, p_weeks, p_source_note)` -> uuid | `super_admin`, `content_editor` | replaces the weeks of the DRAFT scheme of (subject, level, term) or creates it; a scheme that is not a draft is never rewritten (`scheme_not_draft`). Weeks are validated like `Scheme` in content-schema |
 | `approve_scheme(p_scheme_id)`                          | `super_admin`, `reviewer`                     | draft -> approved; needs a teaching week; approving an approved scheme is a no-op; audited               |
 | `apply_chapter_plan(p_scheme_id, p_plan)` -> counts    | `super_admin`, `content_editor`               | needs an APPROVED scheme. Creates / updates draft chapters and units (3 to 5 per chapter, weeks must exist), links the theme, idempotent (an unchanged plan writes nothing), atomic; a unit that has a version is never changed or dropped (`unit_has_versions`); a chapter that is no longer a draft keeps its title (`chapter_not_draft`) |
+| `apply_unit_layout(p_scheme_id, p_layout, p_confirm_renumber default false)` -> `{chapters, units, units_created, units_updated, units_moved, units_renumbered, units_archived, chapters_created, created_unit_ids, created_chapter_ids, layout}` | `super_admin`, `content_editor` | one atomic call that sets the chapter, order and term-wide number of EVERY live unit of an APPROVED scheme. The layout must name every live chapter and unit once (`layout_out_of_date` for a stale page, `unit_not_in_scheme`, `chapter_not_in_scheme`, `chapter_order_changed`, `duplicate_unit_in_layout`); 3 to 5 units per chapter (`chapter_unit_count_invalid`). Adds units (and chapters after the existing ones), archives the units in `removed` (they must have no version; the row stays, tombstoned, number parked at 10000+n). A unit with versions is never edited or removed (`unit_has_versions`), cannot leave its chapter once published (`published_unit_cannot_move`) and is renumbered or moved only with `p_confirm_renumber` (`layout_renumbers_versioned_units`, error DETAIL = JSON list `[{id, title, from, to}]`). Idempotent: an unchanged layout writes nothing (no `sync_seq`, no audit row). Locks the scheme row `FOR UPDATE` (serialises with `apply_chapter_plan`), writes in id order. Audited as `unit_layout_applied` |
 | `create_unit_version_draft(p_unit_id, p_content, p_lint_report, p_generated_by, p_model, p_prompt_version, p_base_version_id)` -> `{id, version}` | `super_admin`, `content_editor` | the only way the function saves an AI draft: numbered under a row lock, always a `draft`, `stale_base` unless the base is the latest version (or null for a first one). `SECURITY INVOKER`, so RLS and the `unit_versions` guard trigger stay the last line of defence |
 | `set_unit_version_status(p_unit_version_id, p_status)` | staff; see notes                              | draft -> in_review (any staff), in_review -> approved or back to draft (`reviewer`, `super_admin` only); every other move is `illegal_status_move`. `SECURITY INVOKER`: publishing stays `publish_unit_version` |
 | `get_ai_settings()` -> `AiSettings`                    | content staff                                 | stored keys laid over the defaults (`DEFAULT_AI_SETTINGS`), so an empty table is a working configuration |
@@ -324,8 +327,9 @@ publish left 6 rows in `audit_log` (the temporary admin that signed it was delet
 | `080_ai_jobs.test.sql`                 |   161 | `app_settings` / `ai_jobs` / `ai_usage` access and column grants, `create_ai_job` (roles, aal2, idempotency, kill switch, limit of 5), `cancel_ai_job`, the lease RPCs (busy, takeover, late finisher, 3 attempts, scrubbed errors), costs (prefix price lookup), budget check, failed-but-billed usage |
 | `081_ai_content_rpcs.test.sql`         |   159 | `save_scheme_draft`, `approve_scheme`, `apply_chapter_plan` (validation, idempotency, atomic refusal, units with versions), `create_unit_version_draft` (`stale_base`, provenance, guard trigger), `set_unit_version_status` |
 | `082_ai_settings_usage_storage_cast.test.sql` | 116 | `get_ai_settings` / `set_app_setting` (shape validation per key, audit), `get_ai_usage_summary`, the `scheme-uploads` bucket policies (conditional: skipped with a note when the storage service has not created the bucket or policies), the owner's cast facts |
+| `120_unit_layout.test.sql`             |   141 | `apply_unit_layout`: access (anon, plain, reviewer, support, analyst, aal1), malformed layouts, stale pages, idempotency (no `sync_seq`, no audit row), the scheme row lock, 3 to 5 at both ends, renumber confirmation and its DETAIL, reorder and move, published and versioned units, archival and the freed slot, new chapters, atomicity (a failing trigger), a colleague's concurrent change, `apply_chapter_plan` and `publish_unit_version` next to it, function hygiene |
 
-All 14 files pass (925 tests; the 489 of M0 and M1 are unchanged apart from `000`, below).
+All 14 files pass (925 tests; the 489 of M0 and M1 are unchanged apart from `000`, below). M2.4 adds `120` (141 tests, all green on the dev database); `000` (32), `050` (64), `081` (159) and `082` (116) were re-run live after it and pass.
 
 `000_hardening` was extended, not weakened: its two function-ACL tripwires now list the M2 functions on
 purpose, and its "Zari and Zuri are stubs with empty traits" assertion became "they carry only the
@@ -404,7 +408,8 @@ and must be kept in step with the CHECK constraints and RPC messages by hand.
 ## Advisors (Supabase `get_advisors`)
 
 Last run after the M2 server work (the seven `m2_*` migrations): **no ERROR or WARN, security or
-performance.** The M1 tables (`progress_events`, `unit_progress`), the private `packs` and `scheme-uploads`
+performance.** Re-run after the two M2.4 migrations: the same, and no new finding of any level (the INFO list is only the
+secret-holding tables and unused indexes listed below, plus the M3 tables). The M1 tables (`progress_events`, `unit_progress`), the private `packs` and `scheme-uploads`
 buckets and the M2 tables raise nothing but INFO.
 
 Deliberately accepted (INFO only):
@@ -467,6 +472,18 @@ resolve `private.*` functions as the caller) and is not in the PostgREST `db-sch
   TOTP enrolment is a Supabase Auth setting, not a schema feature.
 
 ### M2 content engine: follow-ups and decisions
+
+- **M2.4, the unit layout (`apply_unit_layout`).** The numbering decision and its trade-offs are in the header of
+  `20261012081415_m2_unit_layout.sql` and in `docs/m2-plan.md`: `units.unit_no` is the dense, term-wide ordinal; a unit
+  with versions renumbers only with `p_confirm_renumber`; removal archives (status `archived`, tombstone, number
+  parked above 10000), so `chapter_unit_count_ok` and the learner views ignore archived units and
+  `create_unit_version_draft` refuses them (`unit_not_editable`). `apply_chapter_plan` is unchanged and still
+  hard-deletes version-less units a new plan does not contain: re-planning after hand edits discards them (the planner
+  warns). The second migration only adds the theme-link clean-up for a unit that changes chapter.
+- **A pgTAP detail worth knowing:** `lives_ok` runs its statement in a sub-transaction, so a row locked by an RPC inside
+  it shows the sub-transaction's id in `xmax`, not the test's own `pg_current_xact_id()`. `120` therefore asserts
+  "`xmax` was 0 before and is not 0 after", with the probe rows inserted under `session_replication_role = replica`
+  (a foreign-key insert would itself take a `FOR KEY SHARE` lock and hide the answer).
 
 - **The deprecated `ai_job_fail_step` pair is still in the database.** `m2_usage_pricing` replaced the
   5-argument `ai_job_fail_step` by a 6-argument one (`p_usage jsonb default '[]'`); the old pair could not

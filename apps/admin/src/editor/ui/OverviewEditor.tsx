@@ -38,8 +38,11 @@ export function OverviewEditor({
   const env = useEnv();
   const rootIssues = useIssuesAt([]);
   const headerIssues = useIssuesAt(['header']);
-  const theme = typeof header.theme === 'object' && header.theme !== null ? (header.theme as Rec) : undefined;
-  const chapter = (typeof header.chapter === 'object' && header.chapter !== null ? header.chapter : undefined) as Rec | undefined;
+  const theme =
+    typeof header.theme === 'object' && header.theme !== null ? (header.theme as Rec) : undefined;
+  const chapter = (
+    typeof header.chapter === 'object' && header.chapter !== null ? header.chapter : undefined
+  ) as Rec | undefined;
   return (
     <View style={{ gap: space[3] }}>
       <IssueLines issues={rootIssues} />
@@ -57,7 +60,12 @@ export function OverviewEditor({
       />
       <Row>
         <View style={{ minWidth: 240, flexGrow: 1, maxWidth: 360 }}>
-          <Pick path={['header', 'stage']} label="Stage" value={str(header.stage)} options={STAGES} />
+          <Pick
+            path={['header', 'stage']}
+            label="Stage"
+            value={str(header.stage)}
+            options={STAGES}
+          />
         </View>
         <View style={{ minWidth: 240, flexGrow: 1, maxWidth: 360 }}>
           <Pick
@@ -77,8 +85,11 @@ export function OverviewEditor({
         {header.unit_no !== undefined ? ` · Unit ${String(header.unit_no)}` : ''}
         {header.week_no !== undefined ? ` · Week ${String(header.week_no)}` : ''}
         {'. '}
-        The scheme and the chapter planner decide these. When you save, the unit's current number, chapter and week are written into this header.
-        {context ? ` Right now it is chapter ${context.chapter.number}, unit ${context.unit_no}${context.week_no ? `, week ${context.week_no}` : ''}.` : ''}
+        The scheme and the chapter planner decide these. When you save, the unit's current number,
+        chapter and week are written into this header.
+        {context
+          ? ` Right now it is chapter ${context.chapter.number}, unit ${context.unit_no}${context.week_no ? `, week ${context.week_no}` : ''}.`
+          : ''}
       </Note>
       {env.weekEditable ? (
         <Num
@@ -94,19 +105,44 @@ export function OverviewEditor({
         <>
           <Row>
             <View style={{ minWidth: 220, flexGrow: 1 }}>
-              <Txt path={['header', 'theme', 'slug']} label="Theme slug" value={str(theme.slug)} mono hint="Lowercase, hyphenated, for example market-day." />
+              <Txt
+                path={['header', 'theme', 'slug']}
+                label="Theme slug"
+                value={str(theme.slug)}
+                mono
+                hint="Lowercase, hyphenated, for example market-day."
+              />
             </View>
             <View style={{ minWidth: 220, flexGrow: 1 }}>
-              <Txt path={['header', 'theme', 'title']} label="Theme title" value={str(theme.title)} />
+              <Txt
+                path={['header', 'theme', 'title']}
+                label="Theme title"
+                value={str(theme.title)}
+              />
             </View>
           </Row>
-          <Txt path={['header', 'theme', 'lens']} label="This subject's lens on the theme" value={str(theme.lens)} hint='For example "Value", "Observation" or "Language".' />
-          <AddButton label="Remove the theme" onPress={() => actions.commit((u) => removeAt(u, ['header', 'theme']))} />
+          <Txt
+            path={['header', 'theme', 'lens']}
+            label="This subject's lens on the theme"
+            value={str(theme.lens)}
+            hint='For example "Value", "Observation" or "Language".'
+          />
+          <AddButton
+            label="Remove the theme"
+            onPress={() => actions.commit((u) => removeAt(u, ['header', 'theme']))}
+          />
         </>
       ) : (
         <>
           <Small>This unit is not tied to a cross-subject theme.</Small>
-          <AddButton label="Add a theme" onPress={() => actions.commit((u) => setAt(u, ['header', 'theme'], { slug: '', title: '', lens: '' }))} />
+          <AddButton
+            label="Add a theme"
+            onPress={() =>
+              actions.commit((u) =>
+                setAt(u, ['header', 'theme'], { slug: '', title: '', lens: '' }),
+              )
+            }
+          />
         </>
       )}
 
@@ -114,8 +150,17 @@ export function OverviewEditor({
         <>
           <SubHeading>Scoring</SubHeading>
           <Row>
-            <Num path={['scoring', 'total_marks']} label="Total marks" value={typeof scoring?.total_marks === 'number' ? scoring.total_marks : null} />
-            <Num path={['scoring', 'pass_mark']} label="Pass mark" value={typeof scoring?.pass_mark === 'number' ? scoring.pass_mark : null} hint="Not more than the total." />
+            <Num
+              path={['scoring', 'total_marks']}
+              label="Total marks"
+              value={typeof scoring?.total_marks === 'number' ? scoring.total_marks : null}
+            />
+            <Num
+              path={['scoring', 'pass_mark']}
+              label="Pass mark"
+              value={typeof scoring?.pass_mark === 'number' ? scoring.pass_mark : null}
+              hint="Not more than the total."
+            />
           </Row>
         </>
       ) : null}

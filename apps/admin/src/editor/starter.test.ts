@@ -18,34 +18,50 @@ const ctx = (kind: StarterContext['kind'], week: number | null = 4): StarterCont
 });
 
 describe('starterUnit', () => {
-  it.each(UnitKind.options)('gives a %s the structure its kind needs and stamps the header', (kind) => {
-    const unit = starterUnit(ctx(kind));
-    expect(unit.kind).toBe(kind);
-    expect(unit).toMatchObject({
-      schema_version: 1,
-      header: {
-        title: 'Places in school',
-        objective: 'Identify places in the school.',
-        stage: 'connect',
-        unit_no: 7,
-        chapter: { number: 2, title: 'My school' },
-        subject_slug: 'social-studies',
-        level_code: 'P3',
-        term: 2,
-      },
-    });
-  });
+  it.each(UnitKind.options)(
+    'gives a %s the structure its kind needs and stamps the header',
+    (kind) => {
+      const unit = starterUnit(ctx(kind));
+      expect(unit.kind).toBe(kind);
+      expect(unit).toMatchObject({
+        schema_version: 1,
+        header: {
+          title: 'Places in school',
+          objective: 'Identify places in the school.',
+          stage: 'connect',
+          unit_no: 7,
+          chapter: { number: 2, title: 'My school' },
+          subject_slug: 'social-studies',
+          level_code: 'P3',
+          term: 2,
+        },
+      });
+    },
+  );
 
   it('starts a lesson with the six always-present sections and two enrichment sections, all in the session plan and manual', () => {
     const unit = starterUnit(ctx('lesson'));
     const ids = sections(unit as never).map((s) => String(s.id));
     expect(ids).toHaveLength(8);
     expect(new Set(ids).size).toBe(8);
-    expect(ids).toEqual(expect.arrayContaining(['concept_1', 'worked_examples_1', 'practice_1', 'think_deeper_1', 'quick_fire_1', 'mastery_check_1']));
-    const plan = (unit.session_plan as { sections: string[]; minutes: { minutes: number }[] }[])[0]!;
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        'concept_1',
+        'worked_examples_1',
+        'practice_1',
+        'think_deeper_1',
+        'quick_fire_1',
+        'mastery_check_1',
+      ]),
+    );
+    const plan = (
+      unit.session_plan as { sections: string[]; minutes: { minutes: number }[] }[]
+    )[0]!;
     expect(plan.sections).toEqual(ids);
     expect(plan.minutes.reduce((sum, m) => sum + m.minutes, 0)).toBe(60);
-    expect((unit.teacher_manual as { script: { section_id: string }[] }).script.map((r) => r.section_id)).toEqual(ids);
+    expect(
+      (unit.teacher_manual as { script: { section_id: string }[] }).script.map((r) => r.section_id),
+    ).toEqual(ids);
   });
 
   it('has no words anywhere, so nothing can be saved until a person writes it', () => {

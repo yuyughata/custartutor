@@ -27,7 +27,7 @@
 //
 // PRIVACY. The child's raw text is passed to the pipeline once, in memory, and nowhere else: it never reaches an RPC
 // argument, a log line, an error or an event. What is stored is `outcome.child_text_redacted` and nothing else.
-// There is no console.* in this file and `log` is never given message text.
+// Nothing in this file prints: `log` is the only output and it is never given message text.
 
 import { TutorHttpError, mapDbError, scrub, type TutorErrorCode } from './tutor-chat-errors.ts';
 import { createTutorContextReader } from './tutor-chat-context.ts';

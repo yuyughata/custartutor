@@ -28,9 +28,9 @@ describe('validateUnit', () => {
   it('gives the same lint warnings as lintUnit', () => {
     const result = validateUnit(gold);
     const direct = lintUnit(gold);
-    expect(result.issues.filter((i) => i.source === 'lint' && i.severity === 'warning')).toHaveLength(
-      direct.warnings.length,
-    );
+    expect(
+      result.issues.filter((i) => i.source === 'lint' && i.severity === 'warning'),
+    ).toHaveLength(direct.warnings.length);
   });
 
   it('a blank heading is a schema error beside the heading field, and blocks saving', () => {
@@ -45,14 +45,22 @@ describe('validateUnit', () => {
   });
 
   it('shows lint beside the field even while the content does not parse', () => {
-    const noObjective = setAt(setAt(gold, ['header', 'objective'], ''), ['sections', 1, 'heading'], '');
+    const noObjective = setAt(
+      setAt(gold, ['header', 'objective'], ''),
+      ['sections', 1, 'heading'],
+      '',
+    );
     const result = validateUnit(noObjective);
     expect(codes(result, 'error')).toContain('objective_empty');
     expect(issuesAt(result.issues, ['header', 'objective']).length).toBeGreaterThan(0);
   });
 
   it('answer problems are shown once, at the answer editor, with where inside', () => {
-    const wrong = setAt(gold, ['questions', 'wb_fill_cook', 'prompt'], 'We cook in the ____ and the ____.');
+    const wrong = setAt(
+      gold,
+      ['questions', 'wb_fill_cook', 'prompt'],
+      'We cook in the ____ and the ____.',
+    );
     const result = validateUnit(wrong);
     const here = issuesAt(result.issues, ['questions', 'wb_fill_cook', 'answer']);
     expect(here.length).toBeGreaterThan(0);
@@ -84,23 +92,36 @@ describe('validateUnit', () => {
 
   it('an enrichment overflow is a lint error with no field, shown at the unit', () => {
     let unit: UnitContent = gold;
-    for (const type of ['across_subjects', 'window_to_world'] as const) unit = addSection(unit, type, none).unit;
+    for (const type of ['across_subjects', 'window_to_world'] as const)
+      unit = addSection(unit, type, none).unit;
     expect(codes(validateUnit(unit), 'error')).toContain('enrichment_count');
   });
 
   it('refuses to save a working copy that lost a published id, and says which', () => {
     const snapshots: PublishedSnapshot[] = [
-      { id: 'p1', version_no: 1, is_current: true, published_at: '2026-10-01T00:00:00Z', content: gold as never },
+      {
+        id: 'p1',
+        version_no: 1,
+        is_current: true,
+        published_at: '2026-10-01T00:00:00Z',
+        content: gold as never,
+      },
     ];
     const index = sections(gold).findIndex((s) => s.id === 'quick_fire');
     const without = removeSection(gold, index).unit;
-    const result = validateUnit(without, { snapshots, publishedIds: publishedIdsOf(snapshots), context: ctx });
+    const result = validateUnit(without, {
+      snapshots,
+      publishedIds: publishedIdsOf(snapshots),
+      context: ctx,
+    });
     expect(result.canSave).toBe(false);
     const dropped = result.issues.find((i) => i.code === 'section_id_dropped');
     expect(dropped?.source).toBe('ids');
     expect(dropped?.message).toContain('version 1');
     // the same edit on a unit nobody published is fine for ids
-    expect(codes(validateUnit(without, { context: ctx }), 'error')).not.toContain('section_id_dropped');
+    expect(codes(validateUnit(without, { context: ctx }), 'error')).not.toContain(
+      'section_id_dropped',
+    );
     // and dropping a question
     const noQuestion = removeQuestion(gold, 'wb_neighbour').unit;
     expect(
@@ -109,7 +130,9 @@ describe('validateUnit', () => {
   });
 
   it('warns when the header numbers differ from the unit row (and never blocks)', () => {
-    const result = validateUnit(gold, { context: { unit_no: 3, week_no: 2, chapter: ctx.chapter } });
+    const result = validateUnit(gold, {
+      context: { unit_no: 3, week_no: 2, chapter: ctx.chapter },
+    });
     const note = result.issues.find((i) => i.code === 'header_differs_from_unit');
     expect(note).toMatchObject({ severity: 'warning', source: 'editor' });
     expect(result.canSave).toBe(true);
@@ -123,7 +146,15 @@ describe('validateUnit', () => {
   });
 
   it('survives content that is not a unit at all', () => {
-    for (const junk of [null, 5, 'x', [], {}, { kind: 'lesson' }, { kind: 'lesson', schema_version: 99 }]) {
+    for (const junk of [
+      null,
+      5,
+      'x',
+      [],
+      {},
+      { kind: 'lesson' },
+      { kind: 'lesson', schema_version: 99 },
+    ]) {
       const result = validateUnit(junk);
       expect(result.canSave).toBe(false);
       expect(result.errors).toBeGreaterThan(0);
@@ -131,7 +162,16 @@ describe('validateUnit', () => {
   });
 
   it('keeps issue keys unique', () => {
-    const result = validateUnit(setAt(gold, ['sections', 0, 'blocks'], [{ type: 'paragraph', text: '' }, { type: 'paragraph', text: '' }]));
+    const result = validateUnit(
+      setAt(
+        gold,
+        ['sections', 0, 'blocks'],
+        [
+          { type: 'paragraph', text: '' },
+          { type: 'paragraph', text: '' },
+        ],
+      ),
+    );
     const keys = result.issues.map((i) => i.key);
     expect(new Set(keys).size).toBe(keys.length);
   });
@@ -143,7 +183,10 @@ describe('storedReportFor', () => {
     expect(report.ok).toBe(true);
     expect(report.errors).toEqual([]);
     expect(report.review).toEqual([]);
-    expect(report.warnings.map((w) => w.code).sort()).toEqual(['no_global_window', 'reading_level']);
+    expect(report.warnings.map((w) => w.code).sort()).toEqual([
+      'no_global_window',
+      'reading_level',
+    ]);
     expect(report.warnings.every((w) => w.severity === 'note')).toBe(true);
     expect(report.summary).toContain('by hand');
   });

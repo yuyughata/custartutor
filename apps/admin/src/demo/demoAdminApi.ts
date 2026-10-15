@@ -595,14 +595,23 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
         needs('layout.apply');
         const scheme = findScheme(schemeId);
         if (scheme.status !== 'approved') {
-          throw conflict('scheme_not_approved', 'The scheme must be approved before chapters can be planned.');
+          throw conflict(
+            'scheme_not_approved',
+            'The scheme must be approved before chapters can be planned.',
+          );
         }
         const chapters = state.chapters.filter((chapter) => chapter.scheme_id === scheme.id);
         const live = state.units.filter(
-          (unit) => unit.status !== 'archived' && chapters.some((chapter) => chapter.id === unit.chapter_id),
+          (unit) =>
+            unit.status !== 'archived' &&
+            chapters.some((chapter) => chapter.id === unit.chapter_id),
         );
         const model: LayoutModel = {
-          chapters: chapters.map((chapter) => ({ id: chapter.id, number: chapter.number, title: chapter.title })),
+          chapters: chapters.map((chapter) => ({
+            id: chapter.id,
+            number: chapter.number,
+            title: chapter.title,
+          })),
           units: live.map((unit) => ({
             id: unit.id,
             chapter_id: unit.chapter_id,
@@ -625,7 +634,10 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
           if (error instanceof LayoutRefusal) {
             // The same typed error the live adapter makes from the server's message (and DETAIL).
             throw fromPostgrest(
-              { message: error.code, ...(error.detail ? { details: JSON.stringify(error.detail) } : {}) },
+              {
+                message: error.code,
+                ...(error.detail ? { details: JSON.stringify(error.detail) } : {}),
+              },
               'The layout was refused.',
             );
           }
@@ -667,7 +679,8 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
               const { lens: _lens, ...fields } = entry.fields;
               if (entry.id !== null) {
                 const unit = state.units.find((candidate) => candidate.id === entry.id);
-                if (unit) Object.assign(unit, fields, { chapter_id: chapterId, unit_no: entry.unit_no });
+                if (unit)
+                  Object.assign(unit, fields, { chapter_id: chapterId, unit_no: entry.unit_no });
               } else {
                 const unit = {
                   id: newId(),
@@ -864,7 +877,10 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
         const unit = state.units.find((candidate) => candidate.id === input.unitId);
         if (!unit) throw notFound('unit_not_found', 'That unit no longer exists.');
         if (unit.status === 'archived') {
-          throw conflict('unit_not_editable', 'This unit was removed from its chapter, so it cannot get new versions.');
+          throw conflict(
+            'unit_not_editable',
+            'This unit was removed from its chapter, so it cannot get new versions.',
+          );
         }
         const content = input.content as { schema_version?: unknown; header?: unknown } | null;
         if (
@@ -874,11 +890,17 @@ export function createDemoAdminApi(options: DemoOptions = {}): DemoAdminApi {
           content.header === null ||
           typeof content.schema_version !== 'number'
         ) {
-          throw fromPostgrest({ message: 'invalid_unit_content' }, 'The server did not accept that content.');
+          throw fromPostgrest(
+            { message: 'invalid_unit_content' },
+            'The server did not accept that content.',
+          );
         }
         const latest = latestVersionOf(state, unit.id);
         if ((input.baseVersionId ?? null) !== (latest?.id ?? null)) {
-          throw conflict('stale_base', 'A newer version of this unit exists. Reload the page and try again.');
+          throw conflict(
+            'stale_base',
+            'A newer version of this unit exists. Reload the page and try again.',
+          );
         }
         const created = {
           id: newId(),

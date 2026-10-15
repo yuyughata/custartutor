@@ -13,11 +13,13 @@ describe('jumpPlan', () => {
   });
 
   it('opens a section and its tutor script and node', () => {
-    const withScript = (unit as { sections: { id: string; tutor_script?: { nodes: { id: string }[] } }[] }).sections.findIndex(
-      (s) => s.tutor_script,
-    );
+    const withScript = (
+      unit as { sections: { id: string; tutor_script?: { nodes: { id: string }[] } }[] }
+    ).sections.findIndex((s) => s.tutor_script);
     expect(withScript).toBeGreaterThanOrEqual(0);
-    const section = (unit as { sections: { id: string; tutor_script: { nodes: { id: string }[] } }[] }).sections[withScript]!;
+    const section = (
+      unit as { sections: { id: string; tutor_script: { nodes: { id: string }[] } }[] }
+    ).sections[withScript]!;
     const plan = jumpPlan(unit, ['sections', withScript, 'tutor_script', 'nodes', 0, 'say']);
     expect(plan.open).toEqual([
       keys.section(section.id),
@@ -50,7 +52,10 @@ describe('jumpPlan', () => {
 
   it('sends project parts to the project tab and unknown paths to the overview', () => {
     expect(jumpPlan(unit, ['steps', 0, 'text']).tab).toBe('project');
-    expect(jumpPlan(unit, ['rubric', 1, 'criterion'])).toEqual({ tab: 'project', open: [keys.rubric(1)] });
+    expect(jumpPlan(unit, ['rubric', 1, 'criterion'])).toEqual({
+      tab: 'project',
+      open: [keys.rubric(1)],
+    });
     expect(jumpPlan(unit, [])).toEqual({ tab: 'overview', open: [] });
     expect(jumpPlan(unit, ['scoring', 'pass_mark']).tab).toBe('overview');
   });
@@ -65,10 +70,14 @@ describe('jumpPlan', () => {
 describe('describeLocation', () => {
   it('says where a problem is in words', () => {
     const heading = (unit as { sections: { heading: string }[] }).sections[1]?.heading ?? '';
-    expect(describeLocation(unit, ['sections', 1, 'blocks', 2, 'text'])).toBe(`Section 2 (${heading.length > 32 ? `${heading.slice(0, 31).trimEnd()}…` : heading}), block 3`);
+    expect(describeLocation(unit, ['sections', 1, 'blocks', 2, 'text'])).toBe(
+      `Section 2 (${heading.length > 32 ? `${heading.slice(0, 31).trimEnd()}…` : heading}), block 3`,
+    );
     expect(describeLocation(unit, ['questions', 'q_name', 'answer'])).toBe('Question q_name');
     expect(describeLocation(unit, ['session_plan', 0])).toBe('Session plan, period 1');
-    expect(describeLocation(unit, ['teacher_manual', 'helper_script', 1])).toBe("Teacher's manual, helper script row 2");
+    expect(describeLocation(unit, ['teacher_manual', 'helper_script', 1])).toBe(
+      "Teacher's manual, helper script row 2",
+    );
     expect(describeLocation(unit, ['header', 'title'])).toBe('Overview, header');
     expect(describeLocation(unit, [])).toBe('The unit');
     expect(describeLocation(unit, ['sections', 99, 'blocks', 0])).toBe('Section 100, block 1');

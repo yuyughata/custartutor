@@ -10,12 +10,13 @@ published. That needs a live `ANTHROPIC_API_KEY`; everything else is built and t
 
 ## Status
 
-| #    | Package                              | State                                                                                                                                                       |
-| ---- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M2.1 | `authoring-core`                     | built; 367 tests against fake models; the live API path and the prompts are unverified                                                                      |
-| M2.2 | server                               | seven migrations applied to the dev database; 925 pgTAP tests (436 new) pass; edge function written and tested with injected dependencies, **not deployed** |
-| M2.3 | `apps/admin`                         | built; 221 tests; verified in a browser in demo mode; the live path is covered by a recording fake client and by a regression test on real server output    |
-| exit | 8 units drafted, reviewed, published | waits for `ANTHROPIC_API_KEY`, the CLI deploy and your review: see [m2-live-test.md](m2-live-test.md)                                                       |
+| #    | Package                              | State                                                                                                                                                                                    |
+| ---- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M2.1 | `authoring-core`                     | built; 367 tests against fake models; the live API path and the prompts are unverified                                                                                                   |
+| M2.2 | server                               | seven migrations applied to the dev database; 925 pgTAP tests (436 new) pass; edge function written and tested with injected dependencies, **not deployed**                              |
+| M2.3 | `apps/admin`                         | built; 221 tests; verified in a browser in demo mode; the live path is covered by a recording fake client and by a regression test on real server output                                 |
+| M2.4 | human editing, units by hand         | built; one RPC (`apply_unit_layout`, two migrations applied to dev) with 141 pgTAP tests; 455 admin tests (234 new); the editor and the layout editor verified in a browser in demo mode |
+| exit | 8 units drafted, reviewed, published | waits for `ANTHROPIC_API_KEY`, the CLI deploy and your review: see [m2-live-test.md](m2-live-test.md)                                                                                    |
 
 ## Flow
 
@@ -58,6 +59,7 @@ All RPCs are `public.*` thin `SECURITY INVOKER` wrappers over `private.*` implem
 | `get_ai_settings() -> jsonb`                                                                                                            | content staff                               | The assembled `AiSettings` (defaults for missing keys).                                                                                                                                                                                                                                                                         |
 | `set_app_setting(p_key, p_value) -> void`                                                                                               | `super_admin`                               | Upserts one `APP_SETTING_KEYS` key after validating its shape. Audited.                                                                                                                                                                                                                                                         |
 | `get_ai_usage_summary(p_from, p_to) -> jsonb`                                                                                           | `super_admin`, `content_editor`, `analyst`  | `{totals, by_day, by_model, by_kind}`: calls, tokens (all four kinds), estimated cost (null when unpriced), jobs by status.                                                                                                                                                                                                     |
+| `apply_unit_layout(p_scheme_id, p_layout, p_confirm_renumber default false) -> jsonb` (M2.4)                                            | `super_admin`, `content_editor`             | One atomic call that sets the chapter, order and term-wide number of every live unit of an approved scheme: adds units (and chapters), archives named units that have no version, 3 to 5 per chapter. See "M2.4" below.                                                                                                         |
 | `publish_unit_version(p_unit_version_id)` (existing, M0)                                                                                | `super_admin`, `content_editor`, `reviewer` | Unchanged.                                                                                                                                                                                                                                                                                                                      |
 
 Plus:
@@ -104,19 +106,66 @@ The owner requires that **everything Claude drafts (lessons, units, worksheets) 
 text-editor space**, and that an admin can **add units to a chapter by hand, up to five**. Until M2.4 the only way to
 change a draft was "Revise with Claude", and units came only from scheme weeks.
 
-- **Editor** (`/units/[unitId]/edit`): edits the whole unit as structured fields, not raw JSON: header, sections, blocks
-  of every type (text with `**bold**`, bullets, definitions, examples, dialogue, callouts, steps, tables, illustration
-  brief and alt text), questions of every kind with answer-spec editors and a "try it" grader, tutor-script nodes, the
-  session plan, the workbook (the worksheet content: tiers, drill, take-it-home, not-yet, variants) and the teacher's
-  manual including the helper script. Live Zod and lint messages beside the field, a reading-level meter, undo and redo,
-  a local autosave, and a side-by-side preview with `UnitView`.
-- **Save** creates a **new `human` version** through `create_unit_version_draft` (never edits a version in place);
-  `stale_base` shows a conflict screen. Approval is still a separate step for a reviewer.
-- **Ids**: existing ids cannot be renamed. An id that was never published may be deleted; an id of a published snapshot
-  of the unit may not (`lintVersionIds` against the published history, not against the previous draft).
-- **Planner**: add a unit to a chapter (up to 5), remove a unit that has no version, reorder within a chapter, and
-  move between neighbouring chapters, with one atomic server RPC for the new layout. The 3 to 5 rule stays enforced in
-  the planner, the RPC and `publish_unit_version`.
+- **Editor** (`/units/[unitId]/edit`, "Edit by hand" in the unit workspace): edits the whole unit as structured fields,
+  not raw JSON: header, sections, blocks of every type (text with `**bold**`, bullets, definitions, examples, dialogue,
+  callouts, steps, tables, illustration brief and alt text), questions of every kind with answer builders and a "Try
+  it" box that uses the real offline grader, tutor-script nodes, the session plan with a 50 to 70 minute check, the
+  workbook (tiers, drill, take-it-home, not-yet, practice sets) and the teacher's manual including the helper script;
+  projects, revision and assessment units too. Live Zod and lint messages beside the field and in a summary panel that
+  jumps to the field, a reading-level meter per section, undo and redo, a local autosave with a restore prompt, a
+  leave guard and a side-by-side preview with `UnitView`. Details: `apps/admin/README.md`.
+- **Save** creates a **new `human` version** through `create_unit_version_draft` (no model, no prompt version, `base` =
+  the latest version; never edits a version in place). `stale_base` shows a **conflict screen** with a by-item merge
+  (no "save as a separate copy"). Approval is still a separate step for a reviewer.
+- **Ids**: existing ids cannot be renamed. An id that was never published may be deleted; an id of any published
+  snapshot of the unit may not (`lintVersionIds` against the whole published history, not only the previous draft;
+  the buttons are disabled with the reason, and a save that lost one is refused).
+- **Planner** ("Edit layout" on the chapter planner): add a unit to a chapter (up to 5), remove a unit that has no
+  version, reorder within a chapter, move the first or last unit to the neighbouring chapter, edit the details of a
+  unit that has no draft, add a chapter; one atomic RPC, `apply_unit_layout`, for the whole layout. The 3 to 5 rule is
+  enforced in the planner's buttons, in the RPC, in `apply_chapter_plan` (unchanged) and in `publish_unit_version`.
+
+### The numbering decision
+
+`units.unit_no` is the 1-based **ordinal of the unit within its term**, in teaching order (chapter number, then
+position in the chapter). It is what the learner app prints ("Unit 5: ..."), what `apply_chapter_plan` requires to be
+unique over a plan, and what `header.unit_no` of the unit content means. `apply_unit_layout` therefore gives every live
+unit its rank in the layout: dense, unique term-wide, always consistent.
+
+What that means in practice, and the trade-offs:
+
+- A unit **without versions** is renumbered, moved and edited freely. A unit **with versions** keeps its row, id and
+  versions; it changes number or chapter only when the caller passes `p_confirm_renumber` after being told which
+  numbers change (the planner computes the same list before calling, the server refuses with the list in the error
+  DETAIL otherwise). Its title, objective, kind, stage, periods and week are never edited by the layout (that is what
+  new versions are for), and it is never removed. A unit that was **ever published** stays in its chapter.
+- **Trade-off 1, adding in an earlier chapter shifts every later number by one**, including units that already have
+  drafts (so it needs the confirmation). Adding at the end of the last chapter, or removing the last unit, renumbers
+  nothing that has a version. The alternative (sparse numbers, "Unit 9" before "Unit 5") renumbers nothing but prints
+  numbers out of order, breaks the learner app's sort and the plan's own uniqueness rule, so it was not chosen.
+- **Trade-off 2, drafts keep the number they were written under.** `header.unit_no` and `header.chapter` in a version
+  are not rewritten (published snapshots are immutable, drafts are never edited in place). The editor shows a banner
+  when a version's header differs from the unit row and writes the current values into the header of the next version
+  it saves. Until then a draft can say "Unit 5" in its header while the unit is now Unit 6; the workspace shows the
+  unit row's number.
+- **Trade-off 3, removal is archival.** A removed unit (it must have no version) becomes `archived` with a tombstone and
+  its number parked above 10000 inside its chapter, which frees the slot for the unique constraint. Nothing is deleted
+  from under a unit that something might refer to; archived units are ignored by the 3 to 5 count and cannot get a
+  version. The cost is a few dormant rows. (`apply_chapter_plan` still hard-deletes version-less units a new plan does
+  not contain, as before: re-planning is a different, destructive tool, and the planner says so.)
+- **Trade-off 4, optimistic concurrency, not merging.** A layout must account for exactly the live chapters and units
+  (`layout_out_of_date` otherwise), so a stale page can never archive a colleague's unit; the person reloads and
+  redoes the change. The call takes the scheme row `FOR UPDATE` (it serialises with `apply_chapter_plan` and other
+  layouts) and writes in id order, because every write draws a global `sync_seq` (see the migrations README).
+- **Trade-off 5, the TypeScript copy.** The planner previews numbers and the demo backend applies layouts with a
+  TypeScript mirror of the SQL rules (`src/lib/unitLayout.ts`). The SQL is the authority: the same scenario runs in
+  pgTAP (`120_unit_layout.test.sql`, 141 assertions), in a Vitest test and against a captured live output
+  (`src/api/fixtures/live-layout-output.json`), so the two cannot drift silently.
+
+Verified: the RPC against the live dev database (pgTAP, including the regression runs of `000`, `050`, `081` and `082`,
+and the security and performance advisors), the editor and the layout editor in a real browser in demo mode
+(`apps/admin/scripts/e2e-editor.mjs`). Not verified: either screen driving the live project through a signed-in browser
+session (this sandbox cannot reach `*.supabase.co`), and two people editing the same unit at the same time live.
 
 ## Admin app screens (M2.3)
 

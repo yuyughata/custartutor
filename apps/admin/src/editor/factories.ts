@@ -110,7 +110,12 @@ export function newQuestion(kind: QuestionKind, id: string, tier: 1 | 2 | 3 = 1)
     case 'mcq':
       return { ...base, kind, options: ['', ''], answer: { correct_index: 0 } };
     case 'fill_blank':
-      return { ...base, kind, prompt: 'Fill in the blank: ____', answer: { blanks: [{ accepted: [''] }] } };
+      return {
+        ...base,
+        kind,
+        prompt: 'Fill in the blank: ____',
+        answer: { blanks: [{ accepted: [''] }] },
+      };
     case 'match':
       return {
         ...base,

@@ -11,7 +11,17 @@ import { colors, radii, space } from '../../ui/theme';
 import { emptyTry, matchChoicesFor, tryIt, type TryInput } from '../tryIt';
 import { TextEditor } from './TextEditor';
 
-function Choice({ label, on, onPress, name }: { label: string; on: boolean; onPress: () => void; name: string }): ReactNode {
+function Choice({
+  label,
+  on,
+  onPress,
+  name,
+}: {
+  label: string;
+  on: boolean;
+  onPress: () => void;
+  name: string;
+}): ReactNode {
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -39,7 +49,13 @@ function Choice({ label, on, onPress, name }: { label: string; on: boolean; onPr
   );
 }
 
-export function TryItBox({ question, idPrefix }: { question: Question; idPrefix: string }): ReactNode {
+export function TryItBox({
+  question,
+  idPrefix,
+}: {
+  question: Question;
+  idPrefix: string;
+}): ReactNode {
   const [input, setInput] = useState<TryInput>(emptyTry());
   const set = (patch: Partial<TryInput>): void => setInput((current) => ({ ...current, ...patch }));
   const outcome = tryIt(question, input);
@@ -110,7 +126,13 @@ export function TryItBox({ question, idPrefix }: { question: Question; idPrefix:
                 label={option}
                 name={`Try circling option ${index + 1}`}
                 on={on}
-                onPress={() => set({ selected: on ? input.selected.filter((s) => s !== option) : [...input.selected, option] })}
+                onPress={() =>
+                  set({
+                    selected: on
+                      ? input.selected.filter((s) => s !== option)
+                      : [...input.selected, option],
+                  })
+                }
               />
             );
           })}
@@ -144,7 +166,13 @@ export function TryItBox({ question, idPrefix }: { question: Question; idPrefix:
                 label={h.label || h.id}
                 name={`Try tapping area ${index + 1}`}
                 on={on}
-                onPress={() => set({ hotspotIds: on ? input.hotspotIds.filter((id) => id !== h.id) : [...input.hotspotIds, h.id] })}
+                onPress={() =>
+                  set({
+                    hotspotIds: on
+                      ? input.hotspotIds.filter((id) => id !== h.id)
+                      : [...input.hotspotIds, h.id],
+                  })
+                }
               />
             );
           })}
@@ -168,7 +196,14 @@ export function TryItBox({ question, idPrefix }: { question: Question; idPrefix:
   return (
     <View
       testID={`tryit-${idPrefix}`}
-      style={{ gap: space[2], padding: space[3], borderRadius: radii.md, borderWidth: 1, borderColor: colors.amber, backgroundColor: colors.amberTint }}
+      style={{
+        gap: space[2],
+        padding: space[3],
+        borderRadius: radii.md,
+        borderWidth: 1,
+        borderColor: colors.amber,
+        backgroundColor: colors.amberTint,
+      }}
     >
       <Text style={{ fontSize: 15, fontWeight: '800', color: colors.amberText }}>Try it</Text>
       <Small>
@@ -178,7 +213,15 @@ export function TryItBox({ question, idPrefix }: { question: Question; idPrefix:
       </Small>
       {body}
       <Banner
-        tone={outcome.kind === 'graded' ? (outcome.result.result === 'correct' ? 'success' : outcome.result.result === 'partial' ? 'warning' : 'danger') : 'info'}
+        tone={
+          outcome.kind === 'graded'
+            ? outcome.result.result === 'correct'
+              ? 'success'
+              : outcome.result.result === 'partial'
+                ? 'warning'
+                : 'danger'
+            : 'info'
+        }
         title={outcome.headline}
         testID={`tryit-result-${idPrefix}`}
       >
@@ -188,7 +231,12 @@ export function TryItBox({ question, idPrefix }: { question: Question; idPrefix:
       </Banner>
       {graded ? (
         <View style={{ alignItems: 'flex-start' }}>
-          <Button label="Clear my answer" small variant="secondary" onPress={() => setInput(emptyTry())} />
+          <Button
+            label="Clear my answer"
+            small
+            variant="secondary"
+            onPress={() => setInput(emptyTry())}
+          />
         </View>
       ) : null}
     </View>

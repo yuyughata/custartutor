@@ -6,7 +6,11 @@
 import { Id, type SectionType, type QuestionKind } from '@custar/content-schema';
 
 export function nextFreeId(prefix: string, taken: ReadonlySet<string>): string {
-  const base = prefix.replace(/[^a-z0-9_]+/g, '_').replace(/^[^a-z]+/, '').replace(/_+$/, '') || 'item';
+  const base =
+    prefix
+      .replace(/[^a-z0-9_]+/g, '_')
+      .replace(/^[^a-z]+/, '')
+      .replace(/_+$/, '') || 'item';
   for (let n = 1; n < 10_000; n += 1) {
     const candidate = `${base}_${n}`.slice(-64);
     if (!taken.has(candidate) && Id.safeParse(candidate).success) return candidate;

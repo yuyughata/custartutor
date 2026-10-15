@@ -199,7 +199,11 @@ export function canAddUnit(chapter: DraftChapter): Allowed {
     : { ok: true, reason: null };
 }
 
-export function canRemoveUnit(draft: LayoutDraft, chapterIndex: number, unitIndex: number): Allowed {
+export function canRemoveUnit(
+  draft: LayoutDraft,
+  chapterIndex: number,
+  unitIndex: number,
+): Allowed {
   const chapter = draft.chapters[chapterIndex];
   const unit = chapter?.units[unitIndex];
   if (!chapter || !unit) return { ok: false, reason: 'No such unit.' };
@@ -210,17 +214,26 @@ export function canRemoveUnit(draft: LayoutDraft, chapterIndex: number, unitInde
     };
   }
   if (chapter.units.length <= CHAPTER_MIN_UNITS) {
-    return { ok: false, reason: `A chapter needs at least ${CHAPTER_MIN_UNITS} units. Add another unit first.` };
+    return {
+      ok: false,
+      reason: `A chapter needs at least ${CHAPTER_MIN_UNITS} units. Add another unit first.`,
+    };
   }
   return { ok: true, reason: null };
 }
 
-export function canMoveWithin(draft: LayoutDraft, chapterIndex: number, unitIndex: number, delta: -1 | 1): Allowed {
+export function canMoveWithin(
+  draft: LayoutDraft,
+  chapterIndex: number,
+  unitIndex: number,
+  delta: -1 | 1,
+): Allowed {
   const chapter = draft.chapters[chapterIndex];
   if (!chapter?.units[unitIndex]) return { ok: false, reason: 'No such unit.' };
   const target = unitIndex + delta;
   if (target < 0) return { ok: false, reason: 'It is already first in its chapter.' };
-  if (target >= chapter.units.length) return { ok: false, reason: 'It is already last in its chapter.' };
+  if (target >= chapter.units.length)
+    return { ok: false, reason: 'It is already last in its chapter.' };
   return { ok: true, reason: null };
 }
 
@@ -237,7 +250,10 @@ export function canMoveToChapter(
   const target = draft.chapters[targetIndex];
   if (!chapter || !unit) return { ok: false, reason: 'No such unit.' };
   if (!target) {
-    return { ok: false, reason: direction === 'previous' ? 'This is the first chapter.' : 'This is the last chapter.' };
+    return {
+      ok: false,
+      reason: direction === 'previous' ? 'This is the first chapter.' : 'This is the last chapter.',
+    };
   }
   const edge = direction === 'previous' ? unitIndex === 0 : unitIndex === chapter.units.length - 1;
   if (!edge) {
@@ -250,10 +266,16 @@ export function canMoveToChapter(
     return { ok: false, reason: 'A published unit stays in its chapter.' };
   }
   if (target.units.length >= CHAPTER_MAX_UNITS) {
-    return { ok: false, reason: `Chapter ${target.number} already has ${CHAPTER_MAX_UNITS} units.` };
+    return {
+      ok: false,
+      reason: `Chapter ${target.number} already has ${CHAPTER_MAX_UNITS} units.`,
+    };
   }
   if (chapter.units.length <= CHAPTER_MIN_UNITS) {
-    return { ok: false, reason: `Chapter ${chapter.number} would have fewer than ${CHAPTER_MIN_UNITS} units.` };
+    return {
+      ok: false,
+      reason: `Chapter ${chapter.number} would have fewer than ${CHAPTER_MIN_UNITS} units.`,
+    };
   }
   return { ok: true, reason: null };
 }
@@ -262,14 +284,19 @@ export function canEditDetails(unit: DraftUnit): Allowed {
   return unit.hasVersions
     ? {
         ok: false,
-        reason: 'This unit has drafts. Change its title or objective in a new version (Edit by hand) instead.',
+        reason:
+          'This unit has drafts. Change its title or objective in a new version (Edit by hand) instead.',
       }
     : { ok: true, reason: null };
 }
 
 // --- updaters -----------------------------------------------------------------------------------------------------------
 
-function mapChapter(draft: LayoutDraft, index: number, fn: (chapter: DraftChapter) => DraftChapter): LayoutDraft {
+function mapChapter(
+  draft: LayoutDraft,
+  index: number,
+  fn: (chapter: DraftChapter) => DraftChapter,
+): LayoutDraft {
   return { ...draft, chapters: draft.chapters.map((c, i) => (i === index ? fn(c) : c)) };
 }
 
@@ -277,7 +304,12 @@ export function blankFields(stage: Stage = 'absorb', kind: UnitKind = 'lesson'):
   return { title: '', objective: '', kind, stage, periods: 1, week_no: null };
 }
 
-export function addUnit(draft: LayoutDraft, chapterIndex: number, fields: UnitFields, lens?: string): LayoutDraft {
+export function addUnit(
+  draft: LayoutDraft,
+  chapterIndex: number,
+  fields: UnitFields,
+  lens?: string,
+): LayoutDraft {
   const chapter = draft.chapters[chapterIndex];
   if (!chapter || !canAddUnit(chapter).ok) return draft;
   const unit: DraftUnit = {
@@ -298,16 +330,28 @@ export function addUnit(draft: LayoutDraft, chapterIndex: number, fields: UnitFi
   };
 }
 
-export function removeUnit(draft: LayoutDraft, chapterIndex: number, unitIndex: number): LayoutDraft {
+export function removeUnit(
+  draft: LayoutDraft,
+  chapterIndex: number,
+  unitIndex: number,
+): LayoutDraft {
   if (!canRemoveUnit(draft, chapterIndex, unitIndex).ok) return draft;
   const unit = draft.chapters[chapterIndex]?.units[unitIndex];
   if (!unit) return draft;
-  const next = mapChapter(draft, chapterIndex, (c) => ({ ...c, units: c.units.filter((_, i) => i !== unitIndex) }));
+  const next = mapChapter(draft, chapterIndex, (c) => ({
+    ...c,
+    units: c.units.filter((_, i) => i !== unitIndex),
+  }));
   // A unit added in this draft just disappears; an existing one is archived by the server.
   return unit.id === null ? next : { ...next, removed: [...next.removed, unit] };
 }
 
-export function moveWithin(draft: LayoutDraft, chapterIndex: number, unitIndex: number, delta: -1 | 1): LayoutDraft {
+export function moveWithin(
+  draft: LayoutDraft,
+  chapterIndex: number,
+  unitIndex: number,
+  delta: -1 | 1,
+): LayoutDraft {
   if (!canMoveWithin(draft, chapterIndex, unitIndex, delta).ok) return draft;
   return mapChapter(draft, chapterIndex, (c) => {
     const units = c.units.slice();
@@ -349,11 +393,17 @@ export function setUnitFields(
   if (!unit || !canEditDetails(unit).ok) return draft;
   return mapChapter(draft, chapterIndex, (c) => ({
     ...c,
-    units: c.units.map((u, i) => (i === unitIndex ? { ...u, fields: { ...u.fields, ...patch } } : u)),
+    units: c.units.map((u, i) =>
+      i === unitIndex ? { ...u, fields: { ...u.fields, ...patch } } : u,
+    ),
   }));
 }
 
-export function setChapterTitle(draft: LayoutDraft, chapterIndex: number, title: string): LayoutDraft {
+export function setChapterTitle(
+  draft: LayoutDraft,
+  chapterIndex: number,
+  title: string,
+): LayoutDraft {
   const chapter = draft.chapters[chapterIndex];
   // Only a chapter added in this draft is renamed here; existing chapters are renamed by re-planning.
   if (!chapter || chapter.id !== null) return draft;
@@ -413,10 +463,22 @@ export function validateDraft(draft: LayoutDraft): DraftIssue[] {
         issues.push({ chapter: ci, unit: ui, message: 'This unit needs a title.' });
       }
       if (unit.fields.objective.trim() === '') {
-        issues.push({ chapter: ci, unit: ui, message: 'This unit needs an objective (what the child will learn).' });
+        issues.push({
+          chapter: ci,
+          unit: ui,
+          message: 'This unit needs an objective (what the child will learn).',
+        });
       }
-      if (!Number.isInteger(unit.fields.periods) || unit.fields.periods < 1 || unit.fields.periods > 10) {
-        issues.push({ chapter: ci, unit: ui, message: 'Periods must be a whole number from 1 to 10.' });
+      if (
+        !Number.isInteger(unit.fields.periods) ||
+        unit.fields.periods < 1 ||
+        unit.fields.periods > 10
+      ) {
+        issues.push({
+          chapter: ci,
+          unit: ui,
+          message: 'Periods must be a whole number from 1 to 10.',
+        });
       }
     });
   });
@@ -432,10 +494,17 @@ export function versionedChanges(
   draft.chapters.forEach((chapter) => {
     chapter.units.forEach((unit) => {
       const to = numbers.get(unit.key);
-      if (unit.id === null || !unit.hasVersions || unit.currentNo === null || to === undefined) return;
+      if (unit.id === null || !unit.hasVersions || unit.currentNo === null || to === undefined)
+        return;
       const moved = unit.chapterId !== chapter.id;
       if (to !== unit.currentNo || moved) {
-        out.push({ title: unit.fields.title, from: unit.currentNo, to, chapter: chapter.number, moved });
+        out.push({
+          title: unit.fields.title,
+          from: unit.currentNo,
+          to,
+          chapter: chapter.number,
+          moved,
+        });
       }
     });
   });

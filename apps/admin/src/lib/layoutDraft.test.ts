@@ -54,7 +54,17 @@ function chapters(): ChapterRow[] {
       title: 'Our Environment',
       status: 'draft',
       units: [1, 2, 3, 4].map((n) =>
-        unit(n, n === 2 ? { status: 'published', version_count: 1, latest_version: 1, latest_version_status: 'published' } : {}),
+        unit(
+          n,
+          n === 2
+            ? {
+                status: 'published',
+                version_count: 1,
+                latest_version: 1,
+                latest_version_status: 'published',
+              }
+            : {},
+        ),
       ),
     },
     {
@@ -64,7 +74,10 @@ function chapters(): ChapterRow[] {
       title: 'Our Homes',
       status: 'draft',
       units: [5, 6, 7, 8].map((n) =>
-        unit(n, n === 6 ? { version_count: 2, latest_version: 2, latest_version_status: 'draft' } : {}),
+        unit(
+          n,
+          n === 6 ? { version_count: 2, latest_version: 2, latest_version_status: 'draft' } : {},
+        ),
       ),
     },
   ];
@@ -79,21 +92,42 @@ describe('draftFrom / draftToDoc', () => {
     expect(draftChanged(draft, loaded())).toBe(false);
     const doc = draftToDoc(draft);
     expect(doc.chapters.map((c) => ('id' in c ? c.id : null))).toEqual(['c1', 'c2']);
-    expect(doc.chapters[0]?.units.map((u) => ('id' in u ? u.id : null))).toEqual(['u1', 'u2', 'u3', 'u4']);
+    expect(doc.chapters[0]?.units.map((u) => ('id' in u ? u.id : null))).toEqual([
+      'u1',
+      'u2',
+      'u3',
+      'u4',
+    ]);
     expect(doc.removed).toEqual([]);
     expect(planLayout(modelFrom(chapters(), weeks), doc).changes).toBe(false);
   });
 
   it('sends a new unit with its fields, and only the changed fields of a unit without versions', () => {
-    let draft = addUnit(loaded(), 1, { ...blankFields('connect'), title: '  Caring for animals ', objective: 'Care', periods: 2, week_no: 4 });
+    let draft = addUnit(loaded(), 1, {
+      ...blankFields('connect'),
+      title: '  Caring for animals ',
+      objective: 'Care',
+      periods: 2,
+      week_no: 4,
+    });
     draft = setUnitFields(draft, 0, 0, { title: 'Renamed' });
     const doc = draftToDoc(draft);
     const added = doc.chapters[1]?.units.at(-1);
     expect(added).toEqual({
-      new: { title: 'Caring for animals', objective: 'Care', kind: 'lesson', stage: 'connect', periods: 2, week_no: 4 },
+      new: {
+        title: 'Caring for animals',
+        objective: 'Care',
+        kind: 'lesson',
+        stage: 'connect',
+        periods: 2,
+        week_no: 4,
+      },
     });
     expect(doc.chapters[0]?.units[0]).toEqual({ id: 'u1', set: { title: 'Renamed' } });
-    expect(planLayout(modelFrom(chapters(), weeks), doc).counts).toMatchObject({ units_created: 1, units_updated: 1 });
+    expect(planLayout(modelFrom(chapters(), weeks), doc).counts).toMatchObject({
+      units_created: 1,
+      units_updated: 1,
+    });
   });
 
   it('never sends details for a unit that has versions', () => {
@@ -216,7 +250,9 @@ describe('what a change does to units with versions', () => {
   it('lists the units with versions whose number or chapter would change', () => {
     expect(versionedChanges(loaded())).toEqual([]);
     const early = addUnit(loaded(), 0, blankFields()); // unit 6 (2 versions) becomes 7
-    expect(versionedChanges(early)).toEqual([{ title: 'Unit 6', from: 6, to: 7, chapter: 2, moved: false }]);
+    expect(versionedChanges(early)).toEqual([
+      { title: 'Unit 6', from: 6, to: 7, chapter: 2, moved: false },
+    ]);
     // adding to the LAST chapter changes no number
     expect(versionedChanges(addUnit(loaded(), 1, blankFields()))).toEqual([]);
     // moving the draft-versioned unit to chapter 1 changes chapter
@@ -229,7 +265,9 @@ describe('what a change does to units with versions', () => {
     const early = addUnit(loaded(), 0, { ...blankFields(), title: 'T', objective: 'O' });
     const model = modelFrom(chapters(), weeks);
     expect(() => planLayout(model, draftToDoc(early))).toThrow();
-    expect(planLayout(model, draftToDoc(early), { confirmRenumber: true }).versioned).toHaveLength(1);
+    expect(planLayout(model, draftToDoc(early), { confirmRenumber: true }).versioned).toHaveLength(
+      1,
+    );
   });
 });
 

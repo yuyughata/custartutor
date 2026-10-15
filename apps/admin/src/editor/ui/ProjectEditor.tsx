@@ -8,7 +8,18 @@ import { EVIDENCE_CHOICES, addStep, moveStep, removeStep, setEvidence } from '..
 import { keys } from '../jump';
 import { appendAt, removeAt as removeAtPath } from '../path';
 import { useActions, useEnv, useIssuesAt } from './context';
-import { AddButton, IssueLines, ItemBar, ItemCard, Mark, Num, Rows, Strings, SubHeading, Txt } from './Fields';
+import {
+  AddButton,
+  IssueLines,
+  ItemBar,
+  ItemCard,
+  Mark,
+  Num,
+  Rows,
+  Strings,
+  SubHeading,
+  Txt,
+} from './Fields';
 import { TutorScriptEditor } from './TutorScriptEditor';
 
 type Rec = Record<string, unknown>;
@@ -17,13 +28,20 @@ function str(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 function recs(value: unknown): Rec[] {
-  return Array.isArray(value) ? value.map((v) => (typeof v === 'object' && v !== null ? (v as Rec) : {})) : [];
+  return Array.isArray(value)
+    ? value.map((v) => (typeof v === 'object' && v !== null ? (v as Rec) : {}))
+    : [];
 }
 function strs(value: unknown): string[] {
   return Array.isArray(value) ? value.map(str) : [];
 }
 
-const EVIDENCE_LABELS: Record<string, string> = { photo: 'A photo', drawing: 'A drawing', audio: 'A recording', text: 'Some writing' };
+const EVIDENCE_LABELS: Record<string, string> = {
+  photo: 'A photo',
+  drawing: 'A drawing',
+  audio: 'A recording',
+  text: 'Some writing',
+};
 
 export function ProjectEditor({
   unit,
@@ -42,21 +60,37 @@ export function ProjectEditor({
   const rubricIssues = useIssuesAt(['rubric']);
   return (
     <View style={{ gap: space[3] }}>
-      <Txt path={['brief']} label="What the child will make or find out (child language)" value={str(unit.brief)} multiline rich rows={4} />
+      <Txt
+        path={['brief']}
+        label="What the child will make or find out (child language)"
+        value={str(unit.brief)}
+        multiline
+        rich
+        rows={4}
+      />
 
       <View style={{ gap: space[2] }} {...({ dataSet: { field: 'steps' } } as object)}>
         <SubHeading>Steps</SubHeading>
         <IssueLines issues={stepsIssues} />
         {steps.map((step, index) => (
           <View key={index} style={{ gap: space[1] }}>
-            <Txt path={['steps', index, 'text']} label={`Step ${index + 1}`} value={str(step.text)} multiline rich rows={2} />
+            <Txt
+              path={['steps', index, 'text']}
+              label={`Step ${index + 1}`}
+              value={str(step.text)}
+              multiline
+              rich
+              rows={2}
+            />
             <ItemBar
               noun={`step ${index + 1}`}
               canUp={index > 0}
               canDown={index < steps.length - 1}
               onUp={() => actions.commit((u) => moveStep(u, index, index - 1))}
               onDown={() => actions.commit((u) => moveStep(u, index, index + 1))}
-              {...(steps.length > 1 ? { onRemove: () => actions.commit((u) => removeStep(u, index)) } : {})}
+              {...(steps.length > 1
+                ? { onRemove: () => actions.commit((u) => removeStep(u, index)) }
+                : {})}
             />
           </View>
         ))}
@@ -64,11 +98,21 @@ export function ProjectEditor({
         <Small>Steps are numbered 1, 2, 3 in order automatically.</Small>
       </View>
 
-      <Strings path={['materials']} label="Materials (low-cost, local)" noun="material" values={strs(unit.materials)} min={1} addLabel="Add a material" />
+      <Strings
+        path={['materials']}
+        label="Materials (low-cost, local)"
+        noun="material"
+        values={strs(unit.materials)}
+        min={1}
+        addLabel="Add a material"
+      />
 
       <View style={{ gap: space[2] }} {...({ dataSet: { field: 'rubric' } } as object)}>
         <SubHeading>Rubric</SubHeading>
-        <Small>Each criterion has levels from 1 (lowest) to 4, with a plain description of what the work looks like at that level.</Small>
+        <Small>
+          Each criterion has levels from 1 (lowest) to 4, with a plain description of what the work
+          looks like at that level.
+        </Small>
         <IssueLines issues={rubricIssues} />
         {rubric.map((row, index) => (
           <ItemCard
@@ -81,12 +125,24 @@ export function ProjectEditor({
               <ItemBar
                 noun={`criterion ${index + 1}`}
                 {...(rubric.length > 1
-                  ? { onRemove: () => actions.confirmDelete({ title: `Remove criterion ${index + 1}?`, confirmLabel: 'Remove criterion', onConfirm: () => actions.commit((u) => removeAtPath(u, ['rubric', index])) }) }
+                  ? {
+                      onRemove: () =>
+                        actions.confirmDelete({
+                          title: `Remove criterion ${index + 1}?`,
+                          confirmLabel: 'Remove criterion',
+                          onConfirm: () =>
+                            actions.commit((u) => removeAtPath(u, ['rubric', index])),
+                        }),
+                    }
                   : {})}
               />
             }
           >
-            <Txt path={['rubric', index, 'criterion']} label="Criterion" value={str(row.criterion)} />
+            <Txt
+              path={['rubric', index, 'criterion']}
+              label="Criterion"
+              value={str(row.criterion)}
+            />
             <Rows
               path={['rubric', index, 'levels']}
               label="Levels"
@@ -97,8 +153,22 @@ export function ProjectEditor({
               blank={() => ({ level: Math.min(4, recs(row.levels).length + 1), descriptor: '' })}
               renderItem={(itemPath, levelIndex) => (
                 <>
-                  <Num path={[...itemPath, 'level']} label={`Level number ${levelIndex + 1} (1 to 4)`} value={typeof recs(row.levels)[levelIndex]?.level === 'number' ? (recs(row.levels)[levelIndex]?.level as number) : null} />
-                  <Txt path={[...itemPath, 'descriptor']} label={`What level ${levelIndex + 1} looks like`} value={str(recs(row.levels)[levelIndex]?.descriptor)} multiline rows={2} />
+                  <Num
+                    path={[...itemPath, 'level']}
+                    label={`Level number ${levelIndex + 1} (1 to 4)`}
+                    value={
+                      typeof recs(row.levels)[levelIndex]?.level === 'number'
+                        ? (recs(row.levels)[levelIndex]?.level as number)
+                        : null
+                    }
+                  />
+                  <Txt
+                    path={[...itemPath, 'descriptor']}
+                    label={`What level ${levelIndex + 1} looks like`}
+                    value={str(recs(row.levels)[levelIndex]?.descriptor)}
+                    multiline
+                    rows={2}
+                  />
                 </>
               )}
             />
@@ -131,21 +201,33 @@ export function ProjectEditor({
             on={evidence.includes(choice)}
             label={EVIDENCE_LABELS[choice] ?? choice}
             name={`Evidence: ${EVIDENCE_LABELS[choice] ?? choice}`}
-            onPress={() => actions.commit((u) => setEvidence(u, choice, !evidence.includes(choice)))}
+            onPress={() =>
+              actions.commit((u) => setEvidence(u, choice, !evidence.includes(choice)))
+            }
           />
         ))}
       </View>
 
-      <Strings path={['reflection_prompts']} label="Reflection prompts" noun="prompt" values={strs(unit.reflection_prompts)} min={1} addLabel="Add a prompt" />
+      <Strings
+        path={['reflection_prompts']}
+        label="Reflection prompts"
+        noun="prompt"
+        values={strs(unit.reflection_prompts)}
+        min={1}
+        addLabel="Add a prompt"
+      />
 
       <TutorScriptEditor
         scope="project"
         sectionIndex={null}
-        script={typeof unit.tutor_script === 'object' && unit.tutor_script !== null ? (unit.tutor_script as Rec) : undefined}
+        script={
+          typeof unit.tutor_script === 'object' && unit.tutor_script !== null
+            ? (unit.tutor_script as Rec)
+            : undefined
+        }
         questions={questions}
         subject="the project"
       />
     </View>
   );
 }
-

@@ -154,7 +154,12 @@ export interface ApplyLayoutResult {
   chapters_created: number;
   created_unit_ids: string[];
   created_chapter_ids: string[];
-  layout: { chapter_id: string; number: number; title: string; units: { id: string; unit_no: number }[] }[];
+  layout: {
+    chapter_id: string;
+    number: number;
+    title: string;
+    units: { id: string; unit_no: number }[];
+  }[];
 }
 
 /** One snapshot from the unit's published history (immutable; content staff can read all of them). */
